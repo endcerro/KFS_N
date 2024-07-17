@@ -2,6 +2,7 @@
 #![no_main]
 #[macro_use]
 pub mod vga;
+pub mod gdt;
 use core::panic::PanicInfo;
 
 #[no_mangle]
@@ -11,6 +12,7 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: usize, _multiboot_magic_nbr :
 }
 
 fn init() {
+    gdt::init();
     vga::clear_screen();
     vga::print_ft();
 }
