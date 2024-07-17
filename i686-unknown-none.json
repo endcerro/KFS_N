@@ -8,8 +8,5 @@
 	"os": "none",
 	"arch": "x86",
 		"linker-flavor": "ld",
-		"pre-link-args": { "ld": ["-m32"] },
-		"no-compiler-rt": true,
-		"eliminate-frame-pointer": false,
-	"morestack": false
+		"pre-link-args": { "ld": ["-m32"] }
 }
