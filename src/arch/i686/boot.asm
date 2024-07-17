@@ -29,19 +29,15 @@ start:
 
     mov esp, stack_top               ; Use our stack.
 
-    ; push arguments
-	; https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html#Boot-information-format
+    ; push arguments https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html#Boot-information-format
 	push ebx ; address of Multiboot2 information structure
 	push eax ; magic value for MultiBoot2 should be 0x36d76289
     call rust_main
 ;     jmp kernel_hello    
+    hlt
 kernel_hello:
     mov dword [0xb8000], 0x2f322f34
     hlt
-;     ; Display "OKAY".
-;     mov eax, 0x3432
-;     mov dword [0xb8000], 0x2f4b2f4f
-;     halt
 
 
 

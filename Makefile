@@ -1,5 +1,5 @@
 
-ASM_SRC = src/arch/i386
+ASM_SRC = src/arch/i686
 SRC = src/
 all : boot_basic
 
