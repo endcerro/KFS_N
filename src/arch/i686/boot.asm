@@ -51,5 +51,5 @@ gdtflush :
     mov ss, ax
 
     jmp 0x08:.flush
-.flush
+.flush :
     ret
