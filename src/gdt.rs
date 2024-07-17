@@ -1,13 +1,14 @@
 //https://wiki.osdev.org/Global_Descriptor_Table#Table
 //https://wiki.osdev.org/GDT_Tutorial#Basics
 
-use core::arch::asm;
-
 use rlibc::memcpy;
 
 pub const GDTADDR: u32 = 0x00000800;
 const GDTSIZE: usize = 7;
 
+extern "C" {
+    fn gdtflush(_gdtr : *const GdtDescriptor);
+}
 //WARNING : This is not portable for future x64
 #[repr(C, packed)]
 struct GdtDescriptor {
@@ -57,14 +58,7 @@ pub fn init() {
 
     unsafe {
         memcpy(gdtr.address as *mut u8, segments.as_ptr() as *const u8, gdtr.size as usize);
-        asm!("
-            lgdt [{}]
-            mov ax, 0x10
-            mov ds, ax
-            mov es, ax
-            mov fs, ax
-            mov gs, ax",
-            in(reg) &gdtr,
-        );
+        gdtflush(&gdtr as *const GdtDescriptor);
     }
+    println!("GDT Success");
 }

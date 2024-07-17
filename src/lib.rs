@@ -12,8 +12,8 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: usize, _multiboot_magic_nbr :
 }
 
 fn init() {
-    gdt::init();
     vga::clear_screen();
+    gdt::init();
     vga::print_ft();
 }
 
