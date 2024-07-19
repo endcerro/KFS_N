@@ -3,12 +3,14 @@
 #[macro_use]
 pub mod vga;
 pub mod gdt;
+pub mod utils;
 use core::panic::PanicInfo;
 
 #[no_mangle]
 pub extern "C" fn rust_main(_multiboot_struct_ptr: usize, _multiboot_magic_nbr : usize) -> ! {
 	init();
 	gdt::print();
+	utils::print_kernel_stack();
 	// print!("OK");
 	loop {}
 }
