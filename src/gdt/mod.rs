@@ -24,7 +24,7 @@ impl GdtDescriptor {
 	pub fn current() -> GdtDescriptor {
 		let gdtr = GdtDescriptor::default();
 		unsafe { core::arch::asm!("sgdt [{}]", in(reg) &gdtr as *const _);}
-		print!("GDT is {:#?}", gdtr);
+		// print!("GDT is {:#?}", gdtr);
         gdtr
 	}
 }
@@ -56,35 +56,31 @@ pub fn init() {
 	SegmentDescriptor::new(0, 0, 0xF6, 0xC), //User stack 0x30
 	SegmentDescriptor::new(tss_base, tss_limit, 0xE9, 0x0) //Tss Segment 0x38
 	];
-
-	segments[1].print_bytes();
-	segments[2].print_bytes();
-
+	// for i in 0..GDTSIZE {
+	// 	println!("{}",segments[i]);
+	// }
 	let gdtr : GdtDescriptor = GdtDescriptor {
 		size : (size_of::<SegmentDescriptor>() * segments.len() - 1) as u16,
 		address : GDTADDR 
 	};
-	print!("GDT is {:#?}", gdtr);
 	
 	unsafe {
 		memcpy(gdtr.address as *mut u8, segments.as_ptr() as *const u8,  segments.len() * size_of::<SegmentDescriptor>() as usize);
 		gdtflush(&gdtr as *const GdtDescriptor);
 		tssflush();
 	}
-	println!("GDT Success");
+	println!("GDT load OK");
 }
 
 pub fn print() {
 	let gdtr = GdtDescriptor::current();
-	let i = 2;
-	for i in 1..3 {
+	for i in 0..GDTSIZE {
 		let mut gdtdescriptor: SegmentDescriptor = Default::default();
 		unsafe {
 			memcpy((&mut gdtdescriptor as *mut _) as *mut u8, 
 			(gdtr.address + ((size_of::<SegmentDescriptor>() as usize) * i)) as *const u8, //This + 2 is weird, investigate
 		8);
 		}
-		println!("Size of struct {}", size_of::<SegmentDescriptor>());
-		gdtdescriptor.print_bytes();
+		println!("{}",gdtdescriptor);
 	}
 }

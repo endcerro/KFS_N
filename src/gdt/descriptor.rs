@@ -1,3 +1,5 @@
+use core::fmt;
+
 //64 Bits so 8 Bytes
 #[repr(C, packed)]
 #[derive(Debug, Default, Clone, Copy)]
@@ -36,19 +38,13 @@ impl SegmentDescriptor {
         println!("high_base : {:b} ", high_base);
 
     }
-
-	// fn reconstruct(segment : SegmentDescriptor) -> SegmentDescriptor 
-	// {
-
-	// }
-	pub fn print(&self)
-	{
-		let mut basea : usize = 0;
-		// let mut flags : usize;
-		// let mut limit : usize;
-		// let mut access : usize;
-		basea = self.low_base as usize; //| (self.mid_base as u32) << 16 | (self.high_base as u32) << 24; 
-		// limit = self.low_limit as usize | ((self.flags_limit & 0xF) as usize) << 16;
-        println!("Base {:x}", basea);
-	}
+}
+impl fmt::Display for SegmentDescriptor { /*TODO Display access and flag with more granularity */
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let base: u32 = self.low_base as u32| (self.mid_base as u32) << 16 | (self.high_base as u32) << 24;
+        let limit : u32 = self.low_limit as u32 | (self.flags_limit as u32 & 0xF ) << 16;
+        let flags : u32 = self.flags_limit as u32 & 0xF0;
+        let access : u8 = self.access;
+        write!(f, "Base {:x}, limit {:x}, flags {:x}, access {:x}", base, limit, flags, access)
+    }
 }
