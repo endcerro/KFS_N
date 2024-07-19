@@ -46,6 +46,9 @@ gdtflush :
 	mov eax, 0x10
 	mov ds, ax ; kdata segment
 
+	mov eax, 0x18
+	mov ss, ax ; kstack segment
+
 	mov eax, 0x20
 	mov es, ax ; ucode segment
 
@@ -55,14 +58,12 @@ gdtflush :
 	mov eax, 0x30
 	mov gs, ax ; ustack segment
 
-	mov eax, 0x18
-	mov ss, ax ; kstack segment
-
-	mov eax, cr0 ; Set protection enabled in control register 0
-	or al, 1
-	mov cr0, eax
-
 	jmp 0x08:.flush ; Set CS, kcode segment
 .flush :
-	;We are now using our GDT and running 32bits protected mode
+	ret
+
+global tssflush
+tssflush: 
+	mov ax, 0x38
+	ltr ax
 	ret
