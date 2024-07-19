@@ -14,6 +14,13 @@ qemu : iso_basic
 	@echo Staring with qemu
 	@qemu-system-x86_64 -cdrom os.iso
 
+qemu_dbg : iso_basic
+	@echo Staring with qemu in debug mode
+	@qemu-system-x86_64 -cdrom os.iso -s -S
+
+dbg : 
+	gdb "isofiles/boot/kernel.bin" -ex "1234"
+
 rust_files :
 	@echo "Building rust"
 	@cargo build --target src/arch/i686/i686-unknown-none.json
