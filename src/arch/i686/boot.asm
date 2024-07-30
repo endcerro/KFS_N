@@ -31,7 +31,7 @@ start:
 
 	; push arguments https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html#Boot-information-format
 	push ebx ; address of Multiboot2 information structure
-	push eax ; magic value for MultiBoot2 should be 0x36d76289
+	;push eax ; magic value for MultiBoot2 should be 0x36d76289
 	call rust_main
 	;jmp kernel_hello    
 	hlt
@@ -66,4 +66,25 @@ global tssflush
 tssflush: 
 	mov ax, 0x38
 	ltr ax
+	ret
+
+global loadpagedirectory
+loadpagedirectory : 
+	push ebp
+	mov ebp, esp
+	mov eax, [8 + esp]
+	mov cr3, eax
+	mov esp, ebp
+	pop ebp
+	ret
+
+global enablepaging
+enablepaging : 
+	push ebp
+	mov ebp, esp
+	mov eax, cr0
+	or eax, 0x80000000
+	mov cr0, eax
+	mov esp, ebp
+	pop ebp
 	ret
