@@ -1,3 +1,5 @@
+OUTPUT_FORMAT(elf32-i386)
+OUTPUT_ARCH(i386)
 ENTRY(start)                /* the name of the entry label */
 
 SECTIONS {
@@ -24,6 +26,7 @@ SECTIONS {
 		*(.bss)              /* all bss sections from all files */
 		section_bss_end = .;
 	}
+	. = ALIGN(4K);
 	kernel_end = .;
 
 	

@@ -16,6 +16,13 @@ header_start:
 header_end:
 
 section .bss
+
+global page_directory_first_entry
+global page_table_first_entry
+page_directory_first_entry:
+	resb 4096
+page_table_first_entry:
+	resb 4096
 global stack_bottom
 global stack_top
 stack_bottom:
@@ -88,3 +95,4 @@ enablepaging :
 	mov esp, ebp
 	pop ebp
 	ret
+
