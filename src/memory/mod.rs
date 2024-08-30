@@ -1,8 +1,8 @@
 // use directory::PagingDirectory;
 
-mod directory;
-mod paging;
 
+mod test;
+mod physical;
 extern "C" {
     static mut _kernel_end: u32;
     static mut _kernel_start: u32;
@@ -17,31 +17,39 @@ extern "C" {
 
 }
 pub fn paging() {
-    // let test: PagingDirectory;
-    // unsafe {
-    //     // println!("Kernel start {:p}", &kernel_start);
-    //     // println!("Kernel end {:p}", &kernel_end);
-    //     // println!("bss start {:p}", &section_bss_start);
-    //     // println!("bss mid {:p}", &common_bss_sep);
-    //     // println!("bss end {:p}", &section_bss_end);
 
-    // } // test.init();
-      // paging::test_paging();
-      unsafe {
+     test2();
+     //  unsafe {
 
-           for i in 0..1024 {
-                let page_directory: *mut u32 = page_directory_first_entry.add(i);
-                *page_directory = 0x00000002; 
-           }
+     //       for i in 0..1024 {
+     //            let page_directory: *mut u32 = page_directory_first_entry.add(i);
+     //            *page_directory = 0x00000002; 
+     //       }
            
-           for i in 0..1024
-           {
-                let page_table = page_table_first_entry.add(i);
-                *page_table = ((i * 0x1000) | 3) as u32
-           }
-           *page_directory_first_entry = page_table_first_entry as u32 | 3;
-           loadpagedirectory(page_directory_first_entry);
-           enablepaging();
-      }
+     //       for i in 0..1024
+     //       {
+     //            let page_table = page_table_first_entry.add(i);
+     //            *page_table = ((i * 0x1000) | 3) as u32
+     //       }
+     //       *page_directory_first_entry = page_table_first_entry as u32 | 3;
+     //       loadpagedirectory(page_directory_first_entry);
+     //       enablepaging();
+     //  }
+      
+}
+
+pub fn test2()
+{
+     test::doa(10);
+
+
+     
+
+     // if let Some(page) = test::allocate_page() {
+     //      println!("Allocated page at address: {:#x}", page);
+     // } else {
+     //      println!("Failed to allocate page");
+     // }
+     
       
 }

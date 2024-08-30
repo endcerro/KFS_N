@@ -12,7 +12,7 @@ kvm : iso_basic
 	@kvm -name kfs -cdrom ./os.iso -boot c
 qemu : iso_basic
 	@echo Staring with qemu
-	@qemu-system-x86_64 -cdrom os.iso
+	@qemu-system-x86_64 -cdrom os.iso -m 8G
 
 qemu_dbg : iso_basic
 	@echo Staring with qemu in debug mode
