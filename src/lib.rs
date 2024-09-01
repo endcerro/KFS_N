@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #[macro_use]
+
 pub mod vga;
 pub mod gdt;
 pub mod memory;
@@ -14,7 +15,7 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     gdt::print();
     // utils::print_kernel_stack();
     multiboot2::init_mem(_multiboot_struct_ptr);
-    memory::paging();
+    memory::init_paging();
     print!("OK {}", size_of::<usize>());
     print!("OK {}", size_of::<u32>());
     loop {}

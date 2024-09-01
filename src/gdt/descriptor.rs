@@ -23,7 +23,7 @@ impl SegmentDescriptor {
 			high_base : ((base & 0xff000000) >> 24) as u8,
 		}
 	}
-    pub fn print_bytes(self) {
+    pub fn _print_bytes(self) {
         let low_limit : u16 = self.low_limit;
         let low_base : u16 = self.low_base;
         let mid_base : u8 = self.mid_base;

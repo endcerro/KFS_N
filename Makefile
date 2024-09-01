@@ -32,7 +32,7 @@ asm_files :
 
 kernel_basic : asm_files rust_files
 	@echo "Linking kernel"
-	@ld -m elf_i386 -o obj/kernel.bin -T $(ASM_SRC)/linker.ld obj/boot.o target/i686-unknown-none/debug/libkfs_1.a
+	@ld -m elf_i386 -z noexecstack -o obj/kernel.bin -T $(ASM_SRC)/linker.ld obj/boot.o target/i686-unknown-none/debug/libkfs_1.a
 
 iso_basic : kernel_basic
 	@mkdir -p isofiles
