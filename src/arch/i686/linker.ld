@@ -4,7 +4,7 @@ ENTRY(start)                /* the name of the entry label */
 
 SECTIONS {
 	. = 1M;          /* the code should be loaded at 1 MB */
-	kernel_start = .;
+	_kernel_start = .;
 	.multiboot_header ALIGN(4K) :
 	{
 		KEEP(*(.multiboot_header))
@@ -26,7 +26,7 @@ SECTIONS {
 		section_bss_end = .;
 	}
 	. = ALIGN(4K);
-	kernel_end = .;
+	_kernel_end = .;
 
 	
 }

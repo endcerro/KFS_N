@@ -76,23 +76,23 @@ tssflush:
 	ret
 
 global loadpagedirectory
-loadpagedirectory : 
-	push ebp
-	mov ebp, esp
-	mov eax, [8 + esp]
-	mov cr3, eax
-	mov esp, ebp
-	pop ebp
-	ret
+loadpagedirectory:
+    push ebp
+    mov ebp, esp
+    mov eax, [ebp+8]  ; Get the page directory address from the stack
+    mov cr3, eax      ; Load the page directory address into CR3
+    mov esp, ebp
+    pop ebp
+    ret
 
 global enablepaging
 enablepaging : 
-	push ebp
-	mov ebp, esp
-	mov eax, cr0
-	or eax, 0x80000000
-	mov cr0, eax
-	mov esp, ebp
-	pop ebp
-	ret
+    push ebp
+    mov ebp, esp
+    mov eax, cr0
+    or eax, 0x80000000  ; Set the paging bit in CR0
+    mov cr0, eax
+    mov esp, ebp
+    pop ebp
+    ret
 

@@ -69,7 +69,7 @@ pub fn init() {
 		gdtflush(&gdtr as *const GdtDescriptor);
 		tssflush();
 	}
-	println!("GDT load OK");
+	// println!("GDT load OK");
 }
 
 pub fn print() {
