@@ -18,7 +18,7 @@ impl SegmentDescriptor {
 		SegmentDescriptor {
 			low_limit : (limit & 0xFFFF ) as u16,
 			low_base : (base & 0xFFFF) as u16,
-			mid_base : (base & 0xFF0000 >> 16) as u8,
+			mid_base : ((base & 0xFF0000) >> 16) as u8,
 			access,
 			flags_limit : ((limit & 0xF0000 ) >> 16 ) as u8 | (flags & 0xf) << 4,
 			high_base : ((base & 0xFF000000) >> 24) as u8,

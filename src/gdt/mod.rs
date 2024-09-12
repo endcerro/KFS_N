@@ -29,22 +29,29 @@ impl GdtDescriptor {
         gdtr
 	}
 }
+extern "C" {
+    static stack_top: u8;
+}
 
 
 //https://wiki.osdev.org/GDT_Tutorial#Basics
 //https://wiki.osdev.org/Global_Descriptor_Table
 pub fn init() {
-	let mut tss = TssSegment::default();
-	let tss_base : u32 = &tss as *const TssSegment as u32;
-	let tss_limit : u32 = tss_base + size_of::<TssSegment>() as u32;
-	tss.ss0 = 0x18;
-	tss.esp0 = 0;
-	tss.cs = 0x08 | 0x3;
-	tss.gs = 0x10 | 0x3;
-	tss.fs = tss.gs; 
-	tss.ss = tss.gs;
-	tss.ds = tss.gs;
-	tss.es = tss.gs;
+	// let mut tss = TssSegment::default();
+	let mut tss_base : u32;
+	let mut tss_limit : u32 ;
+	unsafe {
+		tss_base = &tss::TSS as *const TssSegment as u32;
+		tss_limit = tss_base + size_of::<TssSegment>() as u32 - 1;
+		tss::TSS.ss0 = 0x10;
+		tss::TSS.esp0 = unsafe {stack_top as *const u8 as u32} ;
+		tss::TSS.cs = 0x08 | 0x3;
+		tss::TSS.gs = 0x10 | 0x3;
+		tss::TSS.fs = tss::TSS.gs;
+		tss::TSS.ss = tss::TSS.gs;
+		tss::TSS.ds = tss::TSS.gs;
+		tss::TSS.es = tss::TSS.gs;
+	}
 
 	let segments : [SegmentDescriptor; GDTSIZE] = [
 	SegmentDescriptor::new(0, 0, 0, 0), //Null segment 0x0

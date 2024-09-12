@@ -45,6 +45,10 @@ start:
 	push ebx ; address of Multiboot2 information structure
 	;push eax ; magic value for MultiBoot2 should be 0x36d76289
 	call rust_main
+	mov dword [0xb8000], 0x4f524f45 ; "ER"
+	mov dword [0xb8004], 0x4f3a4f52 ; "R:"
+	mov dword [0xb8008], 0x4f204f20 ; "  "
+	mov byte  [0xb800a], al
 	;jmp kernel_hello
 	hlt
 kernel_hello:
