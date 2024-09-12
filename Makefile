@@ -29,10 +29,11 @@ asm_files :
 	@mkdir -p obj
 	@echo "Building ASM"
 	@nasm -f elf32 $(ASM_SRC)/boot.asm -o obj/boot.o
+	@nasm -f elf32 $(ASM_SRC)/interrupt.asm -o obj/interrupt.o
 
 kernel_basic : asm_files rust_files
 	@echo "Linking kernel"
-	@ld -m elf_i386 -z noexecstack -o obj/kernel.bin -T $(ASM_SRC)/linker.ld obj/boot.o target/i686-unknown-none/debug/libkfs_1.a
+	@ld -m elf_i386 -z noexecstack -o obj/kernel.bin -T $(ASM_SRC)/linker.ld obj/*.o target/i686-unknown-none/debug/libkfs_1.a
 
 iso_basic : kernel_basic
 	@mkdir -p isofiles
