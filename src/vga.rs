@@ -12,7 +12,16 @@
 // /*                                                                            */\n\
 // /* ************************************************************************** */\n";
 
-pub const HEADER_42 : &str = 
+/*
+	This file contains helper functions to allow us to print to the screen in an easy
+	manner.
+	Please not that this only uses character mode and needs another implmentation for a
+	pixel buffer
+ */
+
+const VGA_BUFFER_ADDR : u32 = 0xb8000;
+
+pub const HEADER_42 : &str =
 "         :::        ::::::::
 	   :+:        :+:    :+:
 	 +:+ +:+           +:+
@@ -41,7 +50,7 @@ pub enum Color {
 	Pink = 13,
 	Yellow = 14,
 	White = 15
-	
+
 }
 impl Color {
 	fn cycle(&self) -> Self {
@@ -119,10 +128,16 @@ impl Writer {
 			}
 		}
 	}
+	pub fn write_char(&mut self, char : char) {
+		match char {
+			'\t' => for _ in 0..4 {self.write_byte(b' ');}
+			_ => self.write_byte(char as u8)
+		}
+	}
 	pub fn write_string(&mut self, str : &str) {
 		for char in str.bytes() {
 			match char {
-				0x20..=0x7e | 0x0A => self.write_byte(char),
+				0x20..=0x7e | 0x0A => self.write_char(char as char),
 				_ => self.write_byte(0xfe)
 			}
 		}
@@ -154,40 +169,38 @@ impl Writer {
 				};
 			}
 		}
-		
 	}
 }
 
-use core::fmt;
 
-impl fmt::Write for Writer {
-	fn write_str(&mut self, s: &str) -> fmt::Result {
+impl core::fmt::Write for Writer {
+	fn write_str(&mut self, s: &str) -> core::fmt::Result {
 		self.write_string(s);
 		Ok(())
 	}
 }
 
-pub fn _print_test() {
-	let mut writer = Writer {
-		column_position: 0,
-		_row_position: 0,
-		color_code: ColorCode::new(Color::Yellow, Color::Red),
-		buffer: unsafe { &mut *(0xb8000 as *mut Buffer)},
-	};
-	writer.write_string("HELLO WORLD !");
-	writer.new_line();
-	writer.write_byte(b'4');
-	writer.write_byte(b'2');
-	writer.new_line();
-	writer.write_string(HEADER_42);
-}
+// pub fn _print_test() {
+// 	let mut writer = Writer {
+// 		column_position: 0,
+// 		_row_position: 0,
+// 		color_code: ColorCode::new(Color::Yellow, Color::Red),
+// 		buffer: unsafe { &mut *(0xb8000 as *mut Buffer)},
+// 	};
+// 	writer.write_string("HELLO WORLD !");
+// 	writer.new_line();
+// 	writer.write_byte(b'4');
+// 	writer.write_byte(b'2');
+// 	writer.new_line();
+// 	writer.write_string(HEADER_42);
+// }
 
 pub fn clear_screen() {
 	let mut writer = Writer {
 		column_position: 0,
 		_row_position: 0,
 		color_code: ColorCode::new(Color::Black, Color::Black),
-		buffer: unsafe { &mut *(0xb8000 as *mut Buffer)},
+		buffer: unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)},
 	};
 	writer.clear_screen();
 }
@@ -198,7 +211,7 @@ pub fn print_ft() {
 		column_position: 0,
 		_row_position: 0,
 		color_code: ColorCode::new(current_color, Color::Black),
-		buffer: unsafe { &mut *(0xb8000 as *mut Buffer)},
+		buffer: unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)},
 	};
 	for c in HEADER_42.bytes() {
 		match c {
@@ -207,9 +220,10 @@ pub fn print_ft() {
 				current_color = current_color.cycle();
 				writer.color_code = ColorCode::new(current_color, Color::Black);
 			},
-			c => writer.write_byte(c)
+			c => writer.write_char(c as char)
 		}
 	}
+	writer.write_char('\n');
 }
 
 use spin::Mutex;
@@ -221,7 +235,7 @@ lazy_static! {
 		_row_position : 0,
 		color_code : ColorCode::new(Color::LightGreen, Color::Black),
 		buffer : unsafe {
-			&mut *(0xb8000 as *mut Buffer)
+			&mut *(VGA_BUFFER_ADDR as *mut Buffer)
 		},
 	});
 }
@@ -238,7 +252,7 @@ macro_rules! println {
 }
 
 #[doc(hidden)]
-pub fn _print(args: fmt::Arguments) {
+pub fn _print(args: core::fmt::Arguments) {
 	use core::fmt::Write;
 	WRITER.lock().write_fmt(args).unwrap();
 }

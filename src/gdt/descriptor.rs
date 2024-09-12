@@ -1,6 +1,7 @@
 use core::fmt;
 
-//64 Bits so 8 Bytes
+//https://wiki.osdev.org/Global_Descriptor_Table
+
 #[repr(C, packed)]
 #[derive(Debug, Default, Clone, Copy)]
 pub struct SegmentDescriptor {
@@ -9,18 +10,18 @@ pub struct SegmentDescriptor {
 	mid_base : u8,
 	access : u8,
 	flags_limit : u8,
-	high_base : u8 
+	high_base : u8
 }
 
 impl SegmentDescriptor {
 	pub fn new(base : u32, limit : u32, access : u8, flags : u8) -> SegmentDescriptor {
 		SegmentDescriptor {
-			low_limit : (limit & 0xffff ) as u16,
-			low_base : (base & 0xffff) as u16,
-			mid_base : (base & 0xff0000 >> 16) as u8,
+			low_limit : (limit & 0xFFFF ) as u16,
+			low_base : (base & 0xFFFF) as u16,
+			mid_base : (base & 0xFF0000 >> 16) as u8,
 			access,
-			flags_limit : ((limit & 0xf0000 ) >> 16 ) as u8 | (flags & 0xf) << 4,
-			high_base : ((base & 0xff000000) >> 24) as u8,
+			flags_limit : ((limit & 0xF0000 ) >> 16 ) as u8 | (flags & 0xf) << 4,
+			high_base : ((base & 0xFF000000) >> 24) as u8,
 		}
 	}
     pub fn _print_bytes(self) {
