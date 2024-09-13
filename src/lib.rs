@@ -36,9 +36,9 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
 }
 
 fn init() {
-    gdt::init();
     vga::clear_screen();
     vga::print_ft();
+    gdt::init();
 }
 
 #[panic_handler]

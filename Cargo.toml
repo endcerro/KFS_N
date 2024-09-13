@@ -9,6 +9,10 @@ panic = "abort"
 [profile.release]
 panic = "abort"
 
+[features]
+gdt_test = []
+verbose = []
+
 [dependencies]
 rlibc = "1.0.0"
 spin = "0.9.8"

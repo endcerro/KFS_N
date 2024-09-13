@@ -13,6 +13,16 @@ pub struct SegmentDescriptor {
 	high_base : u8
 }
 
+impl PartialEq for SegmentDescriptor {
+    fn eq(&self, other : &Self) -> bool {
+        self.low_limit == other.low_limit &&
+        self.low_base == other.low_base &&
+        self.mid_base == other.mid_base &&
+        self.flags_limit == other.flags_limit &&
+        self.high_base == other.high_base
+    }
+}
+
 impl SegmentDescriptor {
 	pub fn new(base : u32, limit : u32, access : u8, flags : u8) -> SegmentDescriptor {
 		SegmentDescriptor {
