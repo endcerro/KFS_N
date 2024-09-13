@@ -10,13 +10,13 @@ function deps ()
 }
 
 
-read -p "Do you wish to install the dependencies (sudo requiered) ? Y/N" -n 1 -r
+read -p "Do you wish to install the dependencies (sudo requiered) ? Y/N " -n 1 -r
 echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     deps
 fi
-read -p "Do you wish to install the Rust toolchain ? Y/N" -n 1 -r
+read -p "Do you wish to install the Rust toolchain ? Y/N " -n 1 -r
 echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then

@@ -25,12 +25,12 @@ header_end:
 ; page_table_first_entry:
 ; 	resb 4096
 
+global stack_top
+global stack_bottom
 section .bss
 stack_bottom:
 		resb 4096*4
 stack_top:
-global stack_top
-global stack_bottom
 ;https://en.wikipedia.org/wiki/.bss
 ;Allocate some space for the stack since there is none yet
 
@@ -62,16 +62,16 @@ gdtflush :
 	mov eax, 0x10
 	mov ds, ax ; kdata segment
 
-	mov eax, 0x10
+	mov eax, 0x18
 	mov ss, ax ; kstack segment
 
-	mov eax, 0x10
+	mov eax, 0x20
 	mov es, ax ; ucode segment
 
-	mov eax, 0x10
+	mov eax, 0x28
 	mov fs, ax ; udata segment
 
-	mov eax, 0x10
+	mov eax, 0x30
 	mov gs, ax ; ustack segment
 
 	jmp 0x08:.flush ; Set CS, kcode segment

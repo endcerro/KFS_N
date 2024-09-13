@@ -12,7 +12,7 @@ kvm : iso_basic
 	@kvm -name kfs -cdrom ./os.iso -boot c
 qemu : iso_basic
 	@echo Staring with qemu
-	@qemu-system-x86_64 -cdrom os.iso -m 7M
+	@qemu-system-x86_64 -cdrom os.iso -m 1G
 
 qemu_dbg : iso_basic
 	@echo Staring with qemu in debug mode
@@ -29,7 +29,7 @@ asm_files :
 	@mkdir -p obj
 	@echo "Building ASM"
 	@nasm -f elf32 $(ASM_SRC)/boot.asm -o obj/boot.o
-	@nasm -f elf32 $(ASM_SRC)/interrupt.asm -o obj/interrupt.o
+	# @nasm -f elf32 $(ASM_SRC)/interrupt.asm -o obj/interrupt.o
 
 kernel_basic : asm_files rust_files
 	@echo "Linking kernel"
@@ -46,6 +46,9 @@ iso_basic : kernel_basic
 
 boot_basic : qemu
 
+build : iso_basic
+run : iso_basic
+	@qemu-system-x86_64 -cdrom os.iso -m 1G
 clean :
 	@cargo clean
 	@rm -rf obj

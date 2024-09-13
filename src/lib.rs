@@ -4,7 +4,6 @@
 
 pub mod vga;
 pub mod gdt;
-pub mod interrupts;
 //pub mod memory;
 pub mod multiboot2;
 pub mod utils;
@@ -26,7 +25,6 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     //     println!("The size of this kernel is {} kbytes", size / (1024 * 1024) );
     //     // print!("The size of this kernel is {} mbytes", size / 1024 / 1024);
     // }
-    interrupts::init();
     // gdt::print();
     // utils::print_kernel_stack();
     // multiboot2::init_mem(_multiboot_struct_ptr);

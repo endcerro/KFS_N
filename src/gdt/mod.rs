@@ -1,12 +1,17 @@
 //https://wiki.osdev.org/Global_Descriptor_Table#Table
 //https://wiki.osdev.org/GDT_Tutorial#Basics
-use rlibc::memcpy;
+mod define;
 mod descriptor;
-use descriptor::SegmentDescriptor;
 mod tss;
+
+use core::ptr::addr_of;
+
+use define::*;
+use descriptor::SegmentDescriptor;
 use tss::TssSegment;
-pub const GDTADDR: usize = 0x00000800;
-const GDTSIZE: usize = 8;
+
+use rlibc::memcpy;
+
 
 extern "C" {
 	fn gdtflush(_gdtr : *const GdtDescriptor);
@@ -33,35 +38,26 @@ extern "C" {
     static stack_top: u8;
 }
 
-
 //https://wiki.osdev.org/GDT_Tutorial#Basics
 //https://wiki.osdev.org/Global_Descriptor_Table
 pub fn init() {
-	// let mut tss = TssSegment::default();
-	let mut tss_base : u32;
-	let mut tss_limit : u32 ;
+	let tss_addr : u32;
+	let tss_limit : u32;
 	unsafe {
-		tss_base = &tss::TSS as *const TssSegment as u32;
-		tss_limit = tss_base + size_of::<TssSegment>() as u32 - 1;
-		tss::TSS.ss0 = 0x10;
-		tss::TSS.esp0 = unsafe {stack_top as *const u8 as u32} ;
-		tss::TSS.cs = 0x08 | 0x3;
-		tss::TSS.gs = 0x10 | 0x3;
-		tss::TSS.fs = tss::TSS.gs;
-		tss::TSS.ss = tss::TSS.gs;
-		tss::TSS.ds = tss::TSS.gs;
-		tss::TSS.es = tss::TSS.gs;
+		tss::TSS.init(addr_of!(stack_top) as u32).expect("Unvalid TSS stack address");
+		tss_addr = core::ptr::addr_of!(tss::TSS) as *const TssSegment as u32;
+		tss_limit = tss_addr + size_of::<TssSegment>() as u32 - 1;
 	}
 
 	let segments : [SegmentDescriptor; GDTSIZE] = [
-	SegmentDescriptor::new(0, 0, 0, 0), //Null segment 0x0
-	SegmentDescriptor::new(0, 0xFFFF, 0x9A, 0xCF), //Kernel Code 0x8
-	SegmentDescriptor::new(0, 0xFFFF, 0x92, 0xCF), //Kernel Data 0x10
-	SegmentDescriptor::new(0, 0xFFFF, 0x96, 0xCF), //Kernel Stack 0x18
-	SegmentDescriptor::new(0, 0xFFFF, 0xFA, 0xCF), //User code 0x20
-	SegmentDescriptor::new(0, 0xFFFF, 0xF2, 0xCF), //User data 0x28
-	SegmentDescriptor::new(0, 0xFFFF, 0xF6, 0xCF), //User stack 0x30
-	SegmentDescriptor::new(tss_base, tss_limit, 0xE9, 0x0) //Tss Segment 0x38
+		SegmentDescriptor::new(0, 0, 0, 0), //Null segment 0x0
+		SegmentDescriptor::new(0, 0xFFFF, 0x9A, 0xCF), //Kernel Code 0x8
+		SegmentDescriptor::new(0, 0xFFFF, 0x92, 0xCF), //Kernel Data 0x10
+		SegmentDescriptor::new(0, 0xFFFF, 0x96, 0xCF), //Kernel Stack 0x18
+		SegmentDescriptor::new(0, 0xFFFF, 0xFA, 0xCF), //User code 0x20
+		SegmentDescriptor::new(0, 0xFFFF, 0xF2, 0xCF), //User data 0x28
+		SegmentDescriptor::new(0, 0xFFFF, 0xF6, 0xCF), //User stack 0x30
+		SegmentDescriptor::new(tss_addr, tss_limit, 0xE9, 0x0) //Tss Segment 0x38
 	];
 	// for i in 0..GDTSIZE {
 	// 	println!("{}",segments[i]);
@@ -75,7 +71,7 @@ pub fn init() {
 		gdtflush(&gdtr as *const GdtDescriptor);
 		tssflush();
 	}
-	// println!("GDT load OK");
+	println!("GDT load OK");
 }
 
 pub fn print() {
