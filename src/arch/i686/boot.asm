@@ -28,7 +28,9 @@ header_end:
 global stack_top
 global stack_bottom
 section .bss
+align 16
 stack_bottom:
+		resb 4096 ;guard page
 		resb 4096*4*4
 stack_top:
 ;https://en.wikipedia.org/wiki/.bss

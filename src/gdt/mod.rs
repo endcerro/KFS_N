@@ -10,7 +10,7 @@ use define::*;
 use descriptor::SegmentDescriptor;
 use tss::TssSegment;
 
-use crate::utils::memcpy;
+use rlibc::memcpy;
 
 
 extern "C" {
@@ -92,9 +92,11 @@ pub fn print() {
 	let gdtr = GdtDescriptor::current();
 	for i in 0..GDTSIZE {
 		let mut gdtdescriptor: SegmentDescriptor = Default::default();
-		memcpy((&mut gdtdescriptor as *mut _) as *mut u8, 
-			(gdtr.address + ((size_of::<SegmentDescriptor>() as usize) * i)) as *const u8,
-			8);
+		unsafe {
+			memcpy((&mut gdtdescriptor as *mut _) as *mut u8, 
+				(gdtr.address + ((size_of::<SegmentDescriptor>() as usize) * i)) as *const u8,
+				8);
+		}
 		println!("{}",gdtdescriptor);
 	}
 }
@@ -118,7 +120,9 @@ fn verify_gdt_load_structure() {
 	
 	let gdtr = GdtDescriptor::current();
 	let test_segments : [SegmentDescriptor; GDTSIZE] = [SegmentDescriptor::default(); GDTSIZE];
-	memcpy(addr_of!(test_segments) as *mut _, gdtr.address as *const u8, gdtr.size as usize);
+	unsafe {
+		memcpy(addr_of!(test_segments) as *mut _, gdtr.address as *const u8, gdtr.size as usize);
+	}
 	for i in 0..GDTSIZE {
 		assert_eq!(correct_segments[i], test_segments[i]);
 	}
@@ -174,7 +178,7 @@ pub fn verify_tss() {
 
         println!("TSS base: {:#x}, limit: {:#x}", tss::TSS.esp0, tss::TSS.ss0);
         assert_eq!(tss::TSS.ss0, 0x10, "TSS SS0 not set correctly");
-        assert_eq!(tss::TSS.esp0, &stack_top as *const _ as u32, "TSS ESP0 not set correctly");
+        assert_eq!(tss::TSS.esp0, addr_of!(stack_top) as u32, "TSS ESP0 not set correctly");
 
         println!("TSS verified successfully!");
     }

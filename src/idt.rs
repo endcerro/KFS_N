@@ -56,12 +56,12 @@ impl Idt {
     }
 
     pub fn set_handler(&mut self, index : usize, handler : unsafe extern "x86-interrupt" fn(&handlers::InterruptStackFrame), selector : u16, flags : u8 ) {
-        self.entries[index].set_base(handler as u32);
+        self.entries[index].set_base(handler as usize as u32);
         self.entries[index].set_selector(selector);
         self.entries[index].set_flags(flags);
     }
     pub fn set_handler_with_errcode(&mut self, index : usize, handler : unsafe extern "x86-interrupt" fn(&handlers::InterruptStackFrame, u32), selector : u16, flags : u8 ) {
-        self.entries[index].set_base(handler as u32);
+        self.entries[index].set_base(handler as usize as u32);
         self.entries[index].set_selector(selector);
         self.entries[index].set_flags(flags);
     }

@@ -12,11 +12,11 @@ pub mod utils;
 pub mod idt;
 pub mod handlers;
 pub mod interrupts;
-use core::panic::PanicInfo;
+use core::{panic::PanicInfo, ptr::addr_of};
 
 extern "C" {
-    static _kernel_start : u32;
-    static _kernel_end : u32;
+    static _kernel_start : u8;
+    static _kernel_end : u8;
 
 }
 
@@ -24,10 +24,10 @@ extern "C" {
 pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootInfoHeader) -> ! {
     init();
     // unsafe {
-    //     let mut size =  _kernel_start - _kernel_end;
+    let size = addr_of!(_kernel_end) as u32 - addr_of!(_kernel_start) as u32 ;
     //     // size = size /8;
-    //     println!("The size of this kernel is {} kbytes", size / (1024) );
-    //     println!("The size of this kernel is {} kbytes", size / (1024 * 1024) );
+    println!("The size of this kernel is {} kbytes", size / (1024));
+    println!("The size of this kernel is {} mbytes", (size / (1024 * 1024)));
     //     // print!("The size of this kernel is {} mbytes", size / 1024 / 1024);
     // }
     // gdt::print();
