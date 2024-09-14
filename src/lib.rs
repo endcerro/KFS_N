@@ -4,6 +4,8 @@
 #[macro_use]
 pub mod vga;
 pub mod gdt;
+pub mod pic;
+pub mod keyboard;
 //pub mod memory;
 pub mod multiboot2;
 pub mod utils;

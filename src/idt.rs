@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 use core::ptr::addr_of;
 use crate::gdt::define::KERNEL_CODE_SELECTOR;
+use crate::pic::set_irq_state;
 use crate::{handlers, interrupts::Interrupt};
 const DPL0_INTERRUPT_GATE   : u8 = 0x8E;
 const DPL3_INTERRUPT_GATE   : u8 = 0xEE;
@@ -54,7 +55,12 @@ impl Idt {
         Idt { entries : [IdtEntry::new(); IDT_SIZE] }
     }
 
-    pub fn set_handler(&mut self, index : usize, handler : unsafe extern "x86-interrupt" fn(), selector : u16, flags : u8 ) {
+    pub fn set_handler(&mut self, index : usize, handler : unsafe extern "x86-interrupt" fn(&handlers::InterruptStackFrame), selector : u16, flags : u8 ) {
+        self.entries[index].set_base(handler as u32);
+        self.entries[index].set_selector(selector);
+        self.entries[index].set_flags(flags);
+    }
+    pub fn set_handler_with_errcode(&mut self, index : usize, handler : unsafe extern "x86-interrupt" fn(&handlers::InterruptStackFrame, u32), selector : u16, flags : u8 ) {
         self.entries[index].set_base(handler as u32);
         self.entries[index].set_selector(selector);
         self.entries[index].set_flags(flags);
@@ -68,6 +74,7 @@ struct Idtr {
 
 static mut IDT : Idt = Idt::new();
 
+
 pub fn load_idt() {
     let idtr = Idtr {
         limit: (size_of::<Idt>() - 1) as u16,
@@ -78,9 +85,15 @@ pub fn load_idt() {
     }
 }
 
-pub fn set_interrupt_handler(index : u8, handler : unsafe extern "x86-interrupt" fn()) {
+pub fn set_interrupt_handler(index : u8, handler : unsafe extern "x86-interrupt" fn(&handlers::InterruptStackFrame)) {
     unsafe {
         IDT.set_handler(index.into(), handler, KERNEL_CODE_SELECTOR, DPL0_INTERRUPT_GATE);
+    }
+}
+
+pub fn set_interrupt_handler_error(index : u8, handler : unsafe extern "x86-interrupt" fn(&handlers::InterruptStackFrame, u32)) {
+    unsafe {
+        IDT.set_handler_with_errcode(index.into(), handler, KERNEL_CODE_SELECTOR, DPL0_INTERRUPT_GATE);
     }
 }
 
@@ -88,8 +101,8 @@ pub fn init() {
     //Bind handlers here
 
     set_interrupt_handler(Interrupt::DivideError.as_u8(), handlers::divide_by_zero);
-    set_interrupt_handler(Interrupt::PageFault.as_u8(), handlers::page_fault);
-
+    set_interrupt_handler_error(Interrupt::PageFault.as_u8(), handlers::page_fault);
+    set_interrupt_handler(Interrupt::Keyboard.as_u8(), handlers::keyboard_interrupt);
     for i in 0..IDT_SIZE {
         unsafe {
             if IDT.entries[i].handler_present() == false {
@@ -105,5 +118,29 @@ pub fn init() {
 
     load_idt();
     println!("IDT initialized and loaded.");
+    configure_interrupts();
+    println!("Interrupts configured");
+    enable_interrupts(true);
 }
 
+
+pub fn configure_interrupts() {
+    for i in 32..48 {
+        set_irq_state(Interrupt::from_u8(i).expect("Configure int error"), false);
+    }
+    // set_irq_state(Interrupt::Timer, true);
+    set_irq_state(Interrupt::Keyboard, true);
+    // set_irq_state(Interrupt::CascadeForPIC2, true); // Always enable this for PIC2
+}
+
+pub fn enable_interrupts(enable : bool)
+{
+    unsafe {
+        if enable {
+            core::arch::asm!("sti", options(nomem, nostack));
+        } else {        
+            core::arch::asm!("cli", options(nomem, nostack));
+            
+        }
+    }
+}

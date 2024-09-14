@@ -30,3 +30,24 @@ pub fn memcpy(dest : *mut u8, src : *const u8, size : usize) {
         }
     }
 }
+
+pub fn outb(port: u16, value: u8) {
+    unsafe {
+        core::arch::asm!("out dx, al", in("dx") port, in("al") value);
+    }
+}
+
+pub fn inb(port: u16) -> u8 {
+    let result: u8;
+    unsafe {
+        core::arch::asm!("in al, dx", out("al") result, in("dx") port);
+    }
+    result
+}
+
+pub fn send_eoi(irq: u8) {
+        if irq >= 8 {
+            outb(0xA0, 0x20);
+        }
+        outb(0x20, 0x20);
+}
