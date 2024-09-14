@@ -23,7 +23,7 @@ dbg :
 	gdb "isofiles/boot/kernel.bin" -ex "1234"
 
 rust_dbg : asm_files
-	cargo build --target src/arch/i686/i686-unknown-none.json --features gdt_test
+	cargo build --target src/arch/i686/i686-unknown-none.json --features gdt_test  --features verbose
 	@ld -m elf_i386 -z noexecstack -o obj/kernel.bin -T $(ASM_SRC)/linker.ld obj/*.o target/i686-unknown-none/debug/libkfs_1.a
 	@mkdir -p isofiles
 	@mkdir -p isofiles/boot

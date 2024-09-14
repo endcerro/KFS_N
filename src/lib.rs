@@ -1,12 +1,15 @@
 #![no_std]
+#![feature(abi_x86_interrupt)]
 #![no_main]
 #[macro_use]
-
 pub mod vga;
 pub mod gdt;
 //pub mod memory;
 pub mod multiboot2;
 pub mod utils;
+pub mod idt;
+pub mod handlers;
+pub mod interrupts;
 use core::panic::PanicInfo;
 
 extern "C" {
@@ -39,6 +42,7 @@ fn init() {
     vga::clear_screen();
     vga::print_ft();
     gdt::init();
+    idt::init();
 }
 
 #[panic_handler]

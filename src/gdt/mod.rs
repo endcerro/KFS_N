@@ -1,6 +1,6 @@
 //https://wiki.osdev.org/Global_Descriptor_Table#Table
 //https://wiki.osdev.org/GDT_Tutorial#Basics
-mod define;
+pub mod define;
 mod descriptor;
 mod tss;
 
@@ -10,7 +10,7 @@ use define::*;
 use descriptor::SegmentDescriptor;
 use tss::TssSegment;
 
-use rlibc::memcpy;
+use crate::utils::memcpy;
 
 
 extern "C" {
@@ -92,11 +92,9 @@ pub fn print() {
 	let gdtr = GdtDescriptor::current();
 	for i in 0..GDTSIZE {
 		let mut gdtdescriptor: SegmentDescriptor = Default::default();
-		unsafe {
-			memcpy((&mut gdtdescriptor as *mut _) as *mut u8, 
-			(gdtr.address + ((size_of::<SegmentDescriptor>() as usize) * i)) as *const u8, //This + 2 is weird, investigate
-		8);
-		}
+		memcpy((&mut gdtdescriptor as *mut _) as *mut u8, 
+			(gdtr.address + ((size_of::<SegmentDescriptor>() as usize) * i)) as *const u8,
+			8);
 		println!("{}",gdtdescriptor);
 	}
 }
@@ -120,9 +118,7 @@ fn verify_gdt_load_structure() {
 	
 	let gdtr = GdtDescriptor::current();
 	let test_segments : [SegmentDescriptor; GDTSIZE] = [SegmentDescriptor::default(); GDTSIZE];
-	unsafe {
-		memcpy(addr_of!(test_segments) as *mut _, gdtr.address as *const u8, gdtr.size as usize);
-	}
+	memcpy(addr_of!(test_segments) as *mut _, gdtr.address as *const u8, gdtr.size as usize);
 	for i in 0..GDTSIZE {
 		assert_eq!(correct_segments[i], test_segments[i]);
 	}
