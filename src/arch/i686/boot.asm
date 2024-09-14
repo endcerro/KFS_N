@@ -61,19 +61,20 @@ global gdtflush
 gdtflush :
 	mov eax, [esp + 4]
 	lgdt [eax]
-	mov eax, 0x10
-	mov ds, ax ; kdata segment
 
 	mov eax, 0x18
 	mov ss, ax ; kstack segment
 
+	mov eax, 0x10
+	mov ds, ax ; kdata segment
+
 	mov eax, 0x20
 	mov es, ax ; ucode segment
 
-	mov eax, 0x28
+	; mov eax, 0x28
 	mov fs, ax ; udata segment
 
-	mov eax, 0x30
+	; mov eax, 0x30
 	mov gs, ax ; ustack segment
 
 	jmp 0x08:.flush ; Set CS, kcode segment

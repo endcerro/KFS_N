@@ -13,11 +13,11 @@ kvm : iso_basic
 	@kvm -name kfs -cdrom ./os.iso -boot c
 qemu : iso_basic
 	@echo Staring with qemu
-	@qemu-system-x86_64 -cdrom os.iso -m 1G
+	@qemu-system-x86_64 -cdrom os.iso -m 1G -serial stdio
 
 qemu_dbg : iso_basic
 	@echo Staring with qemu in debug mode
-	@qemu-system-x86_64 -cdrom os.iso -s -S
+	@qemu-system-x86_64 -cdrom os.iso -s -S -serial stdio
 
 dbg : 
 	gdb "isofiles/boot/kernel.bin" -ex "1234"
@@ -32,7 +32,7 @@ rust_dbg : asm_files
 	@cp obj/kernel.bin isofiles/boot/kernel.bin
 	@echo "Making ISO"
 	@grub-mkrescue -d /usr/lib/grub/i386-pc -o os.iso isofiles 2> /dev/null
-	@qemu-system-x86_64 -cdrom os.iso 
+	@qemu-system-x86_64 -cdrom os.iso -serial stdio
 rust_files :
 	@echo "Building rust"
 	@cargo build --target src/arch/i686/i686-unknown-none.json

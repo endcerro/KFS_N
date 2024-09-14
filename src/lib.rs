@@ -12,12 +12,14 @@ pub mod utils;
 pub mod idt;
 pub mod handlers;
 pub mod interrupts;
+pub mod serial;
+
+
 use core::{panic::PanicInfo, ptr::addr_of};
 
 extern "C" {
     static _kernel_start : u8;
     static _kernel_end : u8;
-
 }
 
 #[no_mangle]
@@ -28,6 +30,9 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     //     // size = size /8;
     println!("The size of this kernel is {} kbytes", size / (1024));
     println!("The size of this kernel is {} mbytes", (size / (1024 * 1024)));
+    serial_println!("Hello from serial port!");
+    serial_println!("Kernel size: {} kbytes", size / 1024);
+    
     //     // print!("The size of this kernel is {} mbytes", size / 1024 / 1024);
     // }
     // gdt::print();
@@ -41,6 +46,7 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
 }
 
 fn init() {
+    serial::init();
     vga::clear_screen();
     vga::print_ft();
     gdt::init();
