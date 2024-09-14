@@ -3,12 +3,12 @@ pub fn scancode_to_ascii(scancode: u8) -> Option<char> {
         0x1E => Some('a'),
         0x30 => Some('b'),
         // ... more mappings ...
-        _ => None,
+        _ => Some('X'),
     }
 }
 
 pub fn handle_keyboard_interrupt(scancode: u8) {
     if let Some(ch) = scancode_to_ascii(scancode) {
-        print!("{}", ch);
+        println!("{}", ch);
     }
 }

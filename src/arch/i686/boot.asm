@@ -29,7 +29,7 @@ global stack_top
 global stack_bottom
 section .bss
 stack_bottom:
-		resb 4096*4
+		resb 4096*4*4
 stack_top:
 ;https://en.wikipedia.org/wiki/.bss
 ;Allocate some space for the stack since there is none yet

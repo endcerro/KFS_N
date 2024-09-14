@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 use core::ptr::addr_of;
 use crate::gdt::define::KERNEL_CODE_SELECTOR;
-use crate::pic::set_irq_state;
+use crate::pic::{self, set_irq_state};
 use crate::{handlers, interrupts::Interrupt};
 const DPL0_INTERRUPT_GATE   : u8 = 0x8E;
 const DPL3_INTERRUPT_GATE   : u8 = 0xEE;
@@ -103,6 +103,8 @@ pub fn init() {
     set_interrupt_handler(Interrupt::DivideError.as_u8(), handlers::divide_by_zero);
     set_interrupt_handler_error(Interrupt::PageFault.as_u8(), handlers::page_fault);
     set_interrupt_handler(Interrupt::Keyboard.as_u8(), handlers::keyboard_interrupt);
+    set_interrupt_handler_error(Interrupt::DoubleFault.as_u8(), handlers::double_fault_handler);
+    set_interrupt_handler_error(Interrupt::GeneralProtectionFault.as_u8(), handlers::general_protection_fault_handler);
     for i in 0..IDT_SIZE {
         unsafe {
             if IDT.entries[i].handler_present() == false {
@@ -112,15 +114,22 @@ pub fn init() {
                 #[cfg(feature = "verbose")]
                 println!("Not setting default handler for {:?}", Interrupt::from_u8(i.try_into().unwrap()).unwrap());
             }
-
+            
         }
     }
+    // set_interrupt_handler(Interrupt::CoprocessorSegmentOverrun.as_u8(), handlers::keyboard_interrupt);
 
+    pic::init();
     load_idt();
     println!("IDT initialized and loaded.");
     configure_interrupts();
     println!("Interrupts configured");
     enable_interrupts(true);
+
+//    unsafe {
+//        core::arch::asm!("int 0x21");
+
+//    }
 }
 
 

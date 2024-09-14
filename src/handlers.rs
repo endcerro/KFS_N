@@ -1,4 +1,6 @@
-use crate::{keyboard::handle_keyboard_interrupt, utils::{inb, send_eoi}};
+use core::ptr::null;
+
+use crate::{keyboard::handle_keyboard_interrupt, utils::{inb, outb, send_eoi}};
 
 #[repr(C, packed)]
 pub struct InterruptStackFrame {
@@ -52,14 +54,51 @@ pub unsafe extern "x86-interrupt" fn page_fault(stack_frame: &InterruptStackFram
 }
 
 pub unsafe extern "x86-interrupt" fn default(stack_frame: &InterruptStackFrame) {
-    println!("Default handler error!");
+    println!("Default handler error! ");
     stack_frame.print_debug_info();
     loop {}
 }
 
 pub unsafe extern "x86-interrupt" fn keyboard_interrupt(stack_frame: &InterruptStackFrame) {
     let scancode = inb(0x60);
+    // println!("KEYBOARD! ");
     handle_keyboard_interrupt(scancode);
-    send_eoi(1);
+    unsafe {
+        outb(crate::pic::PIC1_COMMAND, 0x20);
+    }
+    println!("KEYBOARD STACK FRAME : ");
+    stack_frame.print_debug_info();
+    // send_eoi(1);
+}
+
+pub unsafe  extern "x86-interrupt" fn double_fault_handler(stack_frame: &InterruptStackFrame, _error_code: u32) {
+    println!("EXCEPTION: DOUBLE FAULT");
+    stack_frame.print_debug_info();
     loop {}
 }
+
+pub unsafe extern "x86-interrupt" fn general_protection_fault_handler(
+    stack_frame: &InterruptStackFrame,
+    error_code: u32
+) {
+    println!("EXCEPTION: GENERAL PROTECTION FAULT");
+    println!("Error Code: {:#x}", error_code);
+    stack_frame.print_debug_info();
+
+    loop {}
+}
+
+
+// pub extern "x86-interrupt" fn interrupt_0x09_handler(stack_frame: &InterruptStackFrame) {
+//     unsafe {
+//         // Check if it's a real interrupt
+//         crate::utils::outb(0x20, 0x0B);
+//         let isr = inb(0x20);
+//         if isr & (1 << 1) == 0 {  // Check if bit 1 (IRQ1) is set
+//             println!("Spurious interrupt 0x09");
+//             return;
+//         }
+//     }
+//     println!("Real interrupt 0x09 occurred");
+//     // Handle the interrupt...
+// }
