@@ -10,6 +10,8 @@ pub mod multiboot2;
 pub mod utils;
 pub mod interrupts;
 pub mod serial;
+pub mod shell;
+pub mod commands;
 
 use core::{panic::PanicInfo, ptr::addr_of};
 
@@ -34,31 +36,29 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     serial_println!("Hello from serial port!");
     serial_println!("Kernel size: {} kbytes", size / 1024);
 
-
-    loop {
-        loop {
-            if let Some(event) = get_next_key_event() 
-            {
-                if event.pressed == true
-                {
-                    // println!("{event}");
-                    match event.code {
-                        KeyCode::Control(ControlKey::Enter) => break,
-                        KeyCode::Char(c) => print!("{c}"),
-                        KeyCode::Control(ControlKey::Backspace) => WRITER.lock().delete_char(),
-                        _ => ()
-                    }
-
-                }
-        }
-    }
-    let len = keyboard::get_input_string();
-    println!("\nFrom readline : {len}\n");
+    shell();
+    
 
 }
 
+fn shell() -> !
+{
+    loop {
+        shell::processor::hello_shell();
+        loop {
+        if let Some(event) = get_next_key_event() {
+            if event.pressed == true {
+                    // println!("{event}");
+                match event.code {
+                    KeyCode::Control(ControlKey::Enter) => break,
+                    KeyCode::Char(c) => print!("{c}"),
+                    KeyCode::Control(ControlKey::Backspace) => WRITER.lock().delete_char(),
+                    _ => ()}}}
+        }
+        let len = keyboard::get_input_string();
+        shell::processor::process_command(len);
 
-
+    }
 }
 
 fn init() {
