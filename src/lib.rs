@@ -9,8 +9,6 @@ pub mod keyboard;
 //pub mod memory;
 pub mod multiboot2;
 pub mod utils;
-pub mod idt;
-pub mod handlers;
 pub mod interrupts;
 pub mod serial;
 
@@ -49,7 +47,7 @@ fn init() {
     vga::clear_screen();
     vga::print_ft();
     gdt::init();
-    idt::init();
+    interrupts::init();
 }
 
 #[panic_handler]

@@ -51,3 +51,11 @@ pub fn send_eoi(irq: u8) {
         }
         outb(0x20, 0x20);
 }
+
+pub unsafe fn enable_interrupts(enable : bool) {
+    if enable {
+        core::arch::asm!("sti", options(nomem, nostack));
+    } else {
+        core::arch::asm!("cli", options(nomem, nostack));
+    }
+}

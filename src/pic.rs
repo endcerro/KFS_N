@@ -1,4 +1,6 @@
-use crate::{interrupts::Interrupt, utils::{inb, outb}};
+use interrupts::interrupts::Interrupt;
+
+use crate::{interrupts, utils::{outb, inb}};
 // PIC ports
 pub const PIC1_COMMAND: u16 = 0x20;
 pub const PIC1_DATA: u16 = 0x21;
