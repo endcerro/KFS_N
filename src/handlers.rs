@@ -42,7 +42,7 @@ pub unsafe extern "x86-interrupt" fn default(stack_frame: &InterruptStackFrame) 
 
 pub unsafe extern "x86-interrupt" fn keyboard_interrupt(_stack_frame: &InterruptStackFrame) {
     let scancode = inb(0x60);
-    println!("Scancode is {}", scancode);
+    // println!("Scancode is {}", scancode);
     handle_keyboard_interrupt(scancode);
     send_eoi(1);
 }
