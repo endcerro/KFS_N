@@ -14,7 +14,7 @@ pub mod handlers;
 pub mod interrupts;
 pub mod serial;
 
-
+use core::mem::size_of;
 use core::{panic::PanicInfo, ptr::addr_of};
 
 extern "C" {
@@ -32,7 +32,7 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     println!("The size of this kernel is {} mbytes", (size / (1024 * 1024)));
     serial_println!("Hello from serial port!");
     serial_println!("Kernel size: {} kbytes", size / 1024);
-    
+
     //     // print!("The size of this kernel is {} mbytes", size / 1024 / 1024);
     // }
     // gdt::print();

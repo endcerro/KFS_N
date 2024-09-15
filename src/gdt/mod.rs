@@ -10,8 +10,7 @@ use define::*;
 use descriptor::SegmentDescriptor;
 use tss::TssSegment;
 
-use rlibc::memcpy;
-
+use crate::utils::memcpy;
 
 extern "C" {
 	fn gdtflush(_gdtr : *const GdtDescriptor);
@@ -92,11 +91,9 @@ pub fn print() {
 	let gdtr = GdtDescriptor::current();
 	for i in 0..GDTSIZE {
 		let mut gdtdescriptor: SegmentDescriptor = Default::default();
-		unsafe {
-			memcpy((&mut gdtdescriptor as *mut _) as *mut u8, 
+		memcpy((&mut gdtdescriptor as *mut _) as *mut u8, 
 				(gdtr.address + ((size_of::<SegmentDescriptor>() as usize) * i)) as *const u8,
 				8);
-		}
 		println!("{}",gdtdescriptor);
 	}
 }

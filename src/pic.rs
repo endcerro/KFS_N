@@ -24,41 +24,20 @@ pub const PIC1_MASK_ALL_EXCEPT_KEYBOARD: u8 = 0xFD; // 1111 1101
 pub const PIC2_MASK_ALL: u8 = 0xFF; // 1111 1111
 
 pub fn init() {
-    unsafe {
-        // Remap PIC
-        outb(0x20, 0x11);
-        outb(0xA0, 0x11);
-        outb(0x21, 0x20);
-        outb(0xA1, 0x28);
-        outb(0x21, 0x04);
-        outb(0xA1, 0x02);
-        outb(0x21, 0x01);
-        outb(0xA1, 0x01);
+    // Remap PIC
+    outb(0x20, 0x11);
+    outb(0xA0, 0x11);
+    outb(0x21, 0x20);
+    outb(0xA1, 0x28);
+    outb(0x21, 0x04);
+    outb(0xA1, 0x02);
+    outb(0x21, 0x01);
+    outb(0xA1, 0x01);
 
-        // Unmask keyboard interrupt (IRQ1) and cascade interrupt (IRQ2)
-        // let mask = inb(0x21) & 0xF9; // 1111 1001
-        outb(0x21, 0xFD);
-        outb(0xA1, 0xFF);
-        // // Start initialization sequence
-        // outb(PIC1_COMMAND, ICW1_INIT);
-        // outb(PIC2_COMMAND, ICW1_INIT);
-
-        // // Set vector offsets
-        // outb(PIC1_DATA, PIC1_ICW2);
-        // outb(PIC2_DATA, PIC2_ICW2);
-
-        // // Set up cascading
-        // outb(PIC1_DATA, PIC1_ICW3);
-        // outb(PIC2_DATA, PIC2_ICW3);
-
-        // // Set operation mode
-        // outb(PIC1_DATA, ICW4_8086);
-        // outb(PIC2_DATA, ICW4_8086);
-
-        // // Mask interrupts
-        // outb(PIC1_DATA, inb(PIC1_DATA) & PIC1_MASK_ALL_EXCEPT_KEYBOARD);
-        // outb(PIC2_DATA, PIC2_MASK_ALL);
-    }
+    // Unmask keyboard interrupt (IRQ1) and cascade interrupt (IRQ2)
+    // let mask = inb(0x21) & 0xF9; // 1111 1001
+    outb(0x21, 0xFD);
+    outb(0xA1, 0xFF);
 }
 
 pub fn set_irq_state(interrupt: Interrupt, enabled: bool) {

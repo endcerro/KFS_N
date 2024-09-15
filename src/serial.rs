@@ -16,31 +16,29 @@ impl SerialPort {
     }
 
     pub fn init(&mut self) {
-        unsafe {
-            // Disable all interrupts
-            outb(self.port + 1, 0x00);
-            // Enable DLAB (set baud rate divisor)
-            outb(self.port + 3, 0x80);
-            // Set divisor to 3 (lo byte) 38400 baud
-            outb(self.port + 0, 0x03);
-            // (hi byte)
-            outb(self.port + 1, 0x00);
-            // 8 bits, no parity, one stop bit
-            outb(self.port + 3, 0x03);
-            // Enable FIFO, clear them, with 14-byte threshold
-            outb(self.port + 2, 0xC7);
-            // IRQs enabled, RTS/DSR set
-            outb(self.port + 4, 0x0B);
-        }
+        // Disable all interrupts
+        outb(self.port + 1, 0x00);
+        // Enable DLAB (set baud rate divisor)
+        outb(self.port + 3, 0x80);
+        // Set divisor to 3 (lo byte) 38400 baud
+        outb(self.port + 0, 0x03);
+        // (hi byte)
+        outb(self.port + 1, 0x00);
+        // 8 bits, no parity, one stop bit
+        outb(self.port + 3, 0x03);
+        // Enable FIFO, clear them, with 14-byte threshold
+        outb(self.port + 2, 0xC7);
+        // IRQs enabled, RTS/DSR set
+        outb(self.port + 4, 0x0B);
     }
 
     fn is_transmit_empty(&mut self) -> bool {
-        unsafe { inb(self.port + 5) & 0x20 != 0 }
+        inb(self.port + 5) & 0x20 != 0
     }
 
     pub fn write_byte(&mut self, byte: u8) {
         while !self.is_transmit_empty() {}
-        unsafe { outb(self.port, byte) }
+        outb(self.port, byte)
     }
 }
 

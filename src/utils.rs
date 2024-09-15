@@ -20,16 +20,16 @@ pub fn print_kernel_stack() {
     }
 
 }
-// pub fn memcpy(dest : *mut u8, src : *const u8, size : usize) {
-//     if dest.is_null() || src.is_null() {
-//         panic!("memcpy called with null pointers");
-//     }
-//     for i in 0..size {
-//         unsafe {
-//             *((dest.wrapping_add(i)) as *mut u8) = *(src.wrapping_add(i));
-//         }
-//     }
-// }
+pub fn memcpy(dest : *mut u8, src : *const u8, size : usize) {
+    if dest.is_null() || src.is_null() {
+        panic!("memcpy called with null pointers");
+    }
+    for i in 0..size {
+        unsafe {
+            *((dest.wrapping_add(i)) as *mut u8) = *(src.wrapping_add(i));
+        }
+    }
+}
 
 pub fn outb(port: u16, value: u8) {
     unsafe {

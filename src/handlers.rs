@@ -1,6 +1,4 @@
-use core::ptr::null;
-
-use crate::{keyboard::handle_keyboard_interrupt, utils::{inb, outb, send_eoi}};
+use crate::{keyboard::handle_keyboard_interrupt, utils::{inb, send_eoi}};
 
 #[repr(C, align(4))]
 pub struct InterruptStackFrame {
@@ -42,17 +40,9 @@ pub unsafe extern "x86-interrupt" fn default(stack_frame: &InterruptStackFrame) 
     loop {}
 }
 
-pub unsafe extern "x86-interrupt" fn keyboard_interrupt(stack_frame: &InterruptStackFrame) {
-    let esp: u32;
-    core::arch::asm!("mov {}, esp", out(reg) esp);
-    println!("Entered keyboard_interrupt. ESP: {:x}", esp);
-    println!("Stack frame at {:p}", stack_frame);
-
-
-    println!("KEYBOARD STACK FRAME : ");
-    stack_frame.print_debug_info();
-
+pub unsafe extern "x86-interrupt" fn keyboard_interrupt(_stack_frame: &InterruptStackFrame) {
     let scancode = inb(0x60);
+    println!("Scancode is {}", scancode);
     handle_keyboard_interrupt(scancode);
     send_eoi(1);
 }
