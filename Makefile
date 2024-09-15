@@ -41,7 +41,6 @@ asm_files :
 	@mkdir -p obj
 	@echo "Building ASM"
 	@nasm -f elf32 $(ASM_SRC)/boot.asm -o obj/boot.o
-	# @nasm -f elf32 $(ASM_SRC)/interrupt.asm -o obj/interrupt.o
 
 link :
 	@echo "Linking kernel"
@@ -73,5 +72,3 @@ clean :
 
 run-bochs: iso_basic
 	bochs -q -f bochsrc.txt
-
-# Rest of the existing Makefile...

@@ -109,12 +109,11 @@ pub fn init() {
         unsafe {
             if IDT.entries[i].handler_present() == false {
                 set_interrupt_handler(i.try_into().unwrap(), handlers::default);
-            } 
+            }
             else {
                 #[cfg(feature = "verbose")]
                 println!("Not setting default handler for {:?}", Interrupt::from_u8(i.try_into().unwrap()).unwrap());
             }
-            
         }
     }
     // set_interrupt_handler(Interrupt::CoprocessorSegmentOverrun.as_u8(), handlers::keyboard_interrupt);
@@ -124,8 +123,7 @@ pub fn init() {
     println!("IDT initialized and loaded.");
     configure_interrupts();
     println!("Interrupts configured");
-    enable_interrupts(true);
-
+    unsafe {enable_interrupts(true);}
 //    unsafe {
 //        core::arch::asm!("int 0x21");
 
@@ -142,14 +140,10 @@ pub fn configure_interrupts() {
     // set_irq_state(Interrupt::CascadeForPIC2, true); // Always enable this for PIC2
 }
 
-pub fn enable_interrupts(enable : bool)
-{
-    unsafe {
-        if enable {
-            core::arch::asm!("sti", options(nomem, nostack));
-        } else {        
-            core::arch::asm!("cli", options(nomem, nostack));
-            
-        }
+pub unsafe fn enable_interrupts(enable : bool) {
+    if enable {
+        core::arch::asm!("sti", options(nomem, nostack));
+    } else {
+        core::arch::asm!("cli", options(nomem, nostack));
     }
 }

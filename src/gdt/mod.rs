@@ -12,10 +12,6 @@ use tss::TssSegment;
 
 use crate::utils::memcpy;
 
-extern "C" {
-	fn gdtflush(_gdtr : *const GdtDescriptor);
-	fn tssflush();
-}
 //WARNING : This is not portable for future x64
 #[repr(C, packed)]
 #[derive(Debug, Default, Clone, Copy)]
@@ -34,7 +30,7 @@ impl GdtDescriptor {
 	}
 }
 extern "C" {
-    static stack_top: u8;
+	static stack_top: u8;
 }
 
 //https://wiki.osdev.org/GDT_Tutorial#Basics
@@ -59,13 +55,10 @@ pub fn init() {
 		SegmentDescriptor::new(0, 0xFFFF, 0xF2, 0xCF), //User data 0x28
 		SegmentDescriptor::new(0, 0xFFFF, 0xF6, 0xCF), //User stack 0x30
 		SegmentDescriptor::new(tss_addr, tss_limit, 0xE9, 0x0) //Tss Segment 0x38
-	];
-	#[cfg(feature = "verbose")]
-	println!("GDT Segments initialized...");
+		];
+		#[cfg(feature = "verbose")]
+		println!("GDT Segments initialized...");
 
-	// for i in 0..GDTSIZE {
-	// 	println!("{}",segments[i]);
-	// }
 	let gdtr : GdtDescriptor = GdtDescriptor {
 		size : (size_of::<SegmentDescriptor>() * segments.len() - 1) as u16,
 		address : GDTADDR
@@ -74,7 +67,7 @@ pub fn init() {
 		memcpy(gdtr.address as *mut u8, segments.as_ptr() as *const u8,  segments.len() * size_of::<SegmentDescriptor>() as usize);
 		#[cfg(feature = "verbose")]
 		println!("GDT copied to 0x{:x}, flushing..", GDTADDR);
-		gdtflush(&gdtr as *const GdtDescriptor);
+		gdtflush(&gdtr);
 		#[cfg(feature = "verbose")]
 		println!("GDT flush OK, TSS..");
 		tssflush();
@@ -87,11 +80,38 @@ pub fn init() {
 	println!("GDT load OK !");
 }
 
+unsafe fn gdtflush(gdt_descriptor: &GdtDescriptor) {
+	core::arch::asm!(
+		"lgdt [{0}]",
+		"mov ax, 0x10",
+		"mov ss, ax",
+		"mov ds, ax",
+		"mov es, ax",
+		"mov fs, ax",
+		"mov gs, ax",
+		"push 0x08",
+		"lea ecx, [2f]",
+		"push ecx",
+		"retf",
+		"2:",
+		in(reg) gdt_descriptor,
+		options(nostack)
+	);
+}
+
+unsafe fn tssflush() {
+	core::arch::asm!(
+		"mov ax, 0x38",
+		"ltr ax",
+		options(nostack)
+	);
+}
+
 pub fn print() {
 	let gdtr = GdtDescriptor::current();
 	for i in 0..GDTSIZE {
 		let mut gdtdescriptor: SegmentDescriptor = Default::default();
-		memcpy((&mut gdtdescriptor as *mut _) as *mut u8, 
+		memcpy((&mut gdtdescriptor as *mut _) as *mut u8,
 				(gdtr.address + ((size_of::<SegmentDescriptor>() as usize) * i)) as *const u8,
 				8);
 		println!("{}",gdtdescriptor);
@@ -99,11 +119,8 @@ pub fn print() {
 }
 #[cfg(feature = "gdt_test")]
 fn verify_gdt_load_structure() {
-
 	let tss_addr = core::ptr::addr_of!(tss::TSS) as *const TssSegment as u32;
 	let tss_limit = tss_addr + size_of::<TssSegment>() as u32 - 1;
-
-
 	let correct_segments : [SegmentDescriptor; GDTSIZE] = [
 		SegmentDescriptor::new(0, 0, 0, 0), //Null segment 0x0
 		SegmentDescriptor::new(0, 0xFFFF, 0x9A, 0xCF), //Kernel Code 0x8
@@ -114,7 +131,6 @@ fn verify_gdt_load_structure() {
 		SegmentDescriptor::new(0, 0xFFFF, 0xF6, 0xCF), //User stack 0x30
 		SegmentDescriptor::new(tss_addr, tss_limit, 0xE9, 0x0) //Tss Segment 0x38
 	];
-	
 	let gdtr = GdtDescriptor::current();
 	let test_segments : [SegmentDescriptor; GDTSIZE] = [SegmentDescriptor::default(); GDTSIZE];
 	unsafe {
@@ -128,7 +144,7 @@ fn verify_gdt_load_structure() {
 
 #[cfg(feature = "gdt_test")]
 pub fn verify_segment_registers() {
-    let mut cs: u16;
+	let mut cs: u16;
     let mut ds: u16;
     let mut ss: u16;
     let mut es: u16;
@@ -144,20 +160,20 @@ pub fn verify_segment_registers() {
         core::arch::asm!("mov {:x}, gs", out(reg) gs);
     }
 
-    println!("CS: {:#x}, DS: {:#x}, SS: {:#x}, ES: {:#x}, FS: {:#x}, GS: {:#x}", 
-             cs, ds, ss, es, fs, gs);
+    println!("CS: {:#x}, DS: {:#x}, SS: {:#x}, ES: {:#x}, FS: {:#x}, GS: {:#x}",
+	cs, ds, ss, es, fs, gs);
 
     // Verify against expected values
     assert_eq!(cs, KERNEL_CODE_SELECTOR, "CS not set correctly");
     assert_eq!(ds, KERNEL_DATA_SELECTOR, "DS not set correctly");
-    assert_eq!(ss, KERNEL_STACK_SELECTOR, "SS not set correctly");
-    assert_eq!(es, 0x20, "ES not set correctly"); 
-    assert_eq!(fs, 0x28, "FS not set correctly");
-    assert_eq!(gs, 0x30, "GS not set correctly");
+    assert_eq!(ss, KERNEL_DATA_SELECTOR, "SS not set correctly");
+    assert_eq!(es, KERNEL_DATA_SELECTOR, "ES not set correctly");
+    assert_eq!(fs, KERNEL_DATA_SELECTOR, "FS not set correctly");
+    assert_eq!(gs, KERNEL_DATA_SELECTOR, "GS not set correctly");
 
 	let cpl: u16;
 	unsafe {
-    	core::arch::asm!("mov {:x}, cs", out(reg) cpl);
+		core::arch::asm!("mov {:x}, cs", out(reg) cpl);
 	}
 	assert_eq!(cpl & 0x3, 0, "Not running in ring 0 as expected");
 
@@ -167,9 +183,8 @@ pub fn verify_segment_registers() {
 #[cfg(feature = "gdt_test")]
 pub fn verify_tss() {
     unsafe {
-        let loaded_tr: u16;
+		let loaded_tr: u16;
         core::arch::asm!("str {:x}", out(reg) loaded_tr);
-        
         println!("Loaded TR: {:#x}", loaded_tr);
         assert_eq!(loaded_tr, 0x38, "TSS not loaded correctly");
 

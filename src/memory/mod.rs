@@ -80,7 +80,7 @@ pub fn init_paging() {
         unsafe {
             // Set up the page directory entry to point to the corresponding page table
             PAGE_DIRECTORY.0[i] = (&PAGE_TABLES[i] as *const PageTable as u32) | PageFlags::PRESENT | PageFlags::WRITABLE;
-            
+
             // Set up each entry in the page table
             for j in 0..PAGE_TABLE_ENTRIES {
                 let addr = (i * PAGE_TABLE_ENTRIES + j) * PAGE_SIZE;
@@ -93,7 +93,7 @@ pub fn init_paging() {
         print!("Loading page directory...\n");
         // Load the page directory address into CR3
         loadpagedirectory(&PAGE_DIRECTORY as *const PageDirectory);
-        
+
         print!("Enabling paging...\n");
         // Set the paging bit in CR0, enabling paging
         enablepaging();

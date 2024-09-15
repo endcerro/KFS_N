@@ -3,7 +3,7 @@ pub fn print_kernel_stack() {
     let stack_bottom : *const usize;
     unsafe {
         core::arch::asm!("lea {}, [stack_top]
-            mov {}, esp", 
+            mov {}, esp",
             out(reg) stack_top, out(reg) stack_bottom,
         );
     }

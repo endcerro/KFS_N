@@ -57,31 +57,6 @@ kernel_hello:
 	mov dword [0xb8000], 0x2f322f34
 	hlt
 
-global gdtflush
-gdtflush :
-	mov eax, [esp + 4]
-	lgdt [eax]
-
-	mov eax, 0x10
-	mov ss, ax ; kstack segment
-
-	mov ds, ax ; kdata segment
-
-	mov es, ax ; ucode segment
-
-	mov fs, ax ; udata segment
-
-	mov gs, ax ; ustack segment
-
-	jmp 0x08:.flush ; Set CS, kcode segment
-.flush :
-	ret
-
-global tssflush
-tssflush:
-	mov ax, 0x38
-	ltr ax
-	ret
 
 global loadpagedirectory
 loadpagedirectory:
