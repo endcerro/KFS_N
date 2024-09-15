@@ -1,4 +1,4 @@
-use crate::{keyboard::handle_keyboard_interrupt, serial_print, serial_println, utils::{inb, send_eoi}};
+use crate::{keyboard::handle_keyboard_interrupt, utils::{inb, send_eoi}};
 
 #[repr(C, align(4))]
 pub struct InterruptStackFrame {
