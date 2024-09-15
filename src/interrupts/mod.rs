@@ -1,11 +1,12 @@
 pub mod handlers;
 pub mod idt;
+pub mod pic;
 pub mod interrupts;
 pub mod define;
 
 use interrupts::Interrupt;
 use define::{DPL0_INTERRUPT_GATE, IDT_SIZE};
-use crate::{gdt::define::KERNEL_CODE_SELECTOR, pic, utils::enable_interrupts};
+use crate::{gdt::define::KERNEL_CODE_SELECTOR,utils::enable_interrupts};
 
 
 pub fn init() {

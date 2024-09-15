@@ -1,4 +1,4 @@
-use crate::{keyboard::handle_keyboard_interrupt, utils::{inb, send_eoi}};
+use crate::{keyboard::handle_keyboard_interrupt, serial_print, serial_println, utils::{inb, send_eoi}};
 
 #[repr(C, align(4))]
 pub struct InterruptStackFrame {
@@ -42,7 +42,9 @@ pub unsafe extern "x86-interrupt" fn default(stack_frame: &InterruptStackFrame) 
 
 pub unsafe extern "x86-interrupt" fn keyboard_interrupt(_stack_frame: &InterruptStackFrame) {
     let scancode = inb(0x60);
-    // println!("Scancode is {}", scancode);
+    // let scancode2 = inb(0x60);
+    // let scancode3 = inb(0x60);
+    // // serial_println!("Scancode is {} {} {}", scancode, scancode2, scancode3);
     handle_keyboard_interrupt(scancode);
     send_eoi(1);
 }

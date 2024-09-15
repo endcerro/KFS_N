@@ -4,7 +4,6 @@
 #[macro_use]
 pub mod vga;
 pub mod gdt;
-pub mod pic;
 pub mod keyboard;
 //pub mod memory;
 pub mod multiboot2;
@@ -14,6 +13,8 @@ pub mod serial;
 
 use core::mem::size_of;
 use core::{panic::PanicInfo, ptr::addr_of};
+
+use keyboard::{KeyCode, KEYBOARD_BUFFER};
 
 extern "C" {
     static _kernel_start : u8;
@@ -31,6 +32,20 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     serial_println!("Hello from serial port!");
     serial_println!("Kernel size: {} kbytes", size / 1024);
 
+    // fn process()
+loop{
+    unsafe {
+        if let Some(event) = KEYBOARD_BUFFER.pop() {
+            if (event.code == KeyCode::Backspace)
+            {
+                vga::delete_char();
+            }else {
+                
+                print!("{}", event);
+            }
+        }
+    }
+}
     //     // print!("The size of this kernel is {} mbytes", size / 1024 / 1024);
     // }
     // gdt::print();

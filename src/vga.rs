@@ -170,6 +170,21 @@ impl Writer {
 			}
 		}
 	}
+	pub fn delete_char(&mut self){
+	{
+		serial_print!("DELCHAR");
+		if self.column_position > 0
+		{
+			self.column_position -= 1;
+		}
+		self.write_byte(b' ');
+		self.column_position -= 1;
+		// self.buffer.chars[self._row_position][self.column_position] = ScreenCharacter {
+		// 			ascii_value : b' ',
+		// 			color : ColorCode::new(Color::Black, Color::Black)
+		// 		};
+			}
+		}
 }
 
 
@@ -194,6 +209,10 @@ impl core::fmt::Write for Writer {
 // 	writer.new_line();
 // 	writer.write_string(HEADER_42);
 // }
+
+pub fn delete_char() {
+	WRITER.lock().delete_char();
+}
 
 pub fn clear_screen() {
 	let mut writer = Writer {
@@ -228,6 +247,8 @@ pub fn print_ft() {
 
 use spin::Mutex;
 use lazy_static::lazy_static;
+
+use crate::serial_print;
 
 lazy_static! {
 	pub static ref WRITER : Mutex<Writer> = Mutex::new(Writer {

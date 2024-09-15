@@ -6,9 +6,9 @@
 // use crate::{handlers, interrupts::*};
 
 use core::ptr::addr_of;
-use crate::{gdt::define::KERNEL_CODE_SELECTOR, pic::set_irq_state};
+use super::pic::set_irq_state;
 
-use super::{define::{DPL0_INTERRUPT_GATE, IDT_SIZE}, handlers, interrupts::Interrupt};
+use super::{define::IDT_SIZE, handlers, interrupts::Interrupt};
 
 
 #[derive(Clone, Copy)]
