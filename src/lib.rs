@@ -67,6 +67,7 @@ fn init() {
     vga::print_ft();
     gdt::init();
     interrupts::init();
+    vga::enable_cursor(1, 15);
 }
 
 #[panic_handler]

@@ -127,6 +127,11 @@ impl Writer {
 				self.column_position +=1;
 			}
 		}
+		if (self.column_position > 0)
+		{
+			update_cursor(self.column_position, BUFFER_HEIGHT - 1);
+
+		}
 	}
 	pub fn write_char(&mut self, char : char) {
 		match char {
@@ -156,7 +161,7 @@ impl Writer {
 		for col in 0..BUFFER_WIDTH {
 			self.buffer.chars[index][col] = ScreenCharacter {
 				ascii_value : 0x20,
-				color : ColorCode::new(Color::Black, Color::Black)
+				color : ColorCode::new(Color::White, Color::Black)
 			};
 		}
 	}
@@ -218,7 +223,7 @@ pub fn clear_screen() {
 	let mut writer = Writer {
 		column_position: 0,
 		_row_position: 0,
-		color_code: ColorCode::new(Color::Black, Color::Black),
+		color_code: ColorCode::new(Color::White, Color::White),
 		buffer: unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)},
 	};
 	writer.clear_screen();
@@ -238,6 +243,7 @@ pub fn print_ft() {
 				writer.new_line();
 				current_color = current_color.cycle();
 				writer.color_code = ColorCode::new(current_color, Color::Black);
+
 			},
 			c => writer.write_char(c as char)
 		}
@@ -248,7 +254,7 @@ pub fn print_ft() {
 use spin::Mutex;
 use lazy_static::lazy_static;
 
-use crate::serial_print;
+use crate::{serial_print, utils::{inb, outb}};
 
 lazy_static! {
 	pub static ref WRITER : Mutex<Writer> = Mutex::new(Writer {
@@ -276,4 +282,30 @@ macro_rules! println {
 pub fn _print(args: core::fmt::Arguments) {
 	use core::fmt::Write;
 	WRITER.lock().write_fmt(args).unwrap();
+}
+
+pub fn enable_cursor(start :u8, end :u8)
+{
+	outb(0x3D4, 0x0A);
+	outb(0x3D5, (inb(0x3D5) & 0xC0) | start);
+
+	outb(0x3D4, 0x0B);
+	outb(0x3D5, (inb(0x3D5) & 0xE0) | end);
+	update_cursor(1,1);
+}
+
+pub fn disable_cursor()
+{
+	outb(0x3D4, 0x0A);
+	outb(0x3D5, 0x20);
+}
+
+pub fn update_cursor( x : usize,  y : usize)
+{
+	let pos = y * BUFFER_WIDTH + x;
+
+	outb(0x3D4, 0x0F);
+	outb(0x3D5,  (pos & 0xFF) as u8);
+	outb(0x3D4, 0x0E);
+	outb(0x3D5, ((pos >> 8) & 0xFF)as u8);
 }
