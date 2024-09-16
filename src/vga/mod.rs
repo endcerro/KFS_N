@@ -88,23 +88,27 @@ impl ColorCode {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-struct ScreenCharacter {
-	ascii_value : u8,
-	color : ColorCode
+pub struct ScreenCharacter {
+	pub ascii_value : u8,
+	pub color : ColorCode
 }
 
-const BUFFER_HEIGHT : usize = 25;
-const BUFFER_WIDTH : usize = 80;
+
+pub const VGA_BUFFER_HEIGHT : usize = 25;
+pub const VGA_BUFFER_WIDTH : usize = 80;
 
 #[repr(transparent)]
-struct Buffer {
-	chars: [[ScreenCharacter; BUFFER_WIDTH]; BUFFER_HEIGHT]
+pub struct Buffer {
+	pub chars: [[ScreenCharacter; VGA_BUFFER_WIDTH]; VGA_BUFFER_HEIGHT]
 }
+
 
 pub struct Writer {
 	column_position : usize,
 	row_position : usize,
 	color_code : ColorCode,
+	pub background : Color,
+	pub foreground : Color,
 	pub cursor : Cursor,
 	buffer : &'static mut Buffer,
 }
@@ -123,24 +127,22 @@ impl Writer {
 			column_position : 0,
 			row_position: 0,
 			color_code : ColorCode::new(Color::White, Color::Black),
+			background : Color::Black,
+			foreground : Color::White,
 			cursor : Cursor::new(),
 			buffer : unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)}
 		}
 	}
 	pub fn write_byte(&mut self, byte: u8) {
-		// let mut oldposx = self.column_position;
-		// let mut oldposy = self.row_position;
-
 		match byte {
 			b'\n' => self.new_line(),
 			byte => {
-				if self.column_position >= BUFFER_WIDTH {
+				if self.column_position >= VGA_BUFFER_WIDTH {
 					self.new_line()
 				}
-				let color_code = self.color_code;
 				self.buffer.chars[self.row_position][self.column_position] = ScreenCharacter {
 					ascii_value: byte,
-					color : color_code
+					color : self.color_code
 				};
 				self.column_position +=1;
 			}
@@ -152,31 +154,36 @@ impl Writer {
 	}
 	pub fn write_byte_at_pos(&mut self, byte: u8, x : usize, y : usize){
 		match byte {
-			// b'\n' => self.new_line(),
 			byte => {
-				if self.column_position >= BUFFER_WIDTH {
+				if self.column_position >= VGA_BUFFER_WIDTH {
 					self.new_line()
 				}
-				// let row = BUFFER_HEIGHT - 1;
-				// let col = self.column_position;
-
-				let color_code = self.color_code;
-				self.buffer.chars[y][x] = ScreenCharacter {
+				self.buffer.chars[x][y] = ScreenCharacter {
 					ascii_value: byte,
-					color : color_code
+					color : self.color_code
 				};
-				self.column_position +=1;
 			}
 		}
-		if self.column_position > 0
-		{
-			self.cursor.update_cursor(self.column_position, BUFFER_HEIGHT - 1);
-
+	}
+	pub fn write_byte_at_cursor(&mut self, byte: u8)
+	{
+		match byte {
+			byte => {
+				self.buffer.chars[self.cursor.y][self.cursor.x] = ScreenCharacter {
+					ascii_value: byte,
+					color : self.color_code
+				};
+			}
 		}
 	}
 	pub fn write_char(&mut self, char : char) {
 		match char {
 			'\t' => for _ in 0..4 {self.write_byte(b' ');}
+			_ => self.write_byte(char as u8)
+		}
+	}
+	pub fn write_char_at_cursor(&mut self, char : char) {
+		match char {
 			_ => self.write_byte(char as u8)
 		}
 	}
@@ -189,13 +196,13 @@ impl Writer {
 		}
 	}
 	fn new_line(&mut self) {
-		if self.row_position < BUFFER_HEIGHT - 1{
+		if self.row_position < VGA_BUFFER_HEIGHT - 1{
 			self.row_position += 1;
 			self.column_position = 0;
 			return;
 		}
-		for row in 1..BUFFER_HEIGHT {
-			for col in 0..BUFFER_WIDTH {
+		for row in 1..VGA_BUFFER_HEIGHT {
+			for col in 0..VGA_BUFFER_WIDTH {
 				let character = self.buffer.chars[row][col];
 				self.buffer.chars[row - 1][col] = character;
 			}
@@ -206,7 +213,7 @@ impl Writer {
 
 	}
 	fn clear_row(&mut self, index : usize){
-		for col in 0..BUFFER_WIDTH {
+		for col in 0..VGA_BUFFER_WIDTH {
 			self.buffer.chars[index][col] = ScreenCharacter {
 				ascii_value : 0x20,
 				color : self.color_code
@@ -214,8 +221,8 @@ impl Writer {
 		}
 	}
 	pub fn clear_screen(&mut self){
-		for row in 0..BUFFER_HEIGHT {
-			for col in 0..BUFFER_WIDTH {
+		for row in 0..VGA_BUFFER_HEIGHT {
+			for col in 0..VGA_BUFFER_WIDTH {
 				self.buffer.chars[row][col] = ScreenCharacter {
 					ascii_value : 0x20,
 					color : self.color_code
@@ -244,8 +251,16 @@ impl Writer {
 		// 		};
 			}
 		}
-	pub fn change_color(&mut self, color : ColorCode){
-		self.color_code = color;
+	pub fn change_color(&mut self, foreground : Option<Color>,  background : Option<Color>){
+		match background {
+			Some(c) => self.background = c,
+			_ => ()
+		}
+		match foreground {
+			Some(c) => self.foreground = c,
+			_ => ()
+		}
+		self.color_code = ColorCode::new(self.foreground, self.background);
 	}
 }
 
@@ -281,23 +296,17 @@ pub fn clear_screen() {
 }
 
 pub fn print_ft() {
-	let mut current_color = Color::Blue;
-	
-	// let mut writer = Writer {
-	// 	column_position: 0,
-	// 	row_position: 0,
-	// 	cursor: Cursor::new(),
-	// 	color_code: ColorCode::new(current_color, Color::Black),
-	// 	buffer: unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)},
-	// };
-	
+	let mut foreground_color = Color::Blue;
 	
 	for c in HEADER_42.bytes() {
 		match c {
 			b'\n' => {
 				WRITER.lock().new_line();
-				current_color = current_color.cycle();
-				WRITER.lock().color_code = ColorCode::new(current_color, Color::Black);
+				foreground_color = foreground_color.cycle();
+				while foreground_color == WRITER.lock().foreground  { 
+					foreground_color = foreground_color.cycle();
+				 }
+				WRITER.lock().change_color(Some(foreground_color), None);
 
 			},
 			c => WRITER.lock().write_char(c as char)
@@ -360,7 +369,7 @@ impl Cursor {
 	}
 	pub fn update_cursor(&mut self, x : usize,  y : usize)
 	{
-		let pos = y * BUFFER_WIDTH + x;
+		let pos = y * VGA_BUFFER_WIDTH + x;
 
 		outb(0x3D4, 0x0F);
 		outb(0x3D5,  (pos & 0xFF) as u8);
@@ -370,9 +379,9 @@ impl Cursor {
 	pub fn move_cursors(&mut self, dir : Direction) {
 		match dir {
 			Direction::Top => if self.y > 0 {self.y -= 1},
-			Direction::Down => if self.y <= BUFFER_HEIGHT {self.y += 1},
+			Direction::Down => if self.y < VGA_BUFFER_HEIGHT - 1  {self.y += 1},
 			Direction::Left => if self.x > 0 {self.x -= 1},
-			Direction::Right => if self.x <= BUFFER_WIDTH {self.x += 1}
+			Direction::Right => if self.x < VGA_BUFFER_WIDTH - 1 {self.x += 1}
 		}
 		serial_print!("Moving cursor to {}, {}", self.x,self.y);
 		self.update_cursor(self.x, self.y);

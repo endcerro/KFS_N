@@ -8,10 +8,10 @@ use crate::serial_println;
 const BUFFER_SIZE: usize = 256;
 
 // Bitflags for modifiers
-const SHIFT: u8 = 0b0000_0001;
-const CTRL: u8 = 0b0000_0010;
-const ALT: u8 = 0b0000_0100;
-const CAPS_LOCK: u8 = 0b0000_1000;
+pub const SHIFT: u8 = 0b0000_0001;
+pub const CTRL: u8 = 0b0000_0010;
+pub const ALT: u8 = 0b0000_0100;
+pub const CAPS_LOCK: u8 = 0b0000_1000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyCode {
