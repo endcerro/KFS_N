@@ -30,25 +30,35 @@ extern "C" {
 #[no_mangle]
 pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootInfoHeader) -> ! {
     init();
-    // unsafe {
-    let size = addr_of!(_kernel_end) as u32 - addr_of!(_kernel_start) as u32 ;
-    //     // size = size /8;
-    println!("The size of this kernel is {} kbytes", size / (1024));
-    println!("The size of this kernel is {} mbytes", (size / (1024 * 1024)));
-    serial_println!("Hello from serial port!");
-    serial_println!("Kernel size: {} kbytes", size / 1024);
+    // let size = addr_of!(_kernel_end) as u32 - addr_of!(_kernel_start) as u32 ;
+    // println!("The size of this kernel is {} kbytes", size / (1024));
+    // println!("The size of this kernel is {} mbytes", (size / (1024 * 1024)));
+    // serial_println!("Hello from serial port!");
+    // serial_println!("Kernel size: {} kbytes", size / 1024);
     shell();
-//    test_move_cursors(); 
-    
-    
+
+}
+fn init() {
+    WRITER.lock().change_color(Some(vga::Color::White), Some(vga::Color::Black));
+    WRITER.lock().cursor.enable_cursor(0, 15);
+    serial::init();
+    vga::clear_screen();
+    vga::print_ft();
+    gdt::init();
+    interrupts::init();
 
 }
 
-fn shell() -> !
-{
-    let mut paint :bool;
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    print!("{}", info);
+    loop {}
+}
+
+fn shell() -> ! {
+    let mut paint_mode :bool;
     loop {
-        paint = false;
+        paint_mode = false;
         shell::processor::hello_shell();
         loop {
         if let Some(event) = get_next_key_event() {
@@ -59,21 +69,18 @@ fn shell() -> !
                     KeyCode::Char(c) => 
                     {
                         if event.modifiers == CTRL && c == '2'{
-                            paint = true;
+                            paint_mode = true;
                             break;
                         }
                         print!("{c}")
                     },
                     KeyCode::Control(ControlKey::Backspace) => {
-                        if !keyboard::input_buffer_empty()
-                        {
+                        if !keyboard::input_buffer_empty() {
                             WRITER.lock().delete_char();
-                        }
-                    },
-                    _ => ()}}}
-        }
-        if paint {
-            test_move_cursors();
+                        }},
+                    _ => ()}}}}
+        if paint_mode {
+            paint();
         } else {
             let len = keyboard::get_input_string();
             shell::processor::process_command(len);
@@ -82,12 +89,12 @@ fn shell() -> !
     }
 }
 
-fn test_move_cursors()
+fn paint()
 {
     vga::clear_screen();
     static mut PAINT_BUFFER : vga::Buffer = vga::Buffer{
         chars : [[vga::ScreenCharacter {
-            ascii_value : b' ', 
+            ascii_value : b' ',
             color : ColorCode::new(vga::Color::White, vga::Color::Black)
         }; vga::VGA_BUFFER_WIDTH]; vga::VGA_BUFFER_HEIGHT] };
         unsafe {
@@ -142,24 +149,6 @@ fn test_move_cursors()
 
         utils::enable_interrupts(true);
     }
-    // memcpy(addr_of!(paint_buffer.chars) as *mut u8, VGA_BUFFER_ADDR as *const u8, size_of::<vga::Buffer>());
 }
 
 
-fn init() {
-    WRITER.lock().change_color(Some(vga::Color::White), Some(vga::Color::Black));
-    WRITER.lock().cursor.enable_cursor(1, 10);
-    serial::init();
-    vga::clear_screen();
-    vga::print_ft();
-    
-    gdt::init();
-    interrupts::init();
-
-}
-
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    print!("{}", info);
-    loop {}
-}

@@ -32,8 +32,10 @@ pub fn init() {
 
     pic::init();
     idt::load_idt();
+    #[cfg(feature = "verbose")]
     println!("IDT initialized and loaded.");
     idt::configure_interrupts();
+    #[cfg(feature = "verbose")]
     println!("Interrupts configured");
     unsafe {enable_interrupts(true);}
 //    unsafe {

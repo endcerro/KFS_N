@@ -394,7 +394,7 @@ impl Cursor {
 
 		crate::utils::outb(0x3D4, 0x0B);
 		crate::utils::outb(0x3D5, (crate::utils::inb(0x3D5) & 0xE0) | end);
-		self.update_cursor(1,1);
+		self.update_cursor(0,0);
 	}
 	pub fn disable_cursor()
 	{
