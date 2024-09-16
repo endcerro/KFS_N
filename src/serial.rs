@@ -77,5 +77,3 @@ macro_rules! serial_println {
     () => ($crate::serial_print!("\n"));
     ($($arg:tt)*) => ($crate::serial_print!("{}\n", format_args!($($arg)*)));
 }
-
-// These functions should be defined in your utils.rs file

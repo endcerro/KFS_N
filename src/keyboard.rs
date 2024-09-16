@@ -317,7 +317,6 @@ impl fmt::Display for KeyEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut buffer = [0u8; 64];
         let mut writer = WriterWithoutAlloc::new(&mut buffer);
-        
         if self.modifiers & SHIFT != 0 { let _ = writer.write(b"Shift+"); }
         if self.modifiers & CTRL != 0 { let _ = writer.write(b"Ctrl+"); }
         if self.modifiers & ALT != 0 { let _ = writer.write(b"Alt+"); }

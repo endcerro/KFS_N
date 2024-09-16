@@ -127,14 +127,11 @@ pub struct Buffer {
 
 impl Buffer {
 	pub fn copy_from(&mut self, other : &Buffer) {
-		// serial_print!("COPY");
 		for i in 0..VGA_BUFFER_HEIGHT {
 			for j in 0..VGA_BUFFER_WIDTH {
-				// serial_print!("COPYING {} {}\n",i,j);
 				self.chars[i][j] = other.chars[i][j]
 			}
 		}
-		// serial_print!("COPIED");
 	}
 }
 
@@ -277,10 +274,6 @@ impl Writer {
 		{
 			self.cursor.update_cursor(self.column_position, self.row_position);
 		}
-		// self.buffer.chars[self._row_position][self.column_position] = ScreenCharacter {
-		// 			ascii_value : b' ',
-		// 			color : ColorCode::new(Color::Black, Color::Black)
-		// 		};
 			}
 		}
 	pub fn change_color(&mut self, foreground : Option<Color>,  background : Option<Color>){
@@ -304,20 +297,6 @@ impl core::fmt::Write for Writer {
 	}
 }
 
-// pub fn _print_test() {
-// 	let mut writer = Writer {
-// 		column_position: 0,
-// 		_row_position: 0,
-// 		color_code: ColorCode::new(Color::Yellow, Color::Red),
-// 		buffer: unsafe { &mut *(0xb8000 as *mut Buffer)},
-// 	};
-// 	writer.write_string("HELLO WORLD !");
-// 	writer.new_line();
-// 	writer.write_byte(b'4');
-// 	writer.write_byte(b'2');
-// 	writer.new_line();
-// 	writer.write_string(HEADER_42);
-// }
 
 pub fn delete_char() {
 	WRITER.lock().delete_char();
@@ -421,18 +400,3 @@ impl Cursor {
 		self.update_cursor(self.x, self.y);
 	}
 }
-
-
-
-
-// pub fn enable_cursor(start :u8, end :u8)
-// {
-// 	outb(0x3D4, 0x0A);
-// 	outb(0x3D5, (inb(0x3D5) & 0xC0) | start);
-
-// 	outb(0x3D4, 0x0B);
-// 	outb(0x3D5, (inb(0x3D5) & 0xE0) | end);
-// 	update_cursor(1,1);
-// }
-
-

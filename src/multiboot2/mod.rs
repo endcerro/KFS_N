@@ -4,29 +4,25 @@ use meminfo::{MemoryInfo, MemoryInfoEntry, MemoryInfoHeader};
 
 pub mod meminfo;
 #[derive(Debug, Copy, Clone)]
-pub struct MultibootInfo //Base strtuct to init
-{
+pub struct MultibootInfo { //Base strtuct to init
     pub header : *const MultibootInfoHeader,
     pub tag : MultibootInfoTagIterator
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct MultibootInfoHeader //Base content of the multiboot struct
-{
+pub struct MultibootInfoHeader { //Base content of the multiboot struct
     total_size : u32,
     reserverd : u32
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct MultibootInfoTagIterator
-{
+pub struct MultibootInfoTagIterator {
     pub tag : *const MultibootInfoTag
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct MultibootInfoTag
-{
+pub struct MultibootInfoTag {
     pub typee : u32,
     pub size : u32,
 }

@@ -28,8 +28,6 @@ pub fn init() {
             }
         }
     }
-    // set_interrupt_handler(Interrupt::CoprocessorSegmentOverrun.as_u8(), handlers::keyboard_interrupt);
-
     pic::init();
     idt::load_idt();
     #[cfg(feature = "verbose")]
@@ -38,10 +36,7 @@ pub fn init() {
     #[cfg(feature = "verbose")]
     println!("Interrupts configured");
     unsafe {enable_interrupts(true);}
-//    unsafe {
-//        core::arch::asm!("int 0x21");
-
-//    }
+//    unsafe { core::arch::asm!("int 0x21");}
 }
 
 pub fn set_interrupt_handler(index : u8, handler : unsafe extern "x86-interrupt" fn(&handlers::InterruptStackFrame)) {
