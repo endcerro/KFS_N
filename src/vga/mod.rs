@@ -331,14 +331,17 @@ pub fn clear_screen() {
 }
 
 pub fn print_ft() {
+
+	let old_foreground = WRITER.lock().foreground;
+	let old_background = WRITER.lock().background;
 	let mut foreground_color = Color::Blue;
-	
+
 	for c in HEADER_42.bytes() {
 		match c {
 			b'\n' => {
 				WRITER.lock().new_line();
 				foreground_color = foreground_color.cycle();
-				while foreground_color == WRITER.lock().foreground  { 
+				while foreground_color == WRITER.lock().foreground  {
 					foreground_color = foreground_color.cycle();
 				 }
 				WRITER.lock().change_color(Some(foreground_color), None);
@@ -347,6 +350,7 @@ pub fn print_ft() {
 			c => WRITER.lock().write_char(c as char)
 		}
 	}
+	WRITER.lock().change_color(Some(old_foreground), Some(old_background));
 	WRITER.lock().write_char('\n');
 }
 
