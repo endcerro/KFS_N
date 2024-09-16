@@ -13,6 +13,7 @@ pub fn process_command(input: &str) {
             "echo" => commands::echo::run(input),
             "clear" => commands::clear::run(),
             "list" => commands::list::run(parts),
+            "custom" => commands::custom::run(parts),
             _ => print!("\n{SHELL_ID}Unknown command: {}", command),
         }
     }

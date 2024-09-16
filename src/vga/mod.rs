@@ -74,6 +74,15 @@ impl Color {
 			White => Black
 		}
 	}
+
+	pub fn from_string(s: &str)-> Color {
+		match s {
+			"Black" => Color::Black,
+			"Blue" => Color::Blue,
+			_=> Color::Black,
+
+		}
+	}
 }
 
 #[repr(transparent)]
