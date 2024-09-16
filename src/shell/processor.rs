@@ -11,6 +11,8 @@ pub fn process_command(input: &str) {
     if let Some(command) = parts.next() {
         match command {
             "echo" => commands::echo::run(input),
+            "clear" => commands::clear::run(),
+            "list" => commands::list::run(parts),
             _ => print!("\n{SHELL_ID}Unknown command: {}", command),
         }
     }
