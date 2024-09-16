@@ -81,7 +81,7 @@ impl Color {
 pub struct ColorCode(u8);
 
 impl ColorCode {
-	const fn new(foreground : Color, background: Color) -> ColorCode {
+	pub const fn new(foreground : Color, background: Color) -> ColorCode {
 		ColorCode((background as u8) << 4 | (foreground as u8))
 	}
 }
@@ -209,7 +209,7 @@ impl Writer {
 		for col in 0..BUFFER_WIDTH {
 			self.buffer.chars[index][col] = ScreenCharacter {
 				ascii_value : 0x20,
-				color : ColorCode::new(Color::White, Color::Black)
+				color : self.color_code
 			};
 		}
 	}
@@ -218,10 +218,12 @@ impl Writer {
 			for col in 0..BUFFER_WIDTH {
 				self.buffer.chars[row][col] = ScreenCharacter {
 					ascii_value : 0x20,
-					color : ColorCode::new(Color::White, Color::Black)
+					color : self.color_code
 				};
 			}
 		}
+		self.column_position = 0;
+		self.row_position = 0;
 	}
 	pub fn delete_char(&mut self){
 	{
@@ -275,14 +277,7 @@ pub fn delete_char() {
 }
 
 pub fn clear_screen() {
-	let mut writer = Writer {
-		column_position: 0,
-		row_position: 0,
-		cursor: Cursor::new(),
-		color_code: ColorCode::new(Color::White, Color::White),
-		buffer: unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)},
-	};
-	writer.clear_screen();
+	WRITER.lock().clear_screen();
 }
 
 pub fn print_ft() {

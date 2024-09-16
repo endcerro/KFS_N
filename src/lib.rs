@@ -17,7 +17,7 @@ pub mod commands;
 use core::{panic::PanicInfo, ptr::addr_of};
 
 use keyboard::{get_next_key_event, ControlKey, KeyCode};
-use vga::{Direction, WRITER};
+use vga::{ColorCode, Direction, WRITER};
 
 // use keyboard::{KeyCode, KEYBOARD_BUFFER};
 
@@ -95,6 +95,7 @@ fn init() {
     serial::init();
     vga::clear_screen();
     vga::print_ft();
+    WRITER.lock().change_color(ColorCode::new(vga::Color::Blue, vga::Color::Pink));
     gdt::init();
     interrupts::init();
 
