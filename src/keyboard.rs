@@ -214,7 +214,7 @@ pub fn handle_scancode(&mut self, scancode: u8) {
         }
     }
 
-    fn update_input_buffer(&mut self, event: &KeyEvent) {
+    pub fn update_input_buffer(&mut self, event: &KeyEvent) {
         match event.code {
             KeyCode::Char(c) if event.pressed => {
                 if self.input_len < BUFFER_SIZE {
@@ -272,7 +272,7 @@ pub static mut KEYBOARD: Keyboard = Keyboard::new();
 
 // Public interface
 pub fn handle_keyboard_interrupt(scancode: u8) {
-    serial_println!("{scancode}");
+    // serial_println!("{scancode}");
     unsafe {
         KEYBOARD.handle_scancode(scancode);
     }

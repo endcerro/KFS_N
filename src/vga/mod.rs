@@ -19,7 +19,7 @@
 	pixel buffer
  */
 
-const VGA_BUFFER_ADDR : u32 = 0xb8000;
+pub const VGA_BUFFER_ADDR : u32 = 0xb8000;
 
 pub const HEADER_42 : &str =
 "         :::        ::::::::
@@ -102,6 +102,18 @@ pub struct Buffer {
 	pub chars: [[ScreenCharacter; VGA_BUFFER_WIDTH]; VGA_BUFFER_HEIGHT]
 }
 
+impl Buffer {
+	pub fn copy_from(&mut self, other : &Buffer) {
+		// serial_print!("COPY");
+		for i in 0..VGA_BUFFER_HEIGHT {
+			for j in 0..VGA_BUFFER_WIDTH {
+				// serial_print!("COPYING {} {}\n",i,j);
+				self.chars[i][j] = other.chars[i][j]
+			}
+		}
+		// serial_print!("COPIED");
+	}
+}
 
 pub struct Writer {
 	column_position : usize,
@@ -110,7 +122,7 @@ pub struct Writer {
 	pub background : Color,
 	pub foreground : Color,
 	pub cursor : Cursor,
-	buffer : &'static mut Buffer,
+	pub buffer : &'static mut Buffer,
 }
 use spin::Mutex;
 use lazy_static::lazy_static;
@@ -383,7 +395,7 @@ impl Cursor {
 			Direction::Left => if self.x > 0 {self.x -= 1},
 			Direction::Right => if self.x < VGA_BUFFER_WIDTH - 1 {self.x += 1}
 		}
-		serial_print!("Moving cursor to {}, {}", self.x,self.y);
+		// serial_print!("Moving cursor to {}, {}", self.x,self.y);
 		self.update_cursor(self.x, self.y);
 	}
 }

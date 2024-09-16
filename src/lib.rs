@@ -16,7 +16,7 @@ pub mod commands;
 
 use core::{panic::PanicInfo, ptr::addr_of};
 
-use keyboard::{get_next_key_event, ControlKey, KeyCode, KeyEvent, Keyboard, CTRL};
+use keyboard::{get_next_key_event, ControlKey, KeyCode, KeyEvent, CTRL, KEYBOARD};
 use vga::{ColorCode, Direction, WRITER};
 
 
@@ -46,7 +46,7 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
 
 fn shell() -> !
 {
-    let mut paint :bool = false;
+    let mut paint :bool;
     loop {
         paint = false;
         shell::processor::hello_shell();
@@ -72,13 +72,11 @@ fn shell() -> !
                     },
                     _ => ()}}}
         }
-        if paint
-        {
+        if paint {
             test_move_cursors();
         } else {
             let len = keyboard::get_input_string();
             shell::processor::process_command(len);
-
         }
 
     }
@@ -86,32 +84,36 @@ fn shell() -> !
 
 fn test_move_cursors()
 {
-    // vga::clear_screen();
-    static paint_buffer : vga::Buffer = vga::Buffer{
+    vga::clear_screen();
+    static mut PAINT_BUFFER : vga::Buffer = vga::Buffer{
         chars : [[vga::ScreenCharacter {
             ascii_value : b' ', 
             color : ColorCode::new(vga::Color::White, vga::Color::Black)
         }; vga::VGA_BUFFER_WIDTH]; vga::VGA_BUFFER_HEIGHT] };
-    
+        unsafe {
+            utils::enable_interrupts(false);
+
+            WRITER.lock().buffer.copy_from(addr_of!(PAINT_BUFFER).as_ref().unwrap());
+            utils::enable_interrupts(true);
+        }
     WRITER.lock().cursor.x = 0;
     WRITER.lock().cursor.y = 0;
     WRITER.lock().cursor.update_cursor(0, 0);
-    loop {
+    let mut done : bool = false;
+    while done == false {
         loop {
-            if let Some(event) = get_next_key_event() {
-                if event.pressed == true 
-                {
-                    serial_println!("{event}");
-                    match event.code {
+                if let Some(event) = get_next_key_event() {
+                if event.pressed == true {
 
+                    match event.code {
                         KeyCode::Control(ControlKey::UpArrow) => WRITER.lock().cursor.move_cursors(Direction::Top),
                         KeyCode::Control(ControlKey::DownArrow) => WRITER.lock().cursor.move_cursors(Direction::Down),
                         KeyCode::Control(ControlKey::LeftArrow) => WRITER.lock().cursor.move_cursors(Direction::Left),
                         KeyCode::Control(ControlKey::RightArrow) => WRITER.lock().cursor.move_cursors(Direction::Right),
                         KeyCode::Char(c) =>  {
                             if event.modifiers == CTRL && c == '1'{
-                                vga::clear_screen();
-                                return;
+                                done = true;
+                                break;
                             }
                             WRITER.lock().write_byte_at_cursor(c as u8 );
                         }
@@ -120,18 +122,37 @@ fn test_move_cursors()
                 }
             }
         }
-        // let len = keyboard::get_input_string();
-        // shell::processor::process_command(len);
-
     }
+    unsafe {
+        utils::enable_interrupts(false);
+        PAINT_BUFFER.copy_from(WRITER.lock().buffer);
+        WRITER.lock().clear_screen();
+        let key : KeyEvent = KeyEvent {
+            code : KeyCode::Control(ControlKey::Enter),
+            modifiers : 0,
+            pressed : true,
+        };
+        KEYBOARD.update_input_buffer(&key);
+        let key : KeyEvent = KeyEvent {
+            code : KeyCode::Control(ControlKey::Enter),
+            modifiers : 0,
+            pressed : false,
+        };
+        KEYBOARD.update_input_buffer(&key);
+
+        utils::enable_interrupts(true);
+    }
+    // memcpy(addr_of!(paint_buffer.chars) as *mut u8, VGA_BUFFER_ADDR as *const u8, size_of::<vga::Buffer>());
 }
 
 
 fn init() {
-    WRITER.lock().change_color(Some(vga::Color::White), Some(vga::Color::Red));
+    WRITER.lock().change_color(Some(vga::Color::White), Some(vga::Color::Black));
+    WRITER.lock().cursor.enable_cursor(1, 10);
     serial::init();
     vga::clear_screen();
     vga::print_ft();
+    
     gdt::init();
     interrupts::init();
 
