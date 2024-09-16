@@ -269,7 +269,6 @@ impl Writer {
 	}
 	pub fn delete_char(&mut self){
 	{
-		serial_print!("DELCHAR");
 		if self.column_position > 0
 		{
 			self.column_position -= 1;

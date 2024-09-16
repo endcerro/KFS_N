@@ -252,7 +252,7 @@ pub fn handle_scancode(&mut self, scancode: u8) {
 
     pub fn input_buffer_empty(&self) -> bool{
         if self.input_len > 0 || self.just_deleted {
-            serial_println!("Not empty size is {}, {}", self.input_len, self.just_deleted);
+            // serial_println!("Not empty size is {}, {}", self.input_len, self.just_deleted);
                 return false
             }
         true
