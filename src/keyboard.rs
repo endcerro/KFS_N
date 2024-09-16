@@ -88,6 +88,7 @@ pub struct Keyboard {
     input_len: usize,
     finished_buffer: [u8; BUFFER_SIZE],
     finished_len: usize,
+    just_deleted : bool
 }
 
 impl Keyboard {
@@ -107,6 +108,7 @@ impl Keyboard {
             input_len: 0,
             finished_buffer: [b'\0'; BUFFER_SIZE],
             finished_len: 0,
+            just_deleted : false
         }
     }
 
@@ -225,11 +227,16 @@ pub fn handle_scancode(&mut self, scancode: u8) {
                     };
                     self.input_buffer[self.input_len] = output_char as u8;
                     self.input_len += 1;
+                    self.just_deleted = false;
                 }
             }
             KeyCode::Control(ControlKey::Backspace) if event.pressed => {
                 if self.input_len > 0 {
                     self.input_len -= 1;
+                    self.just_deleted = true;
+                }else {
+                    self.just_deleted = false;
+
                 }
             }
             KeyCode::Control(ControlKey::Enter) if event.pressed => {
@@ -237,17 +244,25 @@ pub fn handle_scancode(&mut self, scancode: u8) {
                 self.finished_buffer[..self.input_len].copy_from_slice(&self.input_buffer[..self.input_len]);
                 self.finished_len = self.input_len;
                 self.input_len = 0;
+                self.just_deleted = false;
             }
             _ => {}
         }
     }
 
+    pub fn input_buffer_empty(&self) -> bool{
+        if self.input_len > 0 || self.just_deleted {
+            serial_println!("Not empty size is {}, {}", self.input_len, self.just_deleted);
+                return false
+            }
+        true
+    }
 
     pub fn get_input_string(&self) -> &str {
         // Return the finished buffer as a str
         unsafe { core::str::from_utf8_unchecked(&self.finished_buffer[..self.finished_len]) }
     }
-        pub fn clear_input(&mut self) {
+    pub fn clear_input(&mut self) {
         self.finished_len = 0;
     }
 }
@@ -279,6 +294,14 @@ pub fn clear_input() {
         KEYBOARD.clear_input();
     }
 }
+
+pub fn input_buffer_empty() -> bool{
+    unsafe {
+
+        KEYBOARD.input_buffer_empty()
+    }
+}
+
 
 // Implement Display traits
 impl fmt::Display for KeyCode {

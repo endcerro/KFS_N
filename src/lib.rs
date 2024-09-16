@@ -1,5 +1,6 @@
 #![no_std]
 #![feature(abi_x86_interrupt)]
+#![feature(const_mut_refs)]
 #![no_main]
 #[macro_use]
 pub mod vga;
@@ -35,7 +36,7 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     println!("The size of this kernel is {} mbytes", (size / (1024 * 1024)));
     serial_println!("Hello from serial port!");
     serial_println!("Kernel size: {} kbytes", size / 1024);
-    test_move_cursors(); 
+    // test_move_cursors(); 
     shell();
     
 
@@ -52,7 +53,12 @@ fn shell() -> !
                 match event.code {
                     KeyCode::Control(ControlKey::Enter) => break,
                     KeyCode::Char(c) => print!("{c}"),
-                    KeyCode::Control(ControlKey::Backspace) => WRITER.lock().delete_char(),
+                    KeyCode::Control(ControlKey::Backspace) => {
+                        if !keyboard::input_buffer_empty()
+                        {
+                            WRITER.lock().delete_char();
+                        }
+                    },
                     _ => ()}}}
         }
         let len = keyboard::get_input_string();
@@ -87,7 +93,6 @@ fn test_move_cursors() -> !
 
 fn init() {
     serial::init();
-    vga::WRITER.lock().cursor.enable_cursor(0, 15);
     vga::clear_screen();
     vga::print_ft();
     gdt::init();

@@ -78,7 +78,7 @@ impl Color {
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct ColorCode(u8);
+pub struct ColorCode(u8);
 
 impl ColorCode {
 	const fn new(foreground : Color, background: Color) -> ColorCode {
@@ -103,47 +103,62 @@ struct Buffer {
 
 pub struct Writer {
 	column_position : usize,
-	_row_position : usize,
+	row_position : usize,
 	color_code : ColorCode,
 	pub cursor : Cursor,
 	buffer : &'static mut Buffer,
 }
+use spin::Mutex;
+use lazy_static::lazy_static;
+
+use crate::{serial_print, utils::{inb, outb}};
+
+lazy_static! {
+	pub static ref WRITER : Mutex<Writer> = Mutex::new(Writer::new());
+}
 
 impl Writer {
+	pub const fn new() -> Self {
+		Self {
+			column_position : 0,
+			row_position: 0,
+			color_code : ColorCode::new(Color::White, Color::Black),
+			cursor : Cursor::new(),
+			buffer : unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)}
+		}
+	}
 	pub fn write_byte(&mut self, byte: u8) {
+		// let mut oldposx = self.column_position;
+		// let mut oldposy = self.row_position;
+
 		match byte {
 			b'\n' => self.new_line(),
 			byte => {
 				if self.column_position >= BUFFER_WIDTH {
 					self.new_line()
 				}
-				let row = BUFFER_HEIGHT - 1;
-				let col = self.column_position;
-
 				let color_code = self.color_code;
-				self.buffer.chars[row][col] = ScreenCharacter {
+				self.buffer.chars[self.row_position][self.column_position] = ScreenCharacter {
 					ascii_value: byte,
 					color : color_code
 				};
 				self.column_position +=1;
 			}
 		}
-		if (self.column_position > 0)
+		if self.column_position > 0
 		{
-			self.cursor.update_cursor(self.column_position, BUFFER_HEIGHT - 1);
-
+			self.cursor.update_cursor(self.column_position, self.row_position);
 		}
 	}
-	pub fn write_byte_at_pos(&mut self, byte: u8, x : usize, y : usize)
-	{
+	pub fn write_byte_at_pos(&mut self, byte: u8, x : usize, y : usize){
 		match byte {
 			// b'\n' => self.new_line(),
 			byte => {
 				if self.column_position >= BUFFER_WIDTH {
 					self.new_line()
 				}
-				let row = BUFFER_HEIGHT - 1;
-				let col = self.column_position;
+				// let row = BUFFER_HEIGHT - 1;
+				// let col = self.column_position;
 
 				let color_code = self.color_code;
 				self.buffer.chars[y][x] = ScreenCharacter {
@@ -153,7 +168,7 @@ impl Writer {
 				self.column_position +=1;
 			}
 		}
-		if (self.column_position > 0)
+		if self.column_position > 0
 		{
 			self.cursor.update_cursor(self.column_position, BUFFER_HEIGHT - 1);
 
@@ -174,14 +189,21 @@ impl Writer {
 		}
 	}
 	fn new_line(&mut self) {
+		if self.row_position < BUFFER_HEIGHT - 1{
+			self.row_position += 1;
+			self.column_position = 0;
+			return;
+		}
 		for row in 1..BUFFER_HEIGHT {
 			for col in 0..BUFFER_WIDTH {
 				let character = self.buffer.chars[row][col];
 				self.buffer.chars[row - 1][col] = character;
 			}
 		}
-		self.clear_row(BUFFER_HEIGHT - 1);
+		self.clear_row(self.row_position);
 		self.column_position = 0;
+		// self.row_position = 0;
+
 	}
 	fn clear_row(&mut self, index : usize){
 		for col in 0..BUFFER_WIDTH {
@@ -210,12 +232,19 @@ impl Writer {
 		}
 		self.write_byte(b' ');
 		self.column_position -= 1;
+		if self.column_position > 0
+		{
+			self.cursor.update_cursor(self.column_position, self.row_position);
+		}
 		// self.buffer.chars[self._row_position][self.column_position] = ScreenCharacter {
 		// 			ascii_value : b' ',
 		// 			color : ColorCode::new(Color::Black, Color::Black)
 		// 		};
 			}
 		}
+	pub fn change_color(&mut self, color : ColorCode){
+		self.color_code = color;
+	}
 }
 
 
@@ -248,7 +277,7 @@ pub fn delete_char() {
 pub fn clear_screen() {
 	let mut writer = Writer {
 		column_position: 0,
-		_row_position: 0,
+		row_position: 0,
 		cursor: Cursor::new(),
 		color_code: ColorCode::new(Color::White, Color::White),
 		buffer: unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)},
@@ -258,43 +287,30 @@ pub fn clear_screen() {
 
 pub fn print_ft() {
 	let mut current_color = Color::Blue;
-	let mut writer = Writer {
-		column_position: 0,
-		_row_position: 0,
-		cursor: Cursor::new(),
-		color_code: ColorCode::new(current_color, Color::Black),
-		buffer: unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)},
-	};
+	
+	// let mut writer = Writer {
+	// 	column_position: 0,
+	// 	row_position: 0,
+	// 	cursor: Cursor::new(),
+	// 	color_code: ColorCode::new(current_color, Color::Black),
+	// 	buffer: unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)},
+	// };
+	
+	
 	for c in HEADER_42.bytes() {
 		match c {
 			b'\n' => {
-				writer.new_line();
+				WRITER.lock().new_line();
 				current_color = current_color.cycle();
-				writer.color_code = ColorCode::new(current_color, Color::Black);
+				WRITER.lock().color_code = ColorCode::new(current_color, Color::Black);
 
 			},
-			c => writer.write_char(c as char)
+			c => WRITER.lock().write_char(c as char)
 		}
 	}
-	writer.write_char('\n');
+	WRITER.lock().write_char('\n');
 }
 
-use spin::Mutex;
-use lazy_static::lazy_static;
-
-use crate::{serial_print, utils::{inb, outb}};
-
-lazy_static! {
-	pub static ref WRITER : Mutex<Writer> = Mutex::new(Writer {
-		column_position : 0,
-		_row_position : 0,
-		cursor: Cursor::new(),
-		color_code : ColorCode::new(Color::LightGreen, Color::Black),
-		buffer : unsafe {
-			&mut *(VGA_BUFFER_ADDR as *mut Buffer)
-		},
-	});
-}
 
 #[macro_export]
 macro_rules! print {
