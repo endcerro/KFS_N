@@ -6,23 +6,60 @@ use crate::ColorCode;
 
 pub fn run(mut args: core::str::SplitWhitespace<'_>) {
 
-    if let Some(background ) = args.next() {
-        if let Some(foreground) = args.next() {
-            
-            let back = Color::from_string(background);
-            let fore = Color::from_string(foreground);
+    let mut background = "dark";
+    let mut foreground = "white";
 
-            vga::clear_screen();
-            vga::print_ft();
-            WRITER.lock().change_color(ColorCode::new(back, fore));
-        }
-        else {
-            let foreground = "white";
-        }
+    background = match args.next() {
+       Some(bg) => bg,
+       None => {
+        describe();
+        return;
+       } 
+    };
 
+    foreground = match args.next() {
+        Some(fg) => fg,
+        None => {
+            describe();
+            return;
+        }
+    };
+
+    let mut back = Color::from_string(background);
+    let mut fore = Color::from_string(foreground);
+
+    if back == fore && back != Color::White {
+        fore = Color::White;
     }
-    else {
-        let background = "black";
-        let foreground: &str = "white";
+    else if back == fore {
+        fore = Color::Black;
     }
+
+    vga::clear_screen();
+    WRITER.lock().change_color(ColorCode::new(fore, back));
+    vga::clear_screen();
+    vga::print_ft();
+
+}
+
+pub fn describe() {
+    print!("\n This function give you the possibility to change background 
+        and foreground color\n Here is a list of all color available
+        - black,
+        - blue,
+        - green,
+        - cyan,
+        - red,
+        - magenta,
+        - brown,
+        - lightgray,
+        - garkgray,
+        - lightblue,
+        - lightgreen,
+        - lightcyan,
+        - lightred,
+        - pink,
+        - yellow,
+        - white
+        Usage : custom background foreground");
 }

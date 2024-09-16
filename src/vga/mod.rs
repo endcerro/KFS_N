@@ -77,8 +77,22 @@ impl Color {
 
 	pub fn from_string(s: &str)-> Color {
 		match s {
-			"Black" => Color::Black,
-			"Blue" => Color::Blue,
+			"black" => Color::Black,
+			"blue" => Color::Blue,
+			"green" => Color::Green,
+			"cyan" => Color::Cyan,
+			"red" => Color::Red,
+			"magenta" => Color::Magenta,
+			"brown" => Color::Brown,
+			"lightgray" => Color::LightGray,
+			"darkgray" => Color::DarkGray,
+			"lightblue" => Color::LightBlue,
+			"lightgreen" => Color::LightGreen,
+			"lightcyan" => Color::LightCyan,
+			"lightred" => Color::LightRed,
+			"pink" => Color::Pink,
+			"yellow" => Color::Yellow,
+			"white" => Color::White,
 			_=> Color::Black,
 
 		}
