@@ -36,9 +36,8 @@ pub fn run(mut args: core::str::SplitWhitespace<'_>) {
     }
 
     vga::clear_screen();
-    WRITER.lock().change_color(ColorCode::new(fore, back));
+    WRITER.lock().change_color(Some(fore),Some( back));
     vga::clear_screen();
-    vga::print_ft();
 
 }
 
