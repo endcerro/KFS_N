@@ -150,8 +150,6 @@ pub struct Writer {
 use spin::Mutex;
 use lazy_static::lazy_static;
 
-use crate::{serial_print, utils::{inb, outb}};
-
 lazy_static! {
 	pub static ref WRITER : Mutex<Writer> = Mutex::new(Writer::new());
 }
@@ -332,15 +330,13 @@ pub fn clear_screen() {
 pub fn print_ft() {
 
 	let old_foreground = WRITER.lock().foreground;
-	let old_background = WRITER.lock().background;
-	let mut foreground_color = Color::Blue;
-
+	let mut foreground_color = old_foreground;
 	for c in HEADER_42.bytes() {
 		match c {
 			b'\n' => {
 				WRITER.lock().new_line();
 				foreground_color = foreground_color.cycle();
-				while foreground_color == WRITER.lock().foreground  {
+				while foreground_color == WRITER.lock().background  {
 					foreground_color = foreground_color.cycle();
 				 }
 				WRITER.lock().change_color(Some(foreground_color), None);
@@ -349,7 +345,7 @@ pub fn print_ft() {
 			c => WRITER.lock().write_char(c as char)
 		}
 	}
-	WRITER.lock().change_color(Some(old_foreground), Some(old_background));
+	WRITER.lock().change_color(Some(old_foreground), None);
 	WRITER.lock().write_char('\n');
 }
 
@@ -393,26 +389,26 @@ impl Cursor {
 	}
 	pub fn enable_cursor(&mut self, start :u8, end :u8)
 	{
-		outb(0x3D4, 0x0A);
-		outb(0x3D5, (inb(0x3D5) & 0xC0) | start);
+		crate::utils::outb(0x3D4, 0x0A);
+		crate::utils::outb(0x3D5, (crate::utils::inb(0x3D5) & 0xC0) | start);
 
-		outb(0x3D4, 0x0B);
-		outb(0x3D5, (inb(0x3D5) & 0xE0) | end);
+		crate::utils::outb(0x3D4, 0x0B);
+		crate::utils::outb(0x3D5, (crate::utils::inb(0x3D5) & 0xE0) | end);
 		self.update_cursor(1,1);
 	}
 	pub fn disable_cursor()
 	{
-		outb(0x3D4, 0x0A);
-		outb(0x3D5, 0x20);
+		crate::utils::outb(0x3D4, 0x0A);
+		crate::utils::outb(0x3D5, 0x20);
 	}
 	pub fn update_cursor(&mut self, x : usize,  y : usize)
 	{
 		let pos = y * VGA_BUFFER_WIDTH + x;
 
-		outb(0x3D4, 0x0F);
-		outb(0x3D5,  (pos & 0xFF) as u8);
-		outb(0x3D4, 0x0E);
-		outb(0x3D5, ((pos >> 8) & 0xFF)as u8);
+		crate::utils::outb(0x3D4, 0x0F);
+		crate::utils::outb(0x3D5,  (pos & 0xFF) as u8);
+		crate::utils::outb(0x3D4, 0x0E);
+		crate::utils::outb(0x3D5, ((pos >> 8) & 0xFF)as u8);
 	}
 	pub fn move_cursors(&mut self, dir : Direction) {
 		match dir {

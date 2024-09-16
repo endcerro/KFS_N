@@ -1,20 +1,19 @@
 use crate::vga;
 use crate::vga::Color;
 use crate::WRITER;
-use crate::ColorCode;
 
 
 pub fn run(mut args: core::str::SplitWhitespace<'_>) {
 
-    let mut background = "dark";
-    let mut foreground = "white";
+    let background;
+    let foreground;
 
     background = match args.next() {
        Some(bg) => bg,
        None => {
         describe();
         return;
-       } 
+       }
     };
 
     foreground = match args.next() {
@@ -25,7 +24,7 @@ pub fn run(mut args: core::str::SplitWhitespace<'_>) {
         }
     };
 
-    let mut back = Color::from_string(background);
+    let back = Color::from_string(background);
     let mut fore = Color::from_string(foreground);
 
     if back == fore && back != Color::White {

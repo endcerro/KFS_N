@@ -2,7 +2,6 @@
 
 use core::fmt;
 
-use crate::serial_println;
 
 // Constants
 const BUFFER_SIZE: usize = 256;
