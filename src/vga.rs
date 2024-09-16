@@ -105,6 +105,7 @@ pub struct Writer {
 	column_position : usize,
 	_row_position : usize,
 	color_code : ColorCode,
+	pub cursor : Cursor,
 	buffer : &'static mut Buffer,
 }
 
@@ -129,7 +130,32 @@ impl Writer {
 		}
 		if (self.column_position > 0)
 		{
-			update_cursor(self.column_position, BUFFER_HEIGHT - 1);
+			self.cursor.update_cursor(self.column_position, BUFFER_HEIGHT - 1);
+
+		}
+	}
+	pub fn write_byte_at_pos(&mut self, byte: u8, x : usize, y : usize)
+	{
+		match byte {
+			// b'\n' => self.new_line(),
+			byte => {
+				if self.column_position >= BUFFER_WIDTH {
+					self.new_line()
+				}
+				let row = BUFFER_HEIGHT - 1;
+				let col = self.column_position;
+
+				let color_code = self.color_code;
+				self.buffer.chars[y][x] = ScreenCharacter {
+					ascii_value: byte,
+					color : color_code
+				};
+				self.column_position +=1;
+			}
+		}
+		if (self.column_position > 0)
+		{
+			self.cursor.update_cursor(self.column_position, BUFFER_HEIGHT - 1);
 
 		}
 	}
@@ -170,7 +196,7 @@ impl Writer {
 			for col in 0..BUFFER_WIDTH {
 				self.buffer.chars[row][col] = ScreenCharacter {
 					ascii_value : 0x20,
-					color : ColorCode::new(Color::Black, Color::Black)
+					color : ColorCode::new(Color::White, Color::Black)
 				};
 			}
 		}
@@ -223,6 +249,7 @@ pub fn clear_screen() {
 	let mut writer = Writer {
 		column_position: 0,
 		_row_position: 0,
+		cursor: Cursor::new(),
 		color_code: ColorCode::new(Color::White, Color::White),
 		buffer: unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)},
 	};
@@ -234,6 +261,7 @@ pub fn print_ft() {
 	let mut writer = Writer {
 		column_position: 0,
 		_row_position: 0,
+		cursor: Cursor::new(),
 		color_code: ColorCode::new(current_color, Color::Black),
 		buffer: unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)},
 	};
@@ -260,6 +288,7 @@ lazy_static! {
 	pub static ref WRITER : Mutex<Writer> = Mutex::new(Writer {
 		column_position : 0,
 		_row_position : 0,
+		cursor: Cursor::new(),
 		color_code : ColorCode::new(Color::LightGreen, Color::Black),
 		buffer : unsafe {
 			&mut *(VGA_BUFFER_ADDR as *mut Buffer)
@@ -284,28 +313,72 @@ pub fn _print(args: core::fmt::Arguments) {
 	WRITER.lock().write_fmt(args).unwrap();
 }
 
-pub fn enable_cursor(start :u8, end :u8)
-{
-	outb(0x3D4, 0x0A);
-	outb(0x3D5, (inb(0x3D5) & 0xC0) | start);
 
-	outb(0x3D4, 0x0B);
-	outb(0x3D5, (inb(0x3D5) & 0xE0) | end);
-	update_cursor(1,1);
+pub struct Cursor {
+	pub x : usize,
+	pub y : usize
+}
+pub enum Direction {
+	Top,
+	Down,
+	Left,
+	Right
 }
 
-pub fn disable_cursor()
-{
-	outb(0x3D4, 0x0A);
-	outb(0x3D5, 0x20);
+impl Cursor {
+	pub const fn new() -> Self
+	{
+		Self {
+			x : 0,
+			y : 0
+		}
+	}
+	pub fn enable_cursor(&mut self, start :u8, end :u8)
+	{
+		outb(0x3D4, 0x0A);
+		outb(0x3D5, (inb(0x3D5) & 0xC0) | start);
+
+		outb(0x3D4, 0x0B);
+		outb(0x3D5, (inb(0x3D5) & 0xE0) | end);
+		self.update_cursor(1,1);
+	}
+	pub fn disable_cursor()
+	{
+		outb(0x3D4, 0x0A);
+		outb(0x3D5, 0x20);
+	}
+	pub fn update_cursor(&mut self, x : usize,  y : usize)
+	{
+		let pos = y * BUFFER_WIDTH + x;
+
+		outb(0x3D4, 0x0F);
+		outb(0x3D5,  (pos & 0xFF) as u8);
+		outb(0x3D4, 0x0E);
+		outb(0x3D5, ((pos >> 8) & 0xFF)as u8);
+	}
+	pub fn move_cursors(&mut self, dir : Direction) {
+		match dir {
+			Direction::Top => if self.y > 0 {self.y -= 1},
+			Direction::Down => if self.y <= BUFFER_HEIGHT {self.y += 1},
+			Direction::Left => if self.x > 0 {self.x -= 1},
+			Direction::Right => if self.x <= BUFFER_WIDTH {self.x += 1}
+		}
+		serial_print!("Moving cursor to {}, {}", self.x,self.y);
+		self.update_cursor(self.x, self.y);
+	}
 }
 
-pub fn update_cursor( x : usize,  y : usize)
-{
-	let pos = y * BUFFER_WIDTH + x;
 
-	outb(0x3D4, 0x0F);
-	outb(0x3D5,  (pos & 0xFF) as u8);
-	outb(0x3D4, 0x0E);
-	outb(0x3D5, ((pos >> 8) & 0xFF)as u8);
-}
+
+
+// pub fn enable_cursor(start :u8, end :u8)
+// {
+// 	outb(0x3D4, 0x0A);
+// 	outb(0x3D5, (inb(0x3D5) & 0xC0) | start);
+
+// 	outb(0x3D4, 0x0B);
+// 	outb(0x3D5, (inb(0x3D5) & 0xE0) | end);
+// 	update_cursor(1,1);
+// }
+
+

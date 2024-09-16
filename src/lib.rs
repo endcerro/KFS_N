@@ -16,7 +16,7 @@ pub mod commands;
 use core::{panic::PanicInfo, ptr::addr_of};
 
 use keyboard::{get_next_key_event, ControlKey, KeyCode};
-use vga::WRITER;
+use vga::{Direction, WRITER};
 
 // use keyboard::{KeyCode, KEYBOARD_BUFFER};
 
@@ -35,7 +35,7 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     println!("The size of this kernel is {} mbytes", (size / (1024 * 1024)));
     serial_println!("Hello from serial port!");
     serial_println!("Kernel size: {} kbytes", size / 1024);
-
+    test_move_cursors(); 
     shell();
     
 
@@ -61,13 +61,38 @@ fn shell() -> !
     }
 }
 
+fn test_move_cursors() -> !
+{
+    vga::clear_screen();
+    loop {
+        // shell::processor::hello_shell();
+        loop {
+            if let Some(event) = get_next_key_event() {
+                if event.pressed == true {
+                    // serial_println!("{event}");
+                    match event.code {
+                        KeyCode::Control(ControlKey::UpArrow) => WRITER.lock().cursor.move_cursors(Direction::Top),
+                        KeyCode::Control(ControlKey::DownArrow) => WRITER.lock().cursor.move_cursors(Direction::Down),
+                        KeyCode::Control(ControlKey::LeftArrow) => WRITER.lock().cursor.move_cursors(Direction::Left),
+                        KeyCode::Control(ControlKey::RightArrow) => WRITER.lock().cursor.move_cursors(Direction::Right),
+                        KeyCode::Char(c) => WRITER.lock().write_byte_at_pos(c as u8, WRITER.lock().cursor.x, WRITER.lock().cursor.y  ),
+                        _ => ()}}}
+        }
+        // let len = keyboard::get_input_string();
+        // shell::processor::process_command(len);
+
+    }
+}
+
+
 fn init() {
     serial::init();
+    vga::WRITER.lock().cursor.enable_cursor(0, 15);
     vga::clear_screen();
     vga::print_ft();
     gdt::init();
     interrupts::init();
-    vga::enable_cursor(1, 15);
+
 }
 
 #[panic_handler]
