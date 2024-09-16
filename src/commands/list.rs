@@ -19,7 +19,7 @@ fn describe() {
 
 fn creator() {
     print!("\n Enzo Dal Cerro and Victor Portenseigne");
-    print!("\n Eldel--ce aka rust master and Viporten aka bbq master")
+    print!("\n Edal--ce aka rust master and Viporten aka bbq master")
 }
 
 fn commands() {

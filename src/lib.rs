@@ -36,11 +36,7 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     println!("The size of this kernel is {} mbytes", (size / (1024 * 1024)));
     serial_println!("Hello from serial port!");
     serial_println!("Kernel size: {} kbytes", size / 1024);
-<<<<<<< HEAD
-    // test_move_cursors(); 
-=======
     //test_move_cursors(); 
->>>>>>> afcdea4 (add some option)
     shell();
     
 
