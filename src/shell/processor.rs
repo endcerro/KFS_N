@@ -15,6 +15,7 @@ pub fn process_command(input: &str) {
             "list" => commands::list::run(parts),
             "custom" => commands::custom::run(parts),
             "ft42" => commands::print_ft_42::run(),
+            "stack" => commands::print_stack::run(),
             _ => print!("\n{SHELL_ID}Unknown command: {}", command),
         }
     }
