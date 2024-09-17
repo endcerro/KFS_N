@@ -1,74 +1,80 @@
+# Directories
+ASM_SRC := src/arch/i686
+SRC := src
+OBJ_DIR := obj
+ISO_DIR := isofiles
+TARGET_DIR := target/i686-unknown-none/debug
 
-ASM_SRC = src/arch/i686
-SRC = src/
-all : boot_basic
+# Files
+KERNEL_BIN := $(OBJ_DIR)/kernel.bin
+ISO_FILE := os.iso
+RUST_LIB := $(TARGET_DIR)/libkfs_1.a
 
+# Find all Rust source files
+RUST_SRCS := $(shell find $(SRC) -name '*.rs')
 
-# configure  :
-# 	rustup toolchain install nightly --allow-downgrade
-# 	rustup component add rust-src --toolchain nightly-x86_64-unknown-linux-gnu
+# Commands
+RUSTC := cargo build --target $(ASM_SRC)/i686-unknown-none.json
+NASM := nasm -f elf32
+LD := ld -m elf_i386 -z noexecstack
+GRUB_MKRESCUE := grub-mkrescue -d /usr/lib/grub/i386-pc
+QEMU := qemu-system-i386
+KVM := kvm
 
-kvm : iso_basic
-	@echo Starting with KVM
-	@kvm -name kfs -cdrom ./os.iso -boot c
-qemu : iso_basic
-	@echo Staring with qemu
-	@qemu-system-i386 -cdrom os.iso -m 1G -serial stdio
+# Flags
+RUST_FLAGS := #--features gdt_test --features verbose
 
-qemu_dbg : iso_basic
-	@echo Staring with qemu in debug mode
-	@qemu-system-i386 -cdrom os.iso -s -S -serial stdio
+# Phony targets
+.PHONY: all kvm qemu qemu_dbg dbg rust_dbg clean
 
-dbg : 
-	gdb "isofiles/boot/kernel.bin" -ex "1234"
+all: $(ISO_FILE)
 
-rust_dbg : asm_files
-	cargo build --target src/arch/i686/i686-unknown-none.json --features gdt_test  --features verbose
-	@ld -m elf_i386 -z noexecstack -o obj/kernel.bin -T $(ASM_SRC)/linker.ld obj/*.o target/i686-unknown-none/debug/libkfs_1.a
-	@mkdir -p isofiles
-	@mkdir -p isofiles/boot
-	@mkdir -p isofiles/boot/grub
-	@cp $(SRC)/grub/grub.cfg isofiles/boot/grub
-	@cp obj/kernel.bin isofiles/boot/kernel.bin
-	@echo "Making ISO"
-	@grub-mkrescue -d /usr/lib/grub/i386-pc -o os.iso isofiles 2> /dev/null
-	@qemu-system-i386 -cdrom os.iso -serial stdio
-rust_files :
-	@echo "Building rust"
-	@cargo build --target src/arch/i686/i686-unknown-none.json
+kvm: $(ISO_FILE)
+	@echo "Starting with KVM"
+	$(KVM) -name kfs -cdrom $(ISO_FILE) -boot c
 
-asm_files :
-	@mkdir -p obj
+qemu: $(ISO_FILE)
+	@echo "Starting with QEMU"
+	$(QEMU) -cdrom $(ISO_FILE) -m 1G -serial stdio
+
+qemu_dbg: $(ISO_FILE)
+	@echo "Starting with QEMU in debug mode"
+	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio
+
+dbg:
+	gdb "$(ISO_DIR)/boot/kernel.bin" -ex "1234"
+
+rust_dbg: $(KERNEL_BIN)
+	$(QEMU) -cdrom $(ISO_FILE) -serial stdio
+
+# Build rules
+$(OBJ_DIR)/boot.o: $(ASM_SRC)/boot.asm | $(OBJ_DIR)
 	@echo "Building ASM"
-	@nasm -f elf32 $(ASM_SRC)/boot.asm -o obj/boot.o
+	$(NASM) $< -o $@
 
-link :
-	@echo "Linking kernel"
-kernel_basic : asm_files rust_files
-	@echo "Linking kernel"
-	@ld -m elf_i386 -z noexecstack -o obj/kernel.bin -T $(ASM_SRC)/linker.ld obj/*.o target/i686-unknown-none/debug/libkfs_1.a
+$(RUST_LIB): $(RUST_SRCS) | $(TARGET_DIR)
+	@echo "Building Rust"
+	$(RUSTC) $(RUST_FLAGS)
+	@touch $(RUST_LIB)
 
-iso_basic : kernel_basic
-	@mkdir -p isofiles
-	@mkdir -p isofiles/boot
-	@mkdir -p isofiles/boot/grub
-	@cp $(SRC)/grub/grub.cfg isofiles/boot/grub
-	@cp obj/kernel.bin isofiles/boot/kernel.bin
+$(KERNEL_BIN): $(OBJ_DIR)/boot.o $(RUST_LIB) | $(OBJ_DIR)
+	@echo "Linking kernel"
+	$(LD) -o $@ -T $(ASM_SRC)/linker.ld $^
+
+$(ISO_FILE): $(KERNEL_BIN) | $(ISO_DIR)/boot/grub
 	@echo "Making ISO"
-	@grub-mkrescue -d /usr/lib/grub/i386-pc -o os.iso isofiles 2> /dev/null
+	cp $(SRC)/grub/grub.cfg $(ISO_DIR)/boot/grub
+	cp $(KERNEL_BIN) $(ISO_DIR)/boot/kernel.bin
+	$(GRUB_MKRESCUE) -o $@ $(ISO_DIR) 2> /dev/null
 
-boot_basic : qemu
+# Directory creation
+$(OBJ_DIR) $(ISO_DIR)/boot/grub $(TARGET_DIR):
+	mkdir -p $@
 
-build : iso_basic
-run : iso_basic
-	@qemu-system-i386 -cdrom os.iso -m 1G
-clean :
-	@cargo clean
-	@rm -rf obj
-	@rm -rf isofiles
-	@rm -rf os.iso
+clean:
+	cargo clean
+	rm -rf $(OBJ_DIR) $(ISO_DIR) $(ISO_FILE)
 
-	# Existing Makefile content...
-
-run-bochs: iso_basic
+# Run targets
+run-bochs: $(ISO_FILE)
 	bochs -q -f bochsrc.txt
