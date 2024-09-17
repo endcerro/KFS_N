@@ -1,16 +1,14 @@
 use core::fmt;
 
 #[derive(Debug, Copy, Clone)]
-pub struct MemoryInfo
-{
+pub struct MemoryInfo {
     pub header : *const MemoryInfoHeader,
     pub entry : MemoryInfoIterator
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct MemoryInfoHeader
-{
+pub struct MemoryInfoHeader {
     typee : u32,
     size : u32,
     entry_size : u32,
@@ -18,8 +16,7 @@ pub struct MemoryInfoHeader
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct MemoryInfoIterator 
-{
+pub struct MemoryInfoIterator {
     pub entry : *const MemoryInfoEntry,
     endpoint : *const MemoryInfoEntry
 }
@@ -51,12 +48,12 @@ impl fmt::Display for MemoryInfoEntry {
 }
 
 impl MemoryInfo {
-    pub fn new(ptr: *const MemoryInfoHeader) -> MemoryInfo 
+    pub fn new(ptr: *const MemoryInfoHeader) -> MemoryInfo
     {
         MemoryInfo {
             header : ptr,
-            entry : MemoryInfoIterator::new(unsafe { ptr.offset(1) as *const MemoryInfoEntry }, 
-            unsafe { (*ptr).size }) 
+            entry : MemoryInfoIterator::new(unsafe { ptr.offset(1) as *const MemoryInfoEntry },
+            unsafe { (*ptr).size })
         }
     }
 }
@@ -78,7 +75,7 @@ impl Iterator for MemoryInfoIterator {
             return None;
         }
         // let ret: MemoryInfoEntry = unsafe {*self.entry};
-        let ret = self.entry; 
+        let ret = self.entry;
         unsafe { self.entry = self.entry.offset(1);}
         return Some(ret);
     }

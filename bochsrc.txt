@@ -1,0 +1,33 @@
+# ROM and VGA BIOS images
+#romimage: file=/usr/share/bochs/BIOS-bochs-latest
+#vgaromimage: file=/usr/share/bochs/VGABIOS-lgpl-latest
+
+# Boot from the first hard disk (which will be our ISO)
+boot: disk
+
+# Path to your ISO file
+ata0-master: type=cdrom, path="/home/edal/Desktop/KFS_N/os.iso", status=inserted
+
+# RAM size (32MB)
+memory: guest=32, host=32
+
+# Bochs log file
+log: bochsout.txt
+
+# Disable the Bochs internal debugger
+magic_break: enabled=0
+
+# Enable GDB stub for remote debugging (uncomment if needed)
+#gdbstub: enabled=1, port=1234
+
+# Display configuration
+display_library: x, options="gui_debug"
+
+# CPU configuration
+cpu: count=1, ips=1000000
+
+# Enable logging of all interrupts (uncomment if needed)
+#debug: action=report
+
+# Clock configuration
+clock: sync=realtime, time0=local

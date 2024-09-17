@@ -4,29 +4,25 @@ use meminfo::{MemoryInfo, MemoryInfoEntry, MemoryInfoHeader};
 
 pub mod meminfo;
 #[derive(Debug, Copy, Clone)]
-pub struct MultibootInfo //Base strtuct to init
-{
+pub struct MultibootInfo { //Base strtuct to init
     pub header : *const MultibootInfoHeader,
     pub tag : MultibootInfoTagIterator
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct MultibootInfoHeader //Base content of the multiboot struct
-{
+pub struct MultibootInfoHeader { //Base content of the multiboot struct
     total_size : u32,
     reserverd : u32
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct MultibootInfoTagIterator
-{
+pub struct MultibootInfoTagIterator {
     pub tag : *const MultibootInfoTag
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct MultibootInfoTag
-{
+pub struct MultibootInfoTag {
     pub typee : u32,
     pub size : u32,
 }
@@ -44,18 +40,16 @@ impl MultibootInfo {
         let mut current_idx = 0;
         loop {
             match self.tag.next() {
-                Some(i) => 
-                {
-                    id_collected[current_idx] = unsafe { (*i).typee }; 
+                Some(i) => {
+                    id_collected[current_idx] = unsafe { (*i).typee };
                     current_idx +=1 ;
                     println!("{:#?}", i)
-                }
-                    ,
+                },
                 None => break
             }
         }
         print!("We collected : ");
-        for a in 0..current_idx 
+        for a in 0..current_idx
         {
             match a {
                 0 => (),
@@ -102,7 +96,7 @@ impl Iterator for MultibootInfoTagIterator {
             else {
                 let offset: u32 = match (*tag).size {
                     s if s % 8 == 0 => s,
-                    s => (s & !0x7) + 8 
+                    s => (s & !0x7) + 8
                 };
                 self.tag = ((self.tag as usize) + offset as usize) as *const MultibootInfoTag;
                 return Some(tag);
