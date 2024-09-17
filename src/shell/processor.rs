@@ -14,6 +14,7 @@ pub fn process_command(input: &str) {
             "clear" => commands::clear::run(),
             "list" => commands::list::run(parts),
             "custom" => commands::custom::run(parts),
+            "ft42" => commands::print_ft_42::run(),
             _ => print!("\n{SHELL_ID}Unknown command: {}", command),
         }
     }

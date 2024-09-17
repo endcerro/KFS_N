@@ -23,5 +23,5 @@ fn creator() {
 }
 
 fn commands() {
-    print!("\n list commands : \n\n echo\n clear\n list\n");    
+    print!("\n list commands : \n\n echo\n clear\n list\n ft42\n custom \n");    
 }
