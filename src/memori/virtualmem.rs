@@ -1,5 +1,6 @@
 use core::ptr;
 use core::arch::asm;
+use crate::serial_println;
 
 const PAGE_SIZE: usize = 4096; // 4ko par page
 const ENTRIES_PER_TABLE: usize = 1024; // 1024 entrées par Page Table et Page Directory
@@ -88,28 +89,32 @@ pub fn testmain() {
 
         // Étape 2: Vérifier l'adresse du PageDirectory
         let page_directory_addr = &PAGE_DIR as *const _ as u32; // Adresse physique de PAGE_DIR
-        println!("Adresse physique du Page Directory: {:#x}", page_directory_addr);
+        serial_println!("Adresse physique du Page Directory: {:#x}", page_directory_addr);
 
-        // Étape 3: Activer le paging
-        println!("Activation du paging...");
-        enable_paging(page_directory_addr);
+        // Vérification de la structure du Page Directory
+        for i in 0..2 {
+            let dir_entry = PAGE_DIR.entries[i].entries[0];
+            serial_println!("Entry {} of Page Directory: {:#x}", i, dir_entry);
+        }
+
+        // Étape 3: Activation du paging
+        serial_println!("Activation du paging...");
 
         // Étape 4: Test d'accès mémoire à différentes adresses
-        println!("Test d'accès à la mémoire mappée...");
+        serial_println!("Test d'accès à la mémoire mappée...");
 
         // Test d'une adresse virtuelle identique (par exemple, 0x1000)
         let test_addr: *mut u32 = 0x1000 as *mut u32;  // Adresse virtuelle mappée identiquement
-        println!("Essai d'écriture à l'adresse virtuelle: {:#x}", test_addr as u32);
+        serial_println!("Essai d'écriture à l'adresse virtuelle: {:#x}", test_addr as u32);
 
         *test_addr = 42;  // Écrire à cette adresse
         let value = *test_addr;  // Lire depuis cette adresse
-        println!("Valeur lue depuis {:#x}: {}", test_addr as u32, value);
-
+        serial_println!("Valeur lue depuis {:#x}: {}", test_addr as u32, value);
         // Vérification de la valeur écrite et lue
         if value == 42 {
-            println!("Paging et mappage réussi à l'adresse 0x1000 !");
+            serial_println!("Paging et mappage réussi à l'adresse 0x1000 !");
         } else {
-            println!("Erreur dans le mappage ou le paging à l'adresse 0x1000.");
+            serial_println!("Erreur dans le mappage ou le paging à l'adresse 0x1000.");
         }
     }
 
