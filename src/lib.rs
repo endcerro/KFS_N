@@ -13,6 +13,7 @@ pub mod interrupts;
 pub mod serial;
 pub mod shell;
 pub mod commands;
+pub mod memori;
 
 use core::{panic::PanicInfo, ptr::addr_of};
 

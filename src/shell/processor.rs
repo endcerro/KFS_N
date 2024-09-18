@@ -1,4 +1,5 @@
 use crate::commands;
+use crate::memori;
 
 static SHELL_ID : &str = "Minishell > ";
 
@@ -16,6 +17,7 @@ pub fn process_command(input: &str) {
             "custom" => commands::custom::run(parts),
             "ft42" => commands::print_ft_42::run(),
             "stack" => commands::print_stack::run(),
+            "testmem" => memori::virtualmem::testmain(),
             _ => print!("\n{SHELL_ID}Unknown command: {}", command),
         }
     }
