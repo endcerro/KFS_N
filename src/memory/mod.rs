@@ -104,10 +104,10 @@ pub fn init_paging() {
     // Test write to ensure paging is working
     unsafe {
         // Write a test value to a mapped address
-        *(0x1000 as *mut u32) = 0xdeadbeef;
+        *(0x1000 as *mut u32) = 42;
         // Read back the test value
         let value = *(0x1000 as *const u32);
-        print!("Test write and read at 0x1000: 0x{:x}\n", value);
+        print!("Test write and read at 0x1000: {}\n", value);
     }
 }
 

@@ -6,7 +6,7 @@
 pub mod vga;
 pub mod gdt;
 pub mod keyboard;
-//pub mod memory;
+pub mod memory;
 pub mod multiboot2;
 pub mod utils;
 pub mod interrupts;
@@ -17,6 +17,7 @@ pub mod commands;
 use core::{panic::PanicInfo, ptr::addr_of};
 
 use keyboard::{get_next_key_event, ControlKey, KeyCode, KeyEvent, CTRL, KEYBOARD};
+use memory::init_paging;
 use vga::{ColorCode, Direction, WRITER};
 
 
@@ -30,6 +31,7 @@ extern "C" {
 #[no_mangle]
 pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootInfoHeader) -> ! {
     init();
+    init_paging();
     // let size = addr_of!(_kernel_end) as u32 - addr_of!(_kernel_start) as u32 ;
     // println!("The size of this kernel is {} kbytes", size / (1024));
     // println!("The size of this kernel is {} mbytes", (size / (1024 * 1024)));
