@@ -43,7 +43,7 @@ impl Default for MemoryInfoEntry {
 
 impl fmt::Display for MemoryInfoEntry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Start: {:x}, length: {:x}, type {}", self.base_addr, self.length, self.typee)
+        write!(f, "Start: 0x{:x}, length: 0x{:x}, type {}", self.base_addr, self.length, self.typee)
     }
 }
 

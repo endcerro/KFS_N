@@ -1,6 +1,5 @@
 #![no_std]
 #![feature(abi_x86_interrupt)]
-#![feature(const_mut_refs)]
 #![no_main]
 #[macro_use]
 pub mod vga;
@@ -13,6 +12,7 @@ pub mod interrupts;
 pub mod serial;
 pub mod shell;
 pub mod commands;
+pub mod memory;
 
 use core::{panic::PanicInfo, ptr::addr_of};
 
@@ -28,8 +28,9 @@ extern "C" {
 }
 
 #[no_mangle]
-pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootInfoHeader) -> ! {
+pub extern "C" fn rust_main(_multiboot_struct_ptr: *mut multiboot2::MultibootInfoHeader) -> ! {
     init();
+    memory::init(_multiboot_struct_ptr);
     // let size = addr_of!(_kernel_end) as u32 - addr_of!(_kernel_start) as u32 ;
     // println!("The size of this kernel is {} kbytes", size / (1024));
     // println!("The size of this kernel is {} mbytes", (size / (1024 * 1024)));
