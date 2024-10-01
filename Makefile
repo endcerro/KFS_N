@@ -1,9 +1,9 @@
 # Directories
-ASM_SRC := src/arch/i686
+ASM_SRC := src/arch/i386
 SRC := src
 OBJ_DIR := obj
 ISO_DIR := isofiles
-TARGET_DIR := target/i686-unknown-none/debug
+TARGET_DIR := target/i386-unknown-none/debug
 
 # Files
 KERNEL_BIN := $(OBJ_DIR)/kernel.bin
@@ -14,7 +14,7 @@ RUST_LIB := $(TARGET_DIR)/libkfs_1.a
 RUST_SRCS := $(shell find $(SRC) -name '*.rs')
 
 # Commands
-RUSTC := cargo build --target $(ASM_SRC)/i686-unknown-none.json
+RUSTC := cargo build --target $(ASM_SRC)/i386-unknown-none.json
 NASM := nasm -f elf32
 LD := ld -m elf_i386 -z noexecstack
 GRUB_MKRESCUE := grub-mkrescue -d /usr/lib/grub/i386-pc
