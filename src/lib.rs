@@ -46,7 +46,7 @@ fn init() {
     vga::print_ft();
     gdt::init();
     interrupts::init();
-
+    shell::processor::init_shell();
 }
 
 #[panic_handler]

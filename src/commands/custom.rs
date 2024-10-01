@@ -1,63 +1,31 @@
-use crate::vga;
 use crate::vga::Color;
 use crate::WRITER;
 
 
-pub fn run(mut args: core::str::SplitWhitespace<'_>) {
+pub fn run(_args: &[&str]) {
 
-    let background;
-    let foreground;
-
-    background = match args.next() {
-       Some(bg) => bg,
-       None => {
-        describe();
-        return;
-       }
-    };
-
-    foreground = match args.next() {
-        Some(fg) => fg,
-        None => {
-            describe();
+    if  _args.len() == 1 && (_args[0] == "-h" || _args[0] == "--help") || _args.len() != 2 {
+            usage();
             return;
-        }
-    };
-
-    let back = Color::from_string(background);
-    let mut fore = Color::from_string(foreground);
-
-    if back == fore && back != Color::White {
-        fore = Color::White;
-    }
-    else if back == fore {
-        fore = Color::Black;
     }
 
-    vga::clear_screen();
-    WRITER.lock().change_color(Some(fore),Some( back));
-    vga::clear_screen();
+    let colors: (Result<Color, _>, Result<Color, _>) = (_args[0].parse(), _args[1].parse());
 
+    match colors {
+        (Ok(fg), Ok(bg)) if fg != bg => {
+            WRITER.lock().change_color(Some(fg), Some(bg));
+        },
+        (Ok(_), Ok(_)) => {
+            println!("Foreground and background colors must be different");
+        },
+        _ => println!("Invalid colors")
+    }
 }
 
-pub fn describe() {
-    print!("\n This function give you the possibility to change background 
-        and foreground color\n Here is a list of all color available
-        - black,
-        - blue,
-        - green,
-        - cyan,
-        - red,
-        - magenta,
-        - brown,
-        - lightgray,
-        - garkgray,
-        - lightblue,
-        - lightgreen,
-        - lightcyan,
-        - lightred,
-        - pink,
-        - yellow,
-        - white
-        Usage : custom background foreground");
+fn usage() {
+    print!("Change foreground and background color");
+    for color in Color::all() {
+        WRITER.lock().change_color(Some(color), None);
+        print!("\n{:?}", color);
+    }
 }

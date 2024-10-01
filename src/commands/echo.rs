@@ -1,5 +1,8 @@
-pub fn run(args: &str) {
-    let output : &str = args.get(5..).unwrap_or("");
-    
-    print!("\n{}", output);
+pub fn run(_args: &[&str]) {
+    print!("\n",);
+    for arg in _args
+    {
+        print!("{} ", arg);
+    }
+    // print!("\n{}", output);
 }

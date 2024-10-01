@@ -1,10 +1,10 @@
 use core::ptr::addr_of;
 
-use crate::{keyboard::{self, get_next_key_event, ControlKey, KeyCode, KeyEvent, CTRL, KEYBOARD}, shell::processor::{hello_shell, process_command}, utils, vga::{self, ColorCode, Direction, WRITER}};
+use crate::{keyboard::{self, get_next_key_event, ControlKey, KeyCode, KeyEvent, CTRL, KEYBOARD}, shell::processor::{hello_shell, SHELL}, utils, vga::{self, ColorCode, Direction, WRITER}};
 #[allow(static_mut_refs)]
 pub mod echo;
 pub mod clear;
-pub mod list;
+pub mod credits;
 pub mod custom;
 pub mod print_ft_42;
 pub mod print_stack;
@@ -37,7 +37,9 @@ pub fn shell() -> ! {
             paint();
         } else {
             let len = keyboard::get_input_string();
-            process_command(len);
+            unsafe {
+                SHELL.run_command(len);
+            }
         }
 
     }

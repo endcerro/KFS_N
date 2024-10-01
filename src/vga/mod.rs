@@ -50,7 +50,6 @@ pub enum Color {
 	Pink = 13,
 	Yellow = 14,
 	White = 15
-
 }
 impl Color {
 	fn cycle(&self) -> Self {
@@ -74,29 +73,36 @@ impl Color {
 			White => Black
 		}
 	}
+	pub fn all() -> impl Iterator<Item = Color> {
+        (0..=15).map(|i| unsafe { core::mem::transmute(i as u8) })
+    }
 
-	pub fn from_string(s: &str)-> Color {
-		match s {
-			"black" => Color::Black,
-			"blue" => Color::Blue,
-			"green" => Color::Green,
-			"cyan" => Color::Cyan,
-			"red" => Color::Red,
-			"magenta" => Color::Magenta,
-			"brown" => Color::Brown,
-			"lightgray" => Color::LightGray,
-			"darkgray" => Color::DarkGray,
-			"lightblue" => Color::LightBlue,
-			"lightgreen" => Color::LightGreen,
-			"lightcyan" => Color::LightCyan,
-			"lightred" => Color::LightRed,
-			"pink" => Color::Pink,
-			"yellow" => Color::Yellow,
-			"white" => Color::White,
-			_=> Color::Black,
+}
 
-		}
-	}
+impl core::str::FromStr for Color {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "black" => Ok(Color::Black),
+            "blue" => Ok(Color::Blue),
+            "green" => Ok(Color::Green),
+            "cyan" => Ok(Color::Cyan),
+            "red" => Ok(Color::Red),
+            "magenta" => Ok(Color::Magenta),
+            "brown" => Ok(Color::Brown),
+            "lightgray" => Ok(Color::LightGray),
+            "darkgray" => Ok(Color::DarkGray),
+            "lightblue" => Ok(Color::LightBlue),
+            "lightgreen" => Ok(Color::LightGreen),
+            "lightcyan" => Ok(Color::LightCyan),
+            "lightred" => Ok(Color::LightRed),
+            "pink" => Ok(Color::Pink),
+            "yellow" => Ok(Color::Yellow),
+            "white" => Ok(Color::White),
+            _ => Err(()),
+        }
+    }
 }
 
 #[repr(transparent)]
