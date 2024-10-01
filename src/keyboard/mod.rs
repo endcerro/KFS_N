@@ -1,10 +1,12 @@
 // keyboard.rs
-
+#[allow(static_mut_refs)]
 use core::fmt;
 
-
+mod layouts;
 // Constants
 const BUFFER_SIZE: usize = 256;
+
+const CURRENT_LAYOUT : layouts::Layout = layouts::_AZERTY_LAYOUT;
 
 // Bitflags for modifiers
 pub const SHIFT: u8 = 0b0000_0001;
@@ -87,7 +89,7 @@ pub struct Keyboard {
     input_len: usize,
     finished_buffer: [u8; BUFFER_SIZE],
     finished_len: usize,
-    just_deleted : bool
+    just_deleted : bool,
 }
 
 impl Keyboard {
@@ -164,14 +166,7 @@ pub fn handle_scancode(&mut self, scancode: u8) {
     }
 
     fn scancode_to_char(&self, scancode: u8) -> Option<char> {
-        let qwerty_layout = [
-            '\0', '\x1B', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\x08',
-            '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
-            '\0', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',
-            '\0', '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/',
-            '\0', '*', '\0', ' '
-        ];
-        qwerty_layout.get(scancode as usize).copied().filter(|&c| c != '\0')
+        CURRENT_LAYOUT.get(scancode as usize).copied().filter(|&c| c != '\0')
     }
 
     fn update_modifiers(&mut self, event: &KeyEvent) {
@@ -266,7 +261,11 @@ pub fn handle_scancode(&mut self, scancode: u8) {
     }
 }
 
+
+
 // Global keyboard instance
+
+#[allow(static_mut_refs)]
 pub static mut KEYBOARD: Keyboard = Keyboard::new();
 
 // Public interface
