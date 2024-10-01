@@ -72,8 +72,10 @@ $(OBJ_DIR) $(ISO_DIR)/boot/grub $(TARGET_DIR):
 	mkdir -p $@
 
 clean:
-	cargo clean
 	rm -rf $(OBJ_DIR) $(ISO_DIR) $(ISO_FILE)
+
+fclean: clean
+	cargo clean
 
 # Run targets
 run-bochs: $(ISO_FILE)
