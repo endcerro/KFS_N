@@ -31,7 +31,7 @@ all: $(ISO_FILE)
 
 kvm: $(ISO_FILE)
 	@echo "Starting with KVM"
-	$(KVM) -name kfs -cdrom $(ISO_FILE) -boot c
+	$(KVM) -name kfs -cdrom $(ISO_FILE) -boot c -cpu host
 
 qemu: $(ISO_FILE)
 	@echo "Starting with QEMU"
@@ -79,6 +79,8 @@ clean:
 
 fclean: clean
 	cargo clean
+
+re: fclean all
 
 # Run targets
 run-bochs: $(ISO_FILE)

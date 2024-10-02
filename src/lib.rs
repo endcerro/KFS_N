@@ -47,11 +47,11 @@ fn init() {
     vga::clear_screen();
     vga::print_ft();
 
-    memory::init();
+    // memory::init();
 
-    // gdt::init();
-    // interrupts::init();
-    // shell::init_shell();
+    gdt::init();
+    interrupts::init();
+    shell::init_shell();
 }
 
 #[panic_handler]
