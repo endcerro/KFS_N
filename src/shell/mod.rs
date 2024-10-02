@@ -1,13 +1,14 @@
 use crate::keyboard;
 use crate::vga;
 use crate::keyboard::*;
+use crate::vga::Color;
 pub mod commands;
 use commands::{*, paint};
 
 const MAX_COMMANDS: usize = 20;
 const _MAX_COMMAND_LENGTH: usize = 20;
 const MAX_ARGS: usize = 10;
-static SHELL_ID : &str = "Minishell > ";
+static SHELL_ID : &str = "kernel@ring0:/#";
 #[derive(Clone, Copy)]
 struct Command {
     name: &'static str,
@@ -58,7 +59,8 @@ impl Shell {
                     return;
                 }
             }
-            print!("\n{SHELL_ID}Unknown command: {}", command);
+            hello_shell();
+            print!("Unknown command: {}", command);
         }
     }
 
@@ -82,7 +84,7 @@ pub fn init_shell() {
 }
 
 pub fn hello_shell () {
-    print!("\n{}", SHELL_ID);
+    colored_print!((Some(Color::Red), Some(Color::Black)), "\n{SHELL_ID} ");
 }
 
 pub fn shell_loop() -> ! {

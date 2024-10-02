@@ -1,3 +1,5 @@
+use crate::serial_println;
+
 pub fn print_kernel_stack() {
     let stack_top : *const usize;
     let stack_bottom : *const usize;
@@ -11,11 +13,13 @@ pub fn print_kernel_stack() {
     while current != stack_top {
         unsafe  {
             println!("{:p}:{:20x}", current,*current);
+            serial_println!("{:p}:{:20x}", current,*current);
             current = current.offset(1);
         }
     }
     unsafe {
         println!("{:p}:{:20x}", current, *current);
+        serial_println!("{:p}:{:20x}", current, *current);
     }
 
 }

@@ -8,7 +8,7 @@ TARGET_DIR := target/i386-unknown-none/debug
 # Files
 KERNEL_BIN := $(OBJ_DIR)/kernel.bin
 ISO_FILE := os.iso
-RUST_LIB := $(TARGET_DIR)/libkfs_1.a
+RUST_LIB := $(TARGET_DIR)/libkfs.a
 
 # Find all Rust source files
 RUST_SRCS := $(shell find $(SRC) -name '*.rs')
@@ -72,6 +72,7 @@ $(OBJ_DIR) $(ISO_DIR)/boot/grub $(TARGET_DIR):
 	mkdir -p $@
 
 clean:
+	cargo clean -p kfs
 	rm -rf $(OBJ_DIR) $(ISO_DIR) $(ISO_FILE)
 
 fclean: clean

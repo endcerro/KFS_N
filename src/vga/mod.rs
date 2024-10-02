@@ -295,6 +295,9 @@ impl Writer {
 		}
 		self.color_code = ColorCode::new(self.foreground, self.background);
 	}
+	pub fn get_color(& self) -> (Color, Color) {
+		(self.foreground, self.background)
+	}
 }
 
 
@@ -341,6 +344,21 @@ pub fn print_ft() {
 macro_rules! print {
 	($($arg:tt)*) => ($crate::vga::_print(format_args!($($arg)*)));
 }
+#[macro_export]
+macro_rules! colored_println {
+    () => ($crate::print!("\n"));
+    (($fg:expr, $bg:expr), $($arg:tt)*) => {{
+        $crate::colored_print!(($fg, $bg), $($arg)*);
+        $crate::print!("\n");
+    }};
+}
+
+macro_rules! colored_print {
+    (($fg:expr, $bg:expr), $($arg:tt)*) => {{
+         $crate::vga::_print_color(format_args!($($arg)*), ($fg, $bg));
+     }};
+}
+
 
 #[macro_export]
 macro_rules! println {
@@ -352,6 +370,15 @@ macro_rules! println {
 pub fn _print(args: core::fmt::Arguments) {
 	use core::fmt::Write;
 	WRITER.lock().write_fmt(args).unwrap();
+}
+
+#[doc(hidden)]
+pub fn _print_color(args: core::fmt::Arguments, colors : (Option<Color>,Option<Color>)) {
+	use core::fmt::Write;
+	let (oldfg, oldbg) = WRITER.lock().get_color();
+	WRITER.lock().change_color(colors.0, colors.1);
+	WRITER.lock().write_fmt(args).unwrap();
+	WRITER.lock().change_color(Some(oldfg), Some(oldbg));
 }
 
 
