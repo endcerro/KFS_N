@@ -7,7 +7,6 @@ pub fn print_kernel_stack() {
             out(reg) stack_top, out(reg) stack_bottom,
         );
     }
-    // print!("Top : {:p}, Bottom : {:p}", stack_top, stack_bottom);
     let mut current : *const usize = stack_bottom;
     while current != stack_top {
         unsafe  {
@@ -20,6 +19,7 @@ pub fn print_kernel_stack() {
     }
 
 }
+
 pub fn memcpy(dest : *mut u8, src : *const u8, size : usize) {
     if dest.is_null() || src.is_null() {
         panic!("memcpy called with null pointers");
@@ -58,4 +58,15 @@ pub unsafe fn enable_interrupts(enable : bool) {
     } else {
         core::arch::asm!("cli", options(nomem, nostack));
     }
+}
+
+pub struct Cursor {
+	pub x : usize,
+	pub y : usize
+}
+pub enum Direction {
+	Top,
+	Down,
+	Left,
+	Right
 }

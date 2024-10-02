@@ -12,12 +12,11 @@ pub mod utils;
 pub mod interrupts;
 pub mod serial;
 pub mod shell;
-pub mod commands;
 
-use crate::commands::shell;
 use core::panic::PanicInfo;
 
 use vga::WRITER;
+use shell::shell_loop;
 
 
 // use keyboard::{KeyCode, KEYBOARD_BUFFER};
@@ -35,7 +34,7 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     // println!("The size of this kernel is {} mbytes", (size / (1024 * 1024)));
     // serial_println!("Hello from serial port!");
     // serial_println!("Kernel size: {} kbytes", size / 1024);
-    shell();
+    shell_loop();
 
 }
 fn init() {
@@ -46,7 +45,7 @@ fn init() {
     vga::print_ft();
     gdt::init();
     interrupts::init();
-    shell::processor::init_shell();
+    shell::init_shell();
 }
 
 #[panic_handler]

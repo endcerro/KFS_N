@@ -153,6 +153,8 @@ pub struct Writer {
 use spin::Mutex;
 use lazy_static::lazy_static;
 
+use crate::utils::{Cursor, Direction};
+
 lazy_static! {
 	pub static ref WRITER : Mutex<Writer> = Mutex::new(Writer::new());
 }
@@ -353,16 +355,7 @@ pub fn _print(args: core::fmt::Arguments) {
 }
 
 
-pub struct Cursor {
-	pub x : usize,
-	pub y : usize
-}
-pub enum Direction {
-	Top,
-	Down,
-	Left,
-	Right
-}
+
 
 impl Cursor {
 	pub const fn new() -> Self
