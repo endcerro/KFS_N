@@ -11,13 +11,17 @@ set print array-indexes on
 set print elements 100
 
 # Don't stop on SIGSEGV, as this is common during kernel development
-handle SIGSEGV nostop noprint pass
+# handle SIGSEGV nostop noprint pass
 
 # Load symbols from the kernel binary
 file isofiles/boot/kernel.bin
 
 # Connect to QEMU's GDB stub (assuming QEMU is running with -s option)
 target remote localhost:1234
+
+# Prefer Rust source when available
+set language rust
+set disassemble-next-line auto
 
 # Set a breakpoint at the kernel entry point
 break start
@@ -51,6 +55,7 @@ define dump_page_table
         set $i = $i + 1
     end
 end
+directory src/
 
 # Continue execution
 continue

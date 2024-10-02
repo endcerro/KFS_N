@@ -43,7 +43,7 @@ qemu_dbg: $(ISO_FILE)
 
 dbg:
 	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio &
-	gdb -x gdb_init.gdb
+	gdb -x gdb_init.gdb isofiles/kernel.bin
 	pkill qemu
 
 rust_dbg: $(KERNEL_BIN)

@@ -40,8 +40,8 @@ impl Paging {
         self.page_directory.entries[0] = addr_of!(self.page_tables[0]) as u32 | 0x3; // Present + Writable
 
         // Map kernel to higher half (0xC0000000)
-        let kernel_page_index = 0xC0000000 / (PAGE_SIZE * PAGE_TABLE_ENTRIES);
-        self.page_directory.entries[kernel_page_index] = addr_of!(self.page_tables[0]) as u32 | 0x3;
+        // let kernel_page_index = 0xC0000000 / (PAGE_SIZE * PAGE_TABLE_ENTRIES);
+        // self.page_directory.entries[kernel_page_index] = addr_of!(self.page_tables[0]) as u32 | 0x3;
 
         // Load page directory
         unsafe {
@@ -57,7 +57,6 @@ impl Paging {
                 "mov cr0, eax"
             );
         }
-        println!("Paging ok !");
     }
 }
 

@@ -47,13 +47,11 @@ fn init() {
     vga::clear_screen();
     vga::print_ft();
 
-    // unsafe { PAGING.init();
-    // Paging::enable_paging();
-//  };
+    memory::init();
 
-    gdt::init();
-    interrupts::init();;
-    shell::init_shell();
+    // gdt::init();
+    // interrupts::init();
+    // shell::init_shell();
 }
 
 #[panic_handler]
