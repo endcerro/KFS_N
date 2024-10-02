@@ -42,7 +42,9 @@ qemu_dbg: $(ISO_FILE)
 	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio
 
 dbg:
-	gdb "$(ISO_DIR)/boot/kernel.bin" -ex "1234"
+	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio &
+	gdb -x gdb_init.gdb
+	pkill qemu
 
 rust_dbg: $(KERNEL_BIN)
 	$(QEMU) -cdrom $(ISO_FILE) -serial stdio

@@ -6,6 +6,7 @@
 pub mod vga;
 pub mod gdt;
 pub mod keyboard;
+pub mod memory;
 //pub mod memory;
 pub mod multiboot2;
 pub mod utils;
@@ -15,6 +16,7 @@ pub mod shell;
 
 use core::panic::PanicInfo;
 
+use memory::paging::{Paging, PAGING};
 use vga::WRITER;
 use shell::shell_loop;
 
@@ -35,6 +37,7 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     // serial_println!("Hello from serial port!");
     // serial_println!("Kernel size: {} kbytes", size / 1024);
     shell_loop();
+    loop{}
 
 }
 fn init() {
@@ -43,8 +46,13 @@ fn init() {
     serial::init();
     vga::clear_screen();
     vga::print_ft();
+
+    // unsafe { PAGING.init();
+    // Paging::enable_paging();
+//  };
+
     gdt::init();
-    interrupts::init();
+    interrupts::init();;
     shell::init_shell();
 }
 
