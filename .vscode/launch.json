@@ -11,7 +11,18 @@
         "cwd": "${workspaceRoot}",
         "valuesFormatting": "parseText",
         "gdbpath": "gdb",
-        "preLaunchTask": "Run QEMU"
+        "preLaunchTask": "Run QEMU",
+        "postDebugTask": "Kill QEMU",
+        "linux": {
+                "terminal": "integrated"
+            }
       }
+    ],
+    "compounds": [
+        {
+            "name": "Debug with QEMU Serial",
+            "configurations": ["Attach to QEMU"],
+            "preLaunchTask": "Tail QEMU Serial"
+        }
     ]
   }

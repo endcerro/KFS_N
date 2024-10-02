@@ -48,7 +48,7 @@ fn init() {
     vga::print_ft();
 
     // memory::init();
-
+    serial_print!("SAMPLE");
     gdt::init();
     interrupts::init();
     shell::init_shell();

@@ -39,7 +39,7 @@ qemu: $(ISO_FILE)
 
 qemu_dbg: $(ISO_FILE)
 	@echo "Starting with QEMU in debug mode"
-	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio
+	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial file:/tmp/qemu_serial.log
 
 dbg:
 	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio &

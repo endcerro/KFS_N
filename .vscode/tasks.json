@@ -3,7 +3,7 @@
     "tasks": [
         {
             "label": "Run QEMU",
-            "type": "shell",
+            "type": "process",
             "command": "make",
             "args": ["qemu_dbg"],
             "isBackground": true,
@@ -24,6 +24,21 @@
                     }
                 }
             ]
+        },
+        {
+            "label": "Kill QEMU",
+            "type": "shell",
+            "command": "pkill",
+            "args": ["-f", "qemu-system-i386"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Tail QEMU Serial",
+            "type": "shell",
+            "command": "tail",
+            "args": ["-f", "/tmp/qemu_serial.log"],
+            "isBackground": true,
+            "problemMatcher": []
         }
     ]
 }
