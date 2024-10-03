@@ -9,7 +9,8 @@ panic = "abort"
 debug = true
 [profile.release]
 panic = "abort"
-
+[target.'cfg(target_os = "none")']
+rustflags = ["-C", "link-arg=-Tlinker.ld"]
 [features]
 gdt_test = []
 verbose = []
