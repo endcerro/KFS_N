@@ -28,16 +28,13 @@ extern "C" {
 
 #[no_mangle]
 pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootInfoHeader)  {
-    vga::clear_screen();
-    vga::print_ft();
+    // vga::clear_screen();
+    // vga::print_ft();
     unsafe {
         utils::enable_interrupts(false);
     }
-    println!("Init paging...");
 
-    memory::init();
-    // println!("Paging ok");
-    loop{}
+    // loop{}
 
     init();
     // let size = addr_of!(_kernel_end) as u32 - addr_of!(_kernel_start) as u32 ;
@@ -49,11 +46,16 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
 
 }
 fn init() {
+    vga::clear_screen();
+    vga::print_ft();
+    println!("Init paging...");
+
+    memory::init();
+    println!("Paging ok");
+
     WRITER.lock().change_color(Some(vga::Color::White), Some(vga::Color::Black));
     WRITER.lock().cursor.enable_cursor(0, 15);
     serial::init();
-    vga::clear_screen();
-    vga::print_ft();
 
     serial_print!("SAMPLE");
     gdt::init();
