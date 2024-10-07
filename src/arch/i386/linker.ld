@@ -9,9 +9,10 @@ ENTRY(start)
 /* Define the program headers we want in our kernel */
 PHDRS
 {
-  text    PT_LOAD FLAGS(5) ; /* Read + Execute */
-  rodata  PT_LOAD FLAGS(4) ; /* Read only */
-  data    PT_LOAD FLAGS(6) ; /* Read + Write */
+    boot    PT_LOAD FLAGS(5) ; /* Read + Execute */
+    text    PT_LOAD FLAGS(5) ; /* Read + Execute */
+    rodata  PT_LOAD FLAGS(4) ; /* Read only */
+    data    PT_LOAD FLAGS(6) ; /* Read + Write */
 }
 
 /* Define the sections in our kernel */
@@ -23,9 +24,12 @@ SECTIONS {
 
     /* First put the multiboot header, as it is required to be put very early
        in the image or the bootloader won't recognize the file format */
-    .multiboot_header ALIGN(4K) : {
+    .boot ALIGN(4K) : {
         KEEP(*(.multiboot_header))
-    } :text
+        *(.boot .boot.*)
+    } :boot
+
+    _kernel_start = .;
 
     /* Then the text section */
     .text ALIGN(4K) : {
