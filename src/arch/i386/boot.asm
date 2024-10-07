@@ -30,6 +30,7 @@ start :
 	call boot
 	jmp kernel_hello
 
+global kernel_hello
 kernel_hello:
 	mov dword [0xb8000], 0x4f524f45 ; "ER"
 	mov dword [0xb8004], 0x4f3a4f52 ; "R:"
@@ -52,3 +53,18 @@ align 16
 stack_bottom:
 		resb 4096*4
 stack_top:
+
+
+global page_directory
+
+section .data
+align 4096
+page_directory:
+    times 1024 dd 0
+align 4096
+identity_page_table:
+    times 1024 dd 0
+
+align 4096
+higher_half_page_table:
+    times 1024 dd 0
