@@ -8,6 +8,10 @@ pub mod paging;
 pub mod pageflags;
 
 
+extern "C" {
+    static page_directory: [u32; 1024];
+}
+
 pub struct Paging {
     page_directory: PageDirectory,
     page_tables: [PageTable; PAGE_DIRECTORY_ENTRIES],
@@ -23,7 +27,7 @@ impl Paging {
     pub const fn new() -> Self {
         const EMPTY_PAGE_TABLE: PageTable = PageTable { entries: [0; PAGE_TABLE_ENTRIES] };
         Paging {
-            page_directory: PageDirectory { entries: [0; PAGE_DIRECTORY_ENTRIES] },
+            page_directory: PageDirectory::default(),//= PageDirectory::default(),
             page_tables: [EMPTY_PAGE_TABLE; PAGE_DIRECTORY_ENTRIES],
         }
     }
@@ -55,7 +59,7 @@ impl Paging {
 
         // Load page directory
         unsafe {
-            core::arch::asm!("mov cr3, {}", in(reg) &self.page_directory as *const _ as u32);
+            core::arch::asm!("mov cr3, {}", in(reg) &page_directory as *const _ as u32);
         }
     }
 

@@ -28,7 +28,7 @@ section .boot
 
 start : 
 	call boot
-	jmp kernel_hello
+	;jmp kernel_hello
 
 global kernel_hello
 kernel_hello:
@@ -56,6 +56,8 @@ stack_top:
 
 
 global page_directory
+global identity_page_table
+global higher_half_page_table
 
 section .data
 align 4096

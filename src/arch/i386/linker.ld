@@ -4,7 +4,7 @@ OUTPUT_FORMAT(elf32-i386)
 OUTPUT_ARCH(i386)
 
 /* Entry point of the kernel */
-ENTRY(start)
+ENTRY(higher_half_start)
 
 KERNEL_VMA = 0xC0000000;
 KERNEL_LMA = 0x00100000;  /* Typically 1MB */
@@ -31,27 +31,27 @@ SECTIONS {
         *(.boot .boot.*)
     } :boot
 
-    . += KERNEL_VMA;
+    /* . += KERNEL_VMA; */
 
     _kernel_start = .;
 
     /* Then the text section */
-    .text ALIGN(4K) : AT(ADDR(.text) - KERNEL_VMA) {
+    .text ALIGN(4K) : /*AT(ADDR(.text) - KERNEL_VMA)*/ {
         *(.text .text.*)
     } :text
 
     /* Read-only data */
-    .rodata ALIGN(4K) : AT(ADDR(.rodata) - KERNEL_VMA) {
+    .rodata ALIGN(4K) : /*AT(ADDR(.rodata) - KERNEL_VMA)*/ {
         *(.rodata .rodata.*)
     } :rodata
 
     /* Read-write data (initialized) */
-    .data ALIGN(4K) : AT(ADDR(.data) - KERNEL_VMA) {
+    .data ALIGN(4K) : /*AT(ADDR(.data) - KERNEL_VMA)*/ {
         *(.data .data.*)
     } :data
 
     /* Read-write data (uninitialized) and stack */
-    .bss ALIGN(4K) : AT(ADDR(.bss) - KERNEL_VMA) {
+    .bss ALIGN(4K) : /*AT(ADDR(.bss) - KERNEL_VMA)*/ {
         *(COMMON)
         *(.bss .bss.*)
     } :data
