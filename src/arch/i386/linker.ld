@@ -4,7 +4,7 @@ OUTPUT_FORMAT(elf32-i386)
 OUTPUT_ARCH(i386)
 
 /* Entry point of the kernel */
-ENTRY(higher_half_start)
+ENTRY(start)
 
 KERNEL_VMA = 0xC0000000;
 KERNEL_LMA = 0x00100000;  /* Typically 1MB */

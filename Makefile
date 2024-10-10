@@ -15,7 +15,7 @@ RUST_SRCS := $(shell find $(SRC) -name '*.rs')
 
 # Commands
 RUSTC := cargo build --target $(ASM_SRC)/i386-unknown-none.json
-NASM := nasm -f elf32
+NASM := nasm -g -f elf32
 LD := ld -m elf_i386 -z noexecstack
 GRUB_MKRESCUE := grub-mkrescue -d /usr/lib/grub/i386-pc
 QEMU := qemu-system-i386
@@ -54,12 +54,17 @@ $(OBJ_DIR)/boot.o: $(ASM_SRC)/boot.asm | $(OBJ_DIR)
 	@echo "Building ASM"
 	$(NASM) $< -o $@
 
+	# Build rules
+$(OBJ_DIR)/bootstrap.o: $(ASM_SRC)/bootstrap.asm | $(OBJ_DIR)
+	@echo "Building ASM"
+	$(NASM) $< -o $@
+
 $(RUST_LIB): $(RUST_SRCS) | $(TARGET_DIR)
 	@echo "Building Rust"
 	$(RUSTC) $(RUST_FLAGS)
 	@touch $(RUST_LIB)
 
-$(KERNEL_BIN): $(OBJ_DIR)/boot.o $(RUST_LIB) | $(OBJ_DIR)
+$(KERNEL_BIN): $(OBJ_DIR)/boot.o $(OBJ_DIR)/bootstrap.o $(RUST_LIB) | $(OBJ_DIR)
 	@echo "Linking kernel"
 	$(LD) -o $@ -T $(ASM_SRC)/linker.ld $^
 

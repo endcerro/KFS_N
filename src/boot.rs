@@ -9,12 +9,8 @@ extern "C"
 #[link_section = ".boot"]
 pub unsafe extern "C" fn boot() -> ! {
   
-  unsafe {
-    kernel_hello();
-
-  }
-  // println!("Sample text from boot");
+  // Set up identity mapping for first 4
   loop {
-      
+    kernel_hello();
   }
 }

@@ -1,8 +1,10 @@
 ;https://www.gnu.org/software/grub/manual/multiboot2/html_node/boot_002eS.html#boot_002eS
 extern rust_main
 extern boot
+extern page_directory
 global stack_top
 global stack_bottom
+global higher_half_start
 global start
 
 section .boot
@@ -25,10 +27,11 @@ header_start:
 header_end:
 
 section .boot
-
+extern setup_paging
 start : 
-	call boot
-	;jmp kernel_hello
+	mov esp, stack_top
+	call setup_paging
+    call rust_main
 
 global kernel_hello
 kernel_hello:
@@ -40,8 +43,16 @@ kernel_hello:
 section .text
 
 higher_half_start:
-	mov esp, stack_top               ; Enable the stack.
+    mov esp, stack_top
+
+	; mov esp, stack_top               ; Enable the stack.
+	; mov dword [page_directory], 0     ; Unmap the identity mapping
 	; push arguments https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html#Boot-information-format
+	
+	; Flush TLB
+	; mov eax, cr3
+    ; mov cr3, eax
+
 	push ebx ; address of Multiboot2 information structure
 	;push eax ; magic value for MultiBoot2 should be 0x36d76289
 	call rust_main
@@ -55,18 +66,18 @@ stack_bottom:
 stack_top:
 
 
-global page_directory
-global identity_page_table
-global higher_half_page_table
+; global page_directory
+; global identity_page_table
+; global higher_half_page_table
 
-section .data
-align 4096
-page_directory:
-    times 1024 dd 0
-align 4096
-identity_page_table:
-    times 1024 dd 0
+; section .data
+; align 4096
+; page_directory:
+;     times 1024 dd 0
+; align 4096
+; identity_page_table:
+;     times 1024 dd 0
 
-align 4096
-higher_half_page_table:
-    times 1024 dd 0
+; align 4096
+; higher_half_page_table:
+;     times 1024 dd 0
