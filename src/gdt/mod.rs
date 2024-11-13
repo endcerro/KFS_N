@@ -38,9 +38,10 @@ extern "C" {
 pub fn init() {
 	let tss_addr : u32;
 	let tss_limit : u32;
+	let stack_phys = (addr_of!(stack_top) as u32) - KERNEL_VIRTUAL_BASE;
 	unsafe {
-		tss::TSS.init(addr_of!(stack_top) as u32).expect("Unvalid TSS stack address");
-		tss_addr = core::ptr::addr_of!(tss::TSS) as *const TssSegment as u32;
+		tss::TSS.init(stack_phys).expect("Unvalid TSS stack address");
+		tss_addr = core::ptr::addr_of!(tss::TSS) as *const TssSegment as u32 - KERNEL_VIRTUAL_BASE;
 		tss_limit = tss_addr + size_of::<TssSegment>() as u32 - 1;
 	}
 	#[cfg(feature = "verbose")]
@@ -48,12 +49,12 @@ pub fn init() {
 
 	let segments : [SegmentDescriptor; GDTSIZE] = [
 		SegmentDescriptor::new(0, 0, 0, 0), //Null segment 0x0
-		SegmentDescriptor::new(0, 0xFFFF, 0x9A, 0xCF), //Kernel Code 0x8
-		SegmentDescriptor::new(0, 0xFFFF, 0x92, 0xCF), //Kernel Data 0x10
-		SegmentDescriptor::new(0, 0xFFFF, 0x96, 0xCF), //Kernel Stack 0x18
-		SegmentDescriptor::new(0, 0xFFFF, 0xFA, 0xCF), //User code 0x20
-		SegmentDescriptor::new(0, 0xFFFF, 0xF2, 0xCF), //User data 0x28
-		SegmentDescriptor::new(0, 0xFFFF, 0xF6, 0xCF), //User stack 0x30
+		SegmentDescriptor::new(0, 0xFFFFFFFF, 0x9A, 0xCF), //Kernel Code 0x8
+		SegmentDescriptor::new(0, 0xFFFFFFFF, 0x92, 0xCF), //Kernel Data 0x10
+		SegmentDescriptor::new(0, 0xFFFFFFFF, 0x96, 0xCF), //Kernel Stack 0x18
+		SegmentDescriptor::new(0, 0xFFFFFFFF, 0xFA, 0xCF), //User code 0x20
+		SegmentDescriptor::new(0, 0xFFFFFFFF, 0xF2, 0xCF), //User data 0x28 
+		SegmentDescriptor::new(0, 0xFFFFFFFF, 0xF6, 0xCF), //User stack 0x30
 		SegmentDescriptor::new(tss_addr, tss_limit, 0xE9, 0x0) //Tss Segment 0x38
 		];
 		#[cfg(feature = "verbose")]
@@ -61,7 +62,7 @@ pub fn init() {
 
 	let gdtr : GdtDescriptor = GdtDescriptor {
 		size : (size_of::<SegmentDescriptor>() * segments.len() - 1) as u16,
-		address : GDTADDR
+		address : (GDTADDR - KERNEL_VIRTUAL_BASE as usize)
 	};
 	unsafe {
 		memcpy(gdtr.address as *mut u8, segments.as_ptr() as *const u8,  segments.len() * size_of::<SegmentDescriptor>() as usize);
