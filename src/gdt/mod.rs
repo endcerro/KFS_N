@@ -62,7 +62,7 @@ pub fn init() {
 
 	let gdtr : GdtDescriptor = GdtDescriptor {
 		size : (size_of::<SegmentDescriptor>() * segments.len() - 1) as u16,
-		address : (GDTADDR - KERNEL_VIRTUAL_BASE as usize)
+		address : GDTADDR
 	};
 	unsafe {
 		memcpy(gdtr.address as *mut u8, segments.as_ptr() as *const u8,  segments.len() * size_of::<SegmentDescriptor>() as usize);

@@ -19,7 +19,8 @@
 	pixel buffer
  */
 
-pub const VGA_BUFFER_ADDR : u32 = 0xb8000;
+// pub const VGA_BUFFER_ADDR : u32 = 0x   b8000;
+pub const VGA_BUFFER_ADDR : u32 = 0xC00b8000;
 
 pub const HEADER_42 : &str =
 "         :::        ::::::::

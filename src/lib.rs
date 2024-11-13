@@ -35,14 +35,13 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     //     utils::enable_interrupts(false);
     // }
 
-    
     init();
     // let size = addr_of!(_kernel_end) as u32 - addr_of!(_kernel_start) as u32 ;
     // println!("The size of this kernel is {} kbytes", size / (1024));
     // println!("The size of this kernel is {} mbytes", (size / (1024 * 1024)));
     // serial_println!("Hello from serial port!");
     // serial_println!("Kernel size: {} kbytes", size / 1024);
-    // shell_loop();
+    shell_loop();
     loop{}
 
 }
@@ -63,8 +62,8 @@ fn init() {
     gdt::init();
     println!("GDT OK ");
 
-    // interrupts::init();
-    // shell::init_shell();
+    interrupts::init();
+    shell::init_shell();
 }
 
 #[panic_handler]
