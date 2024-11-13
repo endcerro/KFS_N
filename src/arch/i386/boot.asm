@@ -2,12 +2,9 @@
 extern rust_main
 extern boot
 extern page_directory
-global stack_top
-global stack_bottom
 global higher_half_start
-global start
 
-section .boot
+section .boot.multboot2header
 MULTIBOOT_MAGIC equ 0xe85250d6        ; Magic number for multiboot 2.
 ARCHITECTURE    equ 0                 ; Protected mode i386 architecture.
 SCREEN_BASE     equ 0xb8000           ; VGA Buffer address
@@ -28,12 +25,8 @@ header_end:
 
 section .boot
 extern setup_paging
-start : 
-	mov esp, stack_top
-	call setup_paging
-    call rust_main
 
-global kernel_hello
+; global kernel_hello
 kernel_hello:
 	mov dword [0xb8000], 0x4f524f45 ; "ER"
 	mov dword [0xb8004], 0x4f3a4f52 ; "R:"
@@ -43,12 +36,12 @@ kernel_hello:
 section .text
 
 higher_half_start:
-    mov esp, stack_top
+    ; mov esp, stack_top
 
 	; mov esp, stack_top               ; Enable the stack.
 	; mov dword [page_directory], 0     ; Unmap the identity mapping
 	; push arguments https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html#Boot-information-format
-	
+
 	; Flush TLB
 	; mov eax, cr3
     ; mov cr3, eax
@@ -58,26 +51,3 @@ higher_half_start:
 	call rust_main
 	; jmp kernel_hello
 	hlt
-
-section .bss
-align 16
-stack_bottom:
-		resb 4096*4
-stack_top:
-
-
-; global page_directory
-; global identity_page_table
-; global higher_half_page_table
-
-; section .data
-; align 4096
-; page_directory:
-;     times 1024 dd 0
-; align 4096
-; identity_page_table:
-;     times 1024 dd 0
-
-; align 4096
-; higher_half_page_table:
-;     times 1024 dd 0

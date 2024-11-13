@@ -27,31 +27,31 @@ SECTIONS {
     /* First put the multiboot header, as it is required to be put very early
        in the image or the bootloader won't recognize the file format */
     .boot ALIGN(4K) : {
-        KEEP(*(.multiboot_header))
+        KEEP(*(*.multiboot_header))
         *(.boot .boot.*)
     } :boot
 
-    /* . += KERNEL_VMA; */
+    . += KERNEL_VMA;
 
     _kernel_start = .;
 
     /* Then the text section */
-    .text ALIGN(4K) : /*AT(ADDR(.text) - KERNEL_VMA)*/ {
+    .text ALIGN(4K) : AT(ADDR(.text) - KERNEL_VMA) {
         *(.text .text.*)
     } :text
 
     /* Read-only data */
-    .rodata ALIGN(4K) : /*AT(ADDR(.rodata) - KERNEL_VMA)*/ {
+    .rodata ALIGN(4K) : AT(ADDR(.rodata) - KERNEL_VMA) {
         *(.rodata .rodata.*)
     } :rodata
 
     /* Read-write data (initialized) */
-    .data ALIGN(4K) : /*AT(ADDR(.data) - KERNEL_VMA)*/ {
+    .data ALIGN(4K) : AT(ADDR(.data) - KERNEL_VMA) {
         *(.data .data.*)
     } :data
 
     /* Read-write data (uninitialized) and stack */
-    .bss ALIGN(4K) : /*AT(ADDR(.bss) - KERNEL_VMA)*/ {
+    .bss ALIGN(4K) : AT(ADDR(.bss) - KERNEL_VMA) {
         *(COMMON)
         *(.bss .bss.*)
     } :data
@@ -61,5 +61,5 @@ SECTIONS {
     _kernel_end = .;
 
     /* Debugging info */
-    /DISCARD/ : { *(.comment) *(.eh_frame) *(.note.gnu.build-id) }
+    /*/DISCARD/ : { *(.comment) *(.eh_frame) *(.note.gnu.build-id) }*/
 }
