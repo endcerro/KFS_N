@@ -1,6 +1,6 @@
 use core::{fmt, ptr::NonNull};
 
-use super::{define::PAGE_TABLE_ENTRIES, pageflags::PageFlags};
+use super::define::PAGE_TABLE_ENTRIES;
 
 const PRESENT : u32 = 1 << 0;
 const WRITABLE : u32 = 1 << 1;
@@ -14,22 +14,22 @@ const GLOBAL : u32 = 1 << 8;
 
 #[repr(C, align(4096))]
 pub struct PageTable {
-    pub entries: NonNull<[u32; PAGE_TABLE_ENTRIES]>,
+    pub entries: NonNull<[PageTableEntry; PAGE_TABLE_ENTRIES]>,
 }
 impl PageTable {
     pub fn new(address: *mut [u32; PAGE_TABLE_ENTRIES]) -> Self {
         unsafe {
             PageTable {
-                entries: core::ptr::NonNull::new_unchecked(address) 
+                entries: core::ptr::NonNull::new_unchecked(address as *mut [PageTableEntry; 1024])
             }
         }
     }
 
-    pub fn set_entry(&mut self, index: usize, address: usize, flags: PageFlags) {
-        unsafe {
-            self.entries.as_mut()[index] = (address as u32 & 0xFFFFF000) | flags.value();
-        }
-    }
+    // pub fn set_entry(&mut self, index: usize, address: usize, flags: PageFlags) {
+    //     unsafe {
+    //         self.entries.as_mut()[index] = (address as u32 & 0xFFFFF000) | flags.value();
+    //     }
+    // }
     pub fn get_entry(&mut self, index: usize) -> *mut PageTableEntry {
             self.entries.as_ptr().wrapping_add(index) as  *mut PageTableEntry
     }
@@ -72,7 +72,7 @@ impl PageTableEntry {
     }
 }
 
-impl fmt::Display for PageTableEntry { /*TODO Display access and flag with more granularity */
+impl fmt::Display for PageTableEntry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
          write!(f, "Present {},writeable {},user {},pwt {},cache disable {},accessed {},dirty {},pat {},global {}, address {:x}",
          self.present(), self.writeable(), self.user(), self.pwt(), self.cache_disable(), self.accessed(), self.dirty(), self.pat(), self.global(), self.address())

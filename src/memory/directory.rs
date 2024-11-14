@@ -1,6 +1,5 @@
 use core::{fmt, ptr::NonNull};
 
-use super::{pageflags::PageFlags, pagetable::PageTable};
 
 // use crate::define;
 
@@ -15,7 +14,7 @@ const PAGESIZE4MB: u32 = 1 << 7;
 
 #[repr(C, align(4096))]
 pub struct PageDirectory {
-    pub entries: NonNull<[u32; super::define::PAGE_DIRECTORY_ENTRIES]>,
+    pub entries: NonNull<[PageDirectoryEntry; super::define::PAGE_DIRECTORY_ENTRIES]>,
     // pub entries: [u32; PAGE_DIRECTORY_ENTRIES],
 }
 impl PageDirectory {
@@ -24,7 +23,7 @@ impl PageDirectory {
             PageDirectory {
                 // entries: [0; PAGE_DIRECTORY_ENTRIES]
                 entries: NonNull::new_unchecked((
-                    &super::define::page_directory as *const [u32; 1024]) as *mut [u32; 1024])
+                    &super::define::page_directory as *const [u32; 1024]) as *mut [PageDirectoryEntry; 1024])
             }
         }
     }
@@ -33,22 +32,20 @@ impl PageDirectory {
             PageDirectory {
                 // entries: [0; PAGE_DIRECTORY_ENTRIES]
                 entries: NonNull::new_unchecked((
-                    &super::define::page_directory as *const [u32; 1024]) as *mut [u32; 1024])
+                    &super::define::page_directory as *const [u32; 1024]) as *mut [PageDirectoryEntry; 1024])
             }
 
         }
     }
 
+    // pub fn set_entry(&mut self, index: usize, table: &PageTable, flags: PageFlags) {
+    //     unsafe {
+    //         self.entries.as_mut()[index] = ((table as *const PageTable as u32) & 0xFFFFF000) | flags.value();
+    //     }
+    // }
 
-
-    pub fn set_entry(&mut self, index: usize, table: &PageTable, flags: PageFlags) {
-        unsafe {
-            self.entries.as_mut()[index] = ((table as *const PageTable as u32) & 0xFFFFF000) | flags.value();
-        }
-    }
-
-    pub fn get_entry(&mut self, index:usize) -> PageTable {
-        PageTable::new(self.entries.as_ptr().wrapping_add(index))
+    pub fn get_entry(&mut self, index:usize) -> *mut PageDirectoryEntry {
+        self.entries.as_ptr().wrapping_add(index) as *mut PageDirectoryEntry
     }
 }
 
@@ -83,7 +80,7 @@ impl PageDirectoryEntry {
     }
 }
 
-impl fmt::Display for PageDirectoryEntry { /*TODO Display access and flag with more granularity */
+impl fmt::Display for PageDirectoryEntry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Present {},writeable {},user {},pwt {},cache disable {},accessed {},available {},4mb {}, address {:x}",
         self.present(), self.writeable(), self.user(), self.pwt(), self.cache_disable(), self.accessed(), self.available(), self.pagesize4mb(), self.address())
