@@ -48,7 +48,7 @@ clear_page1 :
 
 higher_half_start:
 
-	push eax ; magic value for MultiBoot2 should be 0x36d76289
+	; push eax ; magic value for MultiBoot2 should be 0x36d76289
 	push ebx ; address of Multiboot2 information structure
 	call rust_main
 	; jmp kernel_hello

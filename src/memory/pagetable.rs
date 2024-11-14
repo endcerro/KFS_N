@@ -2,14 +2,15 @@ use core::{fmt, ptr::NonNull};
 
 use super::{define::PAGE_TABLE_ENTRIES, pageflags::PageFlags};
 
-const PRESENT :u32 = 1<<0;
-const WRITABLE :u32 = 1<<1;
-const USER :u32 = 1<<2;
-const PWT: u32 = 1<<3;
-const CACHE_DISABLE: u32 = 1 << 4;
-const ACCESSED: u32 = 1 << 5;
-const AVAILABLE: u32 = 1 << 6;
-const PAGESIZE4MB: u32 = 1 << 7;
+const PRESENT : u32 = 1 << 0;
+const WRITABLE : u32 = 1 << 1;
+const USER : u32 = 1 << 2;
+const PWT : u32 = 1 << 3;
+const CACHE_DISABLE : u32 = 1 << 4;
+const ACCESSED : u32 = 1 << 5;
+const DIRTY : u32 = 1 << 6;
+const PAT : u32 = 1 << 7;
+const GLOBAL : u32 = 1 << 8;
 
 #[repr(C, align(4096))]
 pub struct PageTable {
@@ -39,52 +40,41 @@ impl PageTable {
 pub struct PageTableEntry(pub u32);
 
 impl PageTableEntry {
-    #[inline]
-    pub fn present(&self) -> bool {
+    #[inline] pub fn present(&self) -> bool {
         self.0 & PRESENT > 0
     }
-    #[inline]
-    pub fn writeable(&self) -> bool {
+    #[inline] pub fn writeable(&self) -> bool {
         self.0 & WRITABLE > 0
     }
-    #[inline]
-    pub fn user(&self) -> bool {
+    #[inline] pub fn user(&self) -> bool {
         self.0 & USER > 0
     }
-    #[inline]
-    pub fn pwt(&self) -> bool {
+    #[inline] pub fn pwt(&self) -> bool {
         self.0 & PWT > 0
     }
-    #[inline]
-    pub fn cache_disable(&self) -> bool {
+    #[inline] pub fn cache_disable(&self) -> bool {
         self.0 & CACHE_DISABLE > 0
     }
-    #[inline]
-    pub fn accessed(&self) -> bool {
+    #[inline] pub fn accessed(&self) -> bool {
         self.0 & ACCESSED > 0
     }
-    #[inline]
-    pub fn available(&self) -> bool {
-        self.0 & AVAILABLE > 0
+    #[inline] pub fn dirty(&self) -> bool {
+        self.0 & DIRTY > 0
     }
-    #[inline]
-    pub fn pagesize4mb(&self) -> bool {
-        self.0 & PAGESIZE4MB > 0
+    #[inline] pub fn pat(&self) -> bool {
+        self.0 & PAT > 0
     }
-    #[inline]
-    pub fn address(&self) -> u32 {
+    #[inline] pub fn global(&self) -> bool {
+        self.0 & GLOBAL > 0
+    }
+    #[inline] pub fn address(&self) -> u32 {
         self.0 >> 12
     }
 }
 
 impl fmt::Display for PageTableEntry { /*TODO Display access and flag with more granularity */
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if !self.present() {
-            write!(f, "Page is not present")
-        }
-        else {
-            write!(f, "Page is present")
-        }
-        // write!(f, "Base {:x}, limit {:x}, flags {:x}, access {:x}", base, limit, flags, access)
+         write!(f, "Present {},writeable {},user {},pwt {},cache disable {},accessed {},dirty {},pat {},global {}, address {:x}",
+         self.present(), self.writeable(), self.user(), self.pwt(), self.cache_disable(), self.accessed(), self.dirty(), self.pat(), self.global(), self.address())
     }
 }

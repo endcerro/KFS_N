@@ -21,7 +21,7 @@ start :
     ; mov esp, stack_top
 
     ; Store GRUB parameters
-    push ebx                    ; Multiboot structure - we'll need this later
+    ; push ebx                    ; Multiboot structure - we'll need this later
 
 
     call setup_paging
@@ -37,8 +37,8 @@ start :
     add esp, 0xC0000000
     ; Switch to virtual stack
 
-    pop ebx                    ; Restore multiboot structure pointer
-    push ebx                   ; Push it again for rust_main
+    ; pop ebx                    ; Restore multiboot structure pointer
+    ; push ebx                   ; Push it again for rust_main
 
     jmp higher_half_start      ; Jump to higher half kernel
 

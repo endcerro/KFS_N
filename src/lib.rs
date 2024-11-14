@@ -36,23 +36,23 @@ fn init() {
     vga::print_ft();
 
     memory::init();
-    print!("Init paging...");
+    print!("Paging     ");
     colored_print!((None, Some(Color::Green)), "OK\n");
 
     WRITER.lock().change_color(Some(vga::Color::White), Some(vga::Color::Black));
     WRITER.lock().cursor.enable_cursor(0, 15);
-    print!("Init serial...");
+    print!("Serial     ");
     serial::init();
     colored_print!((None, Some(Color::Green)), "OK\n");
     serial_println!("SAMPLE");
-    print!("Init GDT...");
+    print!("GDT        ");
     gdt::init();
     colored_print!((None, Some(Color::Green)), "OK\n");
 
-    print!("Init Interrupts...");
+    print!("Interrupts ");
     interrupts::init();
     colored_print!((None, Some(Color::Green)), "OK\n");
-    print!("Init Shell...");
+    print!("Shell      ");
     shell::init_shell();
     colored_print!((None, Some(Color::Green)), "OK\n");
 }
