@@ -16,14 +16,14 @@ pub fn run(_args: &[&str]) {
             WRITER.lock().change_color(Some(fg), Some(bg));
         },
         (Ok(_), Ok(_)) => {
-            println!("Foreground and background colors must be different");
+            println!("\nForeground and background colors must be different");
         },
-        _ => println!("Invalid colors")
+        _ => println!("\nInvalid colors")
     }
 }
 
 fn usage() {
-    print!("Change foreground and background color");
+    print!("\nChange foreground and background color");
     for color in Color::all() {
         WRITER.lock().change_color(Some(color), None);
         print!("\n{:?}", color);

@@ -4,6 +4,6 @@ pub mod print_stack;
 pub mod echo;
 pub mod credits;
 pub mod clear;
-pub mod custom;
+pub mod colors;
 
 

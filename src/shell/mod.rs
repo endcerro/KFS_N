@@ -76,7 +76,7 @@ pub fn init_shell() {
         SHELL.add_command("echo", echo::run, "Echo the input arguments");
         SHELL.add_command("clear", clear::run, "Clear the screen");
         SHELL.add_command("credits", credits::run, "Credits");
-        SHELL.add_command("colors", custom::run, "Run a custom command");
+        SHELL.add_command("colors", colors::run, "Run a custom command");
         SHELL.add_command("ft", print_ft_42::run, "Print 42 logo");
         SHELL.add_command("stack", print_stack::run, "Print stack information");
         SHELL.add_command("help", help, "Display help information");

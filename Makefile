@@ -46,9 +46,6 @@ dbg:
 	gdb -x gdb_init.gdb isofiles/kernel.bin
 	pkill qemu
 
-rust_dbg: $(KERNEL_BIN)
-	$(QEMU) -cdrom $(ISO_FILE) -serial stdio
-
 # Build rules
 $(OBJ_DIR)/boot.o: $(ASM_SRC)/boot.asm | $(OBJ_DIR)
 	@echo "Building ASM"

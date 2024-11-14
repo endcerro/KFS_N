@@ -120,23 +120,21 @@ pub fn print() {
 }
 #[cfg(feature = "gdt_test")]
 fn verify_gdt_load_structure() {
-	let tss_addr = core::ptr::addr_of!(tss::TSS) as *const TssSegment as u32;
+	let tss_addr = core::ptr::addr_of!(tss::TSS) as *const TssSegment as u32 - KERNEL_VIRTUAL_BASE;
 	let tss_limit = tss_addr + size_of::<TssSegment>() as u32 - 1;
 	let correct_segments : [SegmentDescriptor; GDTSIZE] = [
 		SegmentDescriptor::new(0, 0, 0, 0), //Null segment 0x0
-		SegmentDescriptor::new(0, 0xFFFF, 0x9A, 0xCF), //Kernel Code 0x8
-		SegmentDescriptor::new(0, 0xFFFF, 0x92, 0xCF), //Kernel Data 0x10
-		SegmentDescriptor::new(0, 0xFFFF, 0x96, 0xCF), //Kernel Stack 0x18
-		SegmentDescriptor::new(0, 0xFFFF, 0xFA, 0xCF), //User code 0x20
-		SegmentDescriptor::new(0, 0xFFFF, 0xF2, 0xCF), //User data 0x28
-		SegmentDescriptor::new(0, 0xFFFF, 0xF6, 0xCF), //User stack 0x30
+		SegmentDescriptor::new(0, 0xFFFFFFFF, 0x9A, 0xCF), //Kernel Code 0x8
+		SegmentDescriptor::new(0, 0xFFFFFFFF, 0x92, 0xCF), //Kernel Data 0x10
+		SegmentDescriptor::new(0, 0xFFFFFFFF, 0x96, 0xCF), //Kernel Stack 0x18
+		SegmentDescriptor::new(0, 0xFFFFFFFF, 0xFA, 0xCF), //User code 0x20
+		SegmentDescriptor::new(0, 0xFFFFFFFF, 0xF2, 0xCF), //User data 0x28
+		SegmentDescriptor::new(0, 0xFFFFFFFF, 0xF6, 0xCF), //User stack 0x30
 		SegmentDescriptor::new(tss_addr, tss_limit, 0xE9, 0x0) //Tss Segment 0x38
 	];
 	let gdtr = GdtDescriptor::current();
 	let test_segments : [SegmentDescriptor; GDTSIZE] = [SegmentDescriptor::default(); GDTSIZE];
-	unsafe {
-		memcpy(addr_of!(test_segments) as *mut _, gdtr.address as *const u8, gdtr.size as usize);
-	}
+	memcpy(addr_of!(test_segments) as *mut _, gdtr.address as *const u8, gdtr.size as usize);
 	for i in 0..GDTSIZE {
 		assert_eq!(correct_segments[i], test_segments[i]);
 	}
@@ -191,7 +189,7 @@ pub fn verify_tss() {
 
         println!("TSS base: {:#x}, limit: {:#x}", tss::TSS.esp0, tss::TSS.ss0);
         assert_eq!(tss::TSS.ss0, 0x10, "TSS SS0 not set correctly");
-        assert_eq!(tss::TSS.esp0, addr_of!(stack_top) as u32, "TSS ESP0 not set correctly");
+        assert_eq!(tss::TSS.esp0, addr_of!(stack_top) as u32 - KERNEL_VIRTUAL_BASE, "TSS ESP0 not set correctly");
 
         println!("TSS verified successfully!");
     }
