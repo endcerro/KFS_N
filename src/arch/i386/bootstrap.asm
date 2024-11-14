@@ -67,12 +67,12 @@ setup_paging:
     mov dword [edi], eax  ; Present + R/W
     mov dword [edi + 768 * 4], eax  ; Present + R/W
 
-    mov eax, page_table2
-    sub eax, 0xC0000000
-    or eax, 3
+    ; mov eax, page_table2
+    ; sub eax, 0xC0000000
+    ; or eax, 3
 
-    mov dword [edi + 4], eax  ; Present + R/W
-    mov dword [edi + 769 * 4], eax  ; Present + R/W
+    ; mov dword [edi + 4], eax  ; Present + R/W
+    ; mov dword [edi + 769 * 4], eax  ; Present + R/W
 
 
     ; mov dword [edi + 4], page_table2 + 3  ; Present + R/W
@@ -92,15 +92,15 @@ setup_paging:
     loop .set_entry1
 
     ; Set up second page table (identity map second 4MB)
-    mov edi, page_table2
-    sub edi, 0xC0000000
-    mov eax, 0x400003         ; Start at 4MB + flags
-    mov ecx, 1024
-.set_entry2:
-    stosd
-    add eax, 4096                ; Next page (4KB)
+;     mov edi, page_table2
+;     sub edi, 0xC0000000
+;     mov eax, 0x400003         ; Start at 4MB + flags
+;     mov ecx, 1024
+; .set_entry2:
+;     stosd
+;     add eax, 4096                ; Next page (4KB)
     
-    loop .set_entry2
+;     loop .set_entry2
 
     ; Load page directory
     mov eax, page_directory
@@ -144,9 +144,9 @@ align 4096
 page_table1 :
     resb 4096
 
-align 4096
-page_table2 :
-    resb 4096
+; align 4096
+; page_table2 :
+;     resb 4096
 ; align 4096
 ; higher_half_page_table:
 ;     times 1024 dd 0

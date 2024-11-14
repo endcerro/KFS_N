@@ -9,8 +9,6 @@ pub const KERNEL_OFFSET: usize = 0xC0000000; // Higher half kernel offset
 
 extern "C" {
     static page_directory: [u32; 1024];
-    static identity_page_table: [u32; 1024];
-    static higher_half_page_table: [u32; 1024];
 }
 
 #[repr(C, align(4096))]

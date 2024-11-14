@@ -50,7 +50,7 @@ fn init() {
     vga::print_ft();
     println!("Init paging...");
 
-    // memory::init();
+    memory::init();
     println!("Paging ok");
 
     WRITER.lock().change_color(Some(vga::Color::White), Some(vga::Color::Black));

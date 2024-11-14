@@ -48,11 +48,11 @@ higher_half_start:
 
 	mov edi, page_directory     ; Using virtual address now
     mov dword [edi], 0          ; Clear first PDE (0-4MB)
-    mov dword [edi + 4], 0      ; Clear second PDE (4-8MB)
+    ; mov dword [edi + 4], 0      ; Clear second PDE (4-8MB)
 
 	mov eax, cr3
     mov cr3, eax
-	
+
 	push ebx ; address of Multiboot2 information structure
 	;push eax ; magic value for MultiBoot2 should be 0x36d76289
 	call rust_main

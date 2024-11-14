@@ -10,11 +10,12 @@ pub mod pageflags;
 
 extern "C" {
     static page_directory: [u32; 1024];
+    static page_table1: [u32; 1024];
 }
 
 pub struct Paging {
     page_directory: PageDirectory,
-    page_tables: [PageTable; PAGE_DIRECTORY_ENTRIES],
+    page_tables: [* mut PageTable; PAGE_DIRECTORY_ENTRIES],
 }
 
 extern "C" {
@@ -25,13 +26,15 @@ extern "C" {
 
 impl Paging {
     pub const fn new() -> Self {
-        const EMPTY_PAGE_TABLE: PageTable = PageTable { entries: [0; PAGE_TABLE_ENTRIES] };
-        Paging {
+        // const EMPTY_PAGE_TABLE: PageTable = PageTable { entries: [0; PAGE_TABLE_ENTRIES] };
+        let page = Paging {
             page_directory: PageDirectory::default(),//= PageDirectory::default(),
-            page_tables: [EMPTY_PAGE_TABLE; PAGE_DIRECTORY_ENTRIES],
-        }
+            page_tables: [core::ptr::null_mut(); PAGE_DIRECTORY_ENTRIES],
+        };
+        page
     }
 
+ 
     pub fn init(&mut self) {
         // Identity map the first 4MB
         // self.map_range(0, 0, 4 * 1024 * 1024, PageFlags::PRESENT | PageFlags::WRITABLE);
@@ -53,9 +56,9 @@ impl Paging {
         // self.map_range(KERNEL_OFFSET, kernel_physical_start, kernel_size, PageFlags::PRESENT | PageFlags::WRITABLE);
 
         // Set up the page directory
-        for i in 0..PAGE_DIRECTORY_ENTRIES {
-            self.page_directory.set_entry(i, &self.page_tables[i], PageFlags::PRESENT | PageFlags::WRITABLE);
-        }
+        // for i in 0..PAGE_DIRECTORY_ENTRIES {
+        //     self.page_directory.set_entry(i, &self.page_tables[i], PageFlags::PRESENT | PageFlags::WRITABLE);
+        // }
 
         // Load page directory
         unsafe {
@@ -73,7 +76,7 @@ impl Paging {
             let table_index = page % PAGE_TABLE_ENTRIES;
             let physical_address = physical_start + (page - start_page) * PAGE_SIZE;
 
-            self.page_tables[dir_index].set_entry(table_index, physical_address, flags);
+            // self.page_tables[dir_index].set_entry(table_index, physical_address, flags);
         }
     }
 
@@ -89,10 +92,20 @@ impl Paging {
 }
 
 
+pub fn print0() {
+
+    unsafe { let test = (*PAGING.page_directory.entries.as_ptr())[768];
+        println!("The already present adress is {:x}", test);
+    }
+
+}
+
+
 pub fn init() {
     unsafe {
-        PAGING.init();
-        PAGING.enable_paging();
+        print0();
+        // PAGING.init();
+        // PAGING.enable_paging();
     }
     // colored_print!((Some(Color::Green), Some(Color::Black)), "\nPAGING OK");
 }
