@@ -35,16 +35,8 @@ kernel_hello:
 	hlt
 section .text
 
-higher_half_start:
-    ; mov esp, stack_top
-
-	; mov esp, stack_top               ; Enable the stack.
-	; mov dword [page_directory], 0     ; Unmap the identity mapping
-	; push arguments https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html#Boot-information-format
-
-	; Flush TLB
-	; mov eax, cr3
-    ; mov cr3, eax
+global clear_page1
+clear_page1 :
 
 	mov edi, page_directory     ; Using virtual address now
     mov dword [edi], 0          ; Clear first PDE (0-4MB)
@@ -52,9 +44,12 @@ higher_half_start:
 
 	mov eax, cr3
     mov cr3, eax
+	ret
 
+higher_half_start:
+
+	push eax ; magic value for MultiBoot2 should be 0x36d76289
 	push ebx ; address of Multiboot2 information structure
-	;push eax ; magic value for MultiBoot2 should be 0x36d76289
 	call rust_main
 	; jmp kernel_hello
 	hlt

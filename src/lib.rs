@@ -42,7 +42,7 @@ pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootI
     // serial_println!("Hello from serial port!");
     // serial_println!("Kernel size: {} kbytes", size / 1024);
     shell_loop();
-    loop{}
+    // loop{}
 
 }
 fn init() {
