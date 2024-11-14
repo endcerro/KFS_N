@@ -16,10 +16,12 @@ extern "C" {
 
 pub fn init() {
     unsafe {
-
+        #[cfg(feature = "verbose")]
         println!("Entry 0 : {}", *PAGING.get_entry(0).get_entry(0));
+        #[cfg(feature = "verbose")]
         println!("Cleaning..");
         clear_page1();
+        #[cfg(feature = "verbose")]
         println!("Entry 0 : {}", *PAGING.get_entry(0).get_entry(0));
 
 
