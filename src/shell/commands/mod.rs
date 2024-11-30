@@ -5,5 +5,6 @@ pub mod echo;
 pub mod credits;
 pub mod clear;
 pub mod colors;
+pub mod meminfo;
 
 

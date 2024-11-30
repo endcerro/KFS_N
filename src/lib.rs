@@ -26,7 +26,8 @@ extern "C" {
 }
 
 #[no_mangle]
-pub extern "C" fn rust_main(_multiboot_struct_ptr: *const multiboot2::MultibootInfoHeader)  {
+pub extern "C" fn rust_main(multiboot_struct_ptr: *const multiboot2::MultibootInfoHeader)  {
+    multiboot2::bind_header(multiboot_struct_ptr);
     init();
     shell_loop();
 }
@@ -55,6 +56,8 @@ fn init() {
     print!("Shell      ");
     shell::init_shell();
     colored_print!((None, Some(Color::Green)), "OK\n");
+
+    multiboot2::meminfo::print_meminfo();
 }
 
 #[panic_handler]

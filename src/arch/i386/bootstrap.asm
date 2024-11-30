@@ -17,6 +17,7 @@ kernel_hello:
 start :
     mov esp, stack_top
     sub esp, 0xC0000000
+    add ebx, 0xC0000000
 	; mov esp, edx
     ; mov esp, stack_top
 

@@ -80,6 +80,7 @@ pub fn init_shell() {
         SHELL.add_command("ft", print_ft_42::run, "Print 42 logo");
         SHELL.add_command("stack", print_stack::run, "Print stack information");
         SHELL.add_command("help", help, "Display help information");
+        SHELL.add_command("meminfo", meminfo::run, "Displays memory mappings from multiboot2");
     }
 }
 

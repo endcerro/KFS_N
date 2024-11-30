@@ -1,12 +1,23 @@
 // use meminfo::{MemoryInfo, MemoryInfoHeader};
 
-use meminfo::{MemoryInfo, MemoryInfoEntry, MemoryInfoHeader};
+
+use core::ptr::null;
+
+use meminfo::{MemoryInfo, MemoryInfoHeader};
 
 pub mod meminfo;
 #[derive(Debug, Copy, Clone)]
 pub struct MultibootInfo { //Base strtuct to init
     pub header : *const MultibootInfoHeader,
     pub tag : MultibootInfoTagIterator
+}
+
+static mut MBOOT_HEADER : *const MultibootInfoHeader = null();
+
+pub fn bind_header(ptr : *const MultibootInfoHeader) {
+    unsafe  {
+        MBOOT_HEADER = ptr;
+    }
 }
 
 #[repr(C)]
@@ -70,6 +81,10 @@ impl MultibootInfo {
             }
         }
     }
+    pub fn print_memory_info() {
+        // let mut meminfo = self.get_memory_info().unwrap();
+        meminfo::print_meminfo();
+    }
 }
 
 impl MultibootInfoHeader {
@@ -105,20 +120,4 @@ impl Iterator for MultibootInfoTagIterator {
     }
 }
 
-pub fn init_mem(multiboot_struct_ptr: *const MultibootInfoHeader) {
-    let mut meminfo = MultibootInfo::new(multiboot_struct_ptr).get_memory_info().unwrap();
-    let mut entries = [MemoryInfoEntry::default(); 128];
-    let mut i : usize = 0;
-    loop {
-        match meminfo.entry.next() {
-            Some(meminfo) => {
-                entries[i] = unsafe {*meminfo};
-                i += 1;
-            }
-            None => break
-        }
-    }
-    for j in 0..i {
-        println!("{} : {}",j, entries[j]);
-    }
-}
+
