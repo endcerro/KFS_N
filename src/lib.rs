@@ -29,6 +29,10 @@ extern "C" {
 pub extern "C" fn rust_main(multiboot_struct_ptr: *const multiboot2::MultibootInfoHeader)  {
     multiboot2::bind_header(multiboot_struct_ptr);
     init();
+    unsafe {
+        utils::enable_interrupts(false);
+        core::arch::asm!("hlt");
+    }
     shell_loop();
 }
 
@@ -45,7 +49,7 @@ fn init() {
     print!("Serial     ");
     serial::init();
     colored_print!((None, Some(Color::Green)), "OK\n");
-    serial_println!("SAMPLE");
+    serial_println!("Hello world");
     print!("GDT        ");
     gdt::init();
     colored_print!((None, Some(Color::Green)), "OK\n");

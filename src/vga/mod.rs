@@ -267,9 +267,7 @@ impl Writer {
 					color : self.color_code
 				};
 			}
-		}
-		self.column_position = 0;
-		self.row_position = 0;
+		};
 	}
 	pub fn delete_char(&mut self){
 	{

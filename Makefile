@@ -35,11 +35,11 @@ kvm: $(ISO_FILE)
 
 qemu: $(ISO_FILE)
 	@echo "Starting with QEMU"
-	$(QEMU) -cdrom $(ISO_FILE) -m 8M -serial stdio
+	$(QEMU) -cdrom $(ISO_FILE) -m 12M -serial stdio
 
 qemu_dbg: $(ISO_FILE)
 	@echo "Starting with QEMU in debug mode"
-	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial file:/tmp/qemu_serial.log
+	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio
 
 dbg:
 	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio &
