@@ -16,15 +16,21 @@ Implement a complete, stable, and functional memory management system for an i38
 
 ## Roadmap to Complete Implementation
 
-### Phase 1: Physical Memory Management ✅ (Mostly Complete)
+### Phase 1: Physical Memory Management ✅ COMPLETE
 | Task | Status | Notes |
 |------|--------|-------|
-| Physical frame representation | ✅ Done | `PhysFrame` struct in `physical.rs` |
+| Physical frame representation | ✅ Done | `PhysFrame` struct with address methods |
 | Bitmap-based frame allocator | ✅ Done | `FrameAllocator` with bitmap tracking |
-| Frame allocation | ✅ Done | `allocate_frame()` method |
+| Frame allocation | ✅ Done | `allocate_frame()` with next-fit optimization |
 | Frame deallocation | ✅ Done | `deallocate_frame()` method |
+| Specific frame allocation | ✅ Done | `allocate_specific_frame()` for DMA/MMIO |
 | Memory map integration | ✅ Done | Parses multiboot2 memory info |
-| Frame counting utilities | ✅ Done | `total_frames()`, `free_frames()` |
+| Kernel region protection | ✅ Done | `protect_kernel_region()` |
+| Bitmap region protection | ✅ Done | `protect_bitmap_region()` |
+| Frame counting utilities | ✅ Done | `total_frames()`, `used_frames()`, `free_frames()` |
+| Memory statistics | ✅ Done | `memory_stats()`, `print_stats()` |
+| Error handling | ✅ Done | `AllocationError` enum |
+| Global allocator | ✅ Done | `FRAME_ALLOCATOR: Option<FrameAllocator>` |
 
 ### Phase 2: Paging Infrastructure ⚠️ (Partially Complete)
 | Task | Status | Notes |
@@ -32,15 +38,17 @@ Implement a complete, stable, and functional memory management system for an i38
 | Page flags definition | ✅ Done | `PageFlags` with bit operations |
 | Page Directory Entry structure | ✅ Done | `PageDirectoryEntry` with flag getters |
 | Page Table Entry structure | ✅ Done | `PageTableEntry` with flag getters |
-| Page Directory wrapper | ⚠️ Partial | Basic structure, but no `set_entry` |
-| Page Table wrapper | ⚠️ Partial | Basic structure, `set_entry` commented out |
+| Page Directory wrapper | ⚠️ Partial | Read-only access, `set_entry` commented out |
+| Page Table wrapper | ⚠️ Partial | Read-only access, `set_entry` commented out |
 | Identity mapping (bootstrap) | ✅ Done | In `bootstrap.asm` |
 | Higher-half mapping | ✅ Done | At `0xC0000000` |
+| Identity map cleanup | ✅ Done | `clear_page1()` in boot.asm |
 
 ### Phase 3: Virtual Memory Manager ❌ (Not Started)
 | Task | Status | Notes |
 |------|--------|-------|
 | Virtual address representation | ❌ TODO | Need `VirtAddr` type |
+| Physical address representation | ❌ TODO | Need `PhysAddr` type |
 | Address translation functions | ❌ TODO | Virtual ↔ Physical conversion |
 | Page mapping function | ❌ TODO | Map virtual to physical page |
 | Page unmapping function | ❌ TODO | Unmap virtual page |
@@ -50,8 +58,8 @@ Implement a complete, stable, and functional memory management system for an i38
 ### Phase 4: Kernel/User Space Separation ⚠️ (Defined but Not Enforced)
 | Task | Status | Notes |
 |------|--------|-------|
-| Kernel space definition | ⚠️ Partial | `KERNEL_OFFSET = 0xC0000000` defined |
-| User space definition | ❌ TODO | Need explicit user space range |
+| Kernel space definition | ✅ Done | `KERNEL_OFFSET = 0xC0000000` |
+| User space definition | ⚠️ Partial | Implied as < 0xC0000000, not explicit |
 | User/Supervisor page flags | ✅ Done | `USER` flag in `PageFlags` |
 | GDT user segments | ✅ Done | User code/data/stack selectors defined |
 | Ring transition (syscalls) | ❌ TODO | Not implemented |
@@ -70,7 +78,7 @@ Implement a complete, stable, and functional memory management system for an i38
 | Task | Status | Notes |
 |------|--------|-------|
 | Panic handler | ✅ Done | Basic `panic!` prints and loops |
-| Colored error output | ❌ TODO | Visual distinction for panics |
+| Colored error output | ⚠️ Partial | VGA colors available but not used in panic |
 | Register dump | ❌ TODO | Show CPU state at panic |
 | Stack trace | ❌ TODO | Backtrace on panic |
 | CPU halt after panic | ✅ Done | Infinite loop in panic handler |
@@ -79,24 +87,29 @@ Implement a complete, stable, and functional memory management system for an i38
 
 ## Current Progress Assessment
 
-### Completed (~40%)
+### Completed (~45%)
 
-1. **Bootstrap Paging** - The kernel boots with identity mapping and higher-half mapping. The assembly code in `bootstrap.asm` sets up:
+1. **Physical Memory Management** - FULLY COMPLETE
+   - Bitmap-based frame allocator with all required features
+   - Proper initialization from multiboot memory map
+   - Protection of kernel and bitmap regions
+   - Statistics and debugging capabilities
+   - Error handling for all allocation scenarios
+
+2. **Bootstrap Paging** - The kernel boots with identity mapping and higher-half mapping. The assembly code in `bootstrap.asm` sets up:
    - Page directory at a known location
    - First page table mapping 0-4MB (identity + higher-half at 0xC0000000)
    - Proper CR3 loading and paging enable
-
-2. **Physical Frame Allocator** - A working bitmap-based allocator exists in `physical.rs`:
-   - Initializes from multiboot memory map
-   - Can allocate and free 4KB frames
-   - Tracks free frame count
+   - Identity map cleanup via `clear_page1()`
 
 3. **Paging Data Structures** - Basic structures exist:
-   - `PageFlags` with bitwise operations
-   - `PageDirectoryEntry` and `PageTableEntry` with flag accessors
+   - `PageFlags` with complete bitwise operations
+   - `PageDirectoryEntry` and `PageTableEntry` with all flag accessors
    - Display implementations for debugging
 
-4. **GDT with User Segments** - User space selectors are defined but not used
+4. **GDT with User Segments** - User space selectors are defined (ring 3 ready)
+
+5. **Memory Map Parsing** - Complete multiboot2 memory map parsing in `meminfo.rs`
 
 ### In Progress (~10%)
 
@@ -105,12 +118,13 @@ Implement a complete, stable, and functional memory management system for an i38
    - No dynamic page table allocation
    - Relies on assembly-created structures
 
-2. **Memory Module Integration** - The `memory::init()` is called but only:
-   - Clears the identity mapping (first PDE)
-   - No heap setup
-   - No virtual memory management
+2. **Memory Module Integration** - The `memory::init()` is called and:
+   - Initializes physical frame allocator ✅
+   - Clears the identity mapping (first PDE) ✅
+   - No heap setup yet
+   - No virtual memory management yet
 
-### Not Started (~50%)
+### Not Started (~45%)
 
 1. **Virtual Memory Manager** - No abstraction for:
    - Creating new page mappings
@@ -127,10 +141,10 @@ Implement a complete, stable, and functional memory management system for an i38
    - No syscall mechanism
    - No user memory allocation
 
-4. **Proper Kernel Panic** - Basic panic exists but lacks:
-   - Dedicated panic screen
-   - Debug information
-   - Clean system halt
+4. **Enhanced Kernel Panic** - Basic panic exists but lacks:
+   - Dedicated panic screen styling
+   - Debug information (registers, CR2)
+   - Clean system halt with interrupts disabled
 
 ---
 
@@ -138,12 +152,16 @@ Implement a complete, stable, and functional memory management system for an i38
 
 ```
 memory/
-├── mod.rs           - Memory initialization (minimal)
-├── define.rs        - Constants (PAGE_SIZE, KERNEL_OFFSET)
+├── mod.rs           - Memory initialization (physical allocator init + identity map cleanup)
+├── define.rs        - Constants (PAGE_SIZE, KERNEL_OFFSET) ✅
 ├── pageflags.rs     - Page flags with bitwise ops ✅
-├── directory.rs     - PageDirectory wrapper (incomplete)
-├── pagetable.rs     - PageTable wrapper (incomplete)
-└── physical.rs      - Physical frame allocator ✅
+├── directory.rs     - PageDirectory wrapper (needs set_entry)
+├── pagetable.rs     - PageTable wrapper (needs set_entry)
+└── physical.rs      - Physical frame allocator ✅ COMPLETE
+
+multiboot2/
+├── mod.rs           - Multiboot2 header/tag parsing ✅
+└── meminfo.rs       - Memory map parsing ✅
 
 gdt/
 ├── mod.rs           - GDT setup with user segments ✅
@@ -156,40 +174,77 @@ gdt/
 
 ## Recommended Next Steps (Priority Order)
 
-### 1. Complete Virtual Memory Manager (High Priority)
+### 1. Enable Page Table Modification (High Priority)
+Uncomment and fix `set_entry()` in `directory.rs` and `pagetable.rs`:
 ```rust
-// Needed functions:
-fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), MapError>
-fn unmap_page(virt: VirtAddr) -> Result<PhysAddr, UnmapError>
-fn translate(virt: VirtAddr) -> Option<PhysAddr>
+// directory.rs
+pub fn set_entry(&mut self, index: usize, phys_addr: u32, flags: u32) {
+    unsafe {
+        (*self.entries.as_ptr())[index] = PageDirectoryEntry((phys_addr & 0xFFFFF000) | flags);
+    }
+}
 ```
 
-### 2. Implement Page Fault Handler (High Priority)
-- Add handler to IDT for interrupt 14
-- Can panic initially, but needed for debugging
+### 2. Create Virtual Memory Manager (High Priority)
+New file `memory/virtual.rs`:
+```rust
+pub struct VirtAddr(pub u32);
+pub struct PhysAddr(pub u32);
 
-### 3. Define Kernel Heap Region (High Priority)
-- Reserve virtual address range for heap (e.g., `0xC1000000` - `0xC2000000`)
-- Implement simple bump allocator first
+pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), MapError>;
+pub fn unmap_page(virt: VirtAddr) -> Result<PhysAddr, UnmapError>;
+pub fn translate(virt: VirtAddr) -> Option<PhysAddr>;
+pub fn flush_tlb_entry(virt: VirtAddr);
+pub fn flush_tlb_all();
+```
 
-### 4. Implement Basic Heap Allocator (Medium Priority)
-- Start with linked-list free list allocator
+### 3. Implement Page Fault Handler (High Priority)
+In interrupts module, add handler for interrupt 14:
+```rust
+extern "x86-interrupt" fn page_fault_handler(
+    stack_frame: InterruptStackFrame,
+    error_code: u32,
+) {
+    let fault_addr: u32;
+    unsafe { core::arch::asm!("mov {}, cr2", out(reg) fault_addr); }
+    panic!("PAGE FAULT at {:#x}, error: {:#b}", fault_addr, error_code);
+}
+```
+
+### 4. Define Kernel Heap Region (Medium Priority)
+Add to `memory/define.rs`:
+```rust
+pub const KERNEL_HEAP_START: usize = 0xC1000000;
+pub const KERNEL_HEAP_END: usize   = 0xC2000000;  // 16MB heap
+pub const KERNEL_HEAP_SIZE: usize  = KERNEL_HEAP_END - KERNEL_HEAP_START;
+```
+
+### 5. Implement Basic Heap Allocator (Medium Priority)
+New file `memory/heap.rs`:
+- Start with bump allocator for simplicity
+- Then upgrade to linked-list free list allocator
 - Implement `GlobalAlloc` trait for Rust `alloc` crate
 
-### 5. Enhance Kernel Panic (Medium Priority)
-- Red screen of death
-- Print registers and basic info
-- Proper halt with interrupts disabled
-
-### 6. User Space Memory (Lower Priority)
-- Only after kernel heap works
-- Requires syscall implementation
+### 6. Enhance Kernel Panic (Lower Priority)
+- Red background / white text for panic screen
+- Print registers (EAX, EBX, ECX, EDX, ESP, EBP, EIP)
+- Print CR2 for page faults
+- Disable interrupts and halt
 
 ---
 
 ## Size Estimate
 
-Current memory-related code is approximately **15-20 KB** (source). The 10 MB constraint refers to runtime memory usage, which is well within limits given the current bitmap allocator design.
+| Component | Size (approx) |
+|-----------|---------------|
+| Kernel code (.text) | ~50 KB |
+| Kernel data (.data/.rodata) | ~10 KB |
+| Kernel BSS (.bss) | ~20 KB (including page tables) |
+| Frame allocator bitmap | ~4 KB per 128 MB RAM |
+| Kernel stack | 16 KB |
+| Future heap | 16 MB (configurable) |
+
+**Total**: Well under 10 MB constraint
 
 ---
 
@@ -197,17 +252,26 @@ Current memory-related code is approximately **15-20 KB** (source). The 10 MB co
 
 | Category | Completion |
 |----------|------------|
-| Physical Memory | ~85% |
-| Paging Structures | ~60% |
-| Virtual Memory Manager | ~10% |
-| Kernel/User Separation | ~20% |
+| Physical Memory | **100%** ✅ |
+| Paging Structures | ~70% |
+| Virtual Memory Manager | ~5% |
+| Kernel/User Separation | ~30% |
 | Heap Allocator | 0% |
-| Panic Handler | ~30% |
-| **Overall** | **~35%** |
+| Panic Handler | ~40% |
+| **Overall** | **~42%** |
 
-The kernel has a solid foundation with working bootstrap paging and a physical frame allocator. The main gaps are:
-1. No virtual memory management API
-2. No heap allocator (`kmalloc`/`kfree`)
-3. No dynamic page mapping beyond bootstrap
+### Key Accomplishments Since Last Assessment:
+- ✅ Physical frame allocator is now **COMPLETE**
+- ✅ Proper kernel region protection
+- ✅ Proper bitmap region protection
+- ✅ Memory statistics and debugging
+- ✅ Error handling for allocation failures
+- ✅ Support for specific frame allocation (DMA/MMIO)
 
-These are the critical pieces needed to achieve a "complete, stable and functional memory system."
+### Critical Remaining Work:
+1. Virtual memory manager (`map_page`, `unmap_page`, `translate`)
+2. Page fault handler
+3. Kernel heap allocator (`kmalloc`, `kfree`, `ksize`)
+4. User space memory management (lower priority)
+
+The foundation is solid - physical memory is fully managed. The next major milestone is enabling dynamic virtual memory mapping, followed by implementing a heap allocator.

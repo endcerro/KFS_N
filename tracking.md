@@ -14,105 +14,40 @@ Virtual Address Space:
 0xC0000000 - 0xFFFFFFFF : Kernel Space (1GB)
     0xC0000000 : Kernel code/data start (_kernel_start)
     0xC0000800 : GDT location (GDTADDR)
-    0xC0100000+: Kernel heap (TODO - not defined)
+    _kernel_end + PAGE_ALIGN : Frame allocator bitmap
 
 Physical Memory:
-0x00100000 (1MB) : Kernel load address (KERNEL_LMA in linker.ld)
+0x00100000 (1MB) : Kernel load address (KERNEL_LMA)
 ```
 
-## Current File Structure
+## File Structure
 
 ```
 src/
-├── lib.rs              # Entry point, calls memory::init()
+├── lib.rs                 # Entry point, calls memory::init()
 ├── memory/
-│   ├── mod.rs          # init() clears identity map, exposes PAGING global
-│   ├── define.rs       # PAGE_SIZE=4096, KERNEL_OFFSET=0xC0000000
-│   ├── pageflags.rs    # PageFlags bitflags (PRESENT, WRITABLE, USER, etc.)
-│   ├── directory.rs    # PageDirectory, PageDirectoryEntry (read-only getters)
-│   ├── pagetable.rs    # PageTable, PageTableEntry (read-only getters)
-│   └── physical.rs     # FrameAllocator with bitmap, PhysFrame
+│   ├── mod.rs             # init(): physical allocator + clear identity map
+│   ├── define.rs          # PAGE_SIZE, KERNEL_OFFSET constants
+│   ├── pageflags.rs       # PageFlags bitflags
+│   ├── directory.rs       # PageDirectory (set_entry commented out)
+│   ├── pagetable.rs       # PageTable (set_entry commented out)
+│   └── physical.rs        # FrameAllocator - COMPLETE
+├── multiboot2/
+│   ├── mod.rs             # Multiboot2 parsing
+│   └── meminfo.rs         # Memory map from multiboot
 ├── gdt/
-│   ├── mod.rs          # GDT init with kernel+user segments + TSS
-│   ├── define.rs       # Selectors: KERNEL_CODE=0x08, USER_CODE=0x23, etc.
-│   ├── descriptor.rs   # SegmentDescriptor struct
-│   └── tss.rs          # TssSegment for ring transitions
-├── boot.asm            # higher_half_start, clear_page1()
-└── bootstrap.asm       # start, setup_paging (assembly), stack, page tables
+│   ├── mod.rs             # GDT init + TSS
+│   ├── define.rs          # Segment selectors
+│   ├── descriptor.rs      # SegmentDescriptor
+│   └── tss.rs             # TssSegment
+├── boot.asm               # higher_half_start, clear_page1()
+└── bootstrap.asm          # start, setup_paging, stack, page tables
 ```
 
-## What Works
-
-| Component | Status | Location |
-|-----------|--------|----------|
-| Multiboot2 boot | ✅ | bootstrap.asm |
-| Higher-half paging (0xC0000000) | ✅ | bootstrap.asm::setup_paging |
-| Identity map cleanup | ✅ | boot.asm::clear_page1 |
-| Physical frame allocator | ✅ | physical.rs::FrameAllocator |
-| Page flags | ✅ | pageflags.rs::PageFlags |
-| GDT with ring 0/3 segments | ✅ | gdt/mod.rs |
-| TSS for stack switching | ✅ | gdt/tss.rs |
-| Basic panic handler | ✅ | lib.rs (print + loop) |
-
-## What's Missing (Implementation TODO)
-
-### 1. Virtual Memory Manager (CRITICAL)
-Need in `memory/` module:
-```rust
-// Virtual address wrapper
-pub struct VirtAddr(u32);
-
-// Core mapping functions
-pub fn map_page(virt: VirtAddr, phys: PhysFrame, flags: PageFlags) -> Result<(), MapError>;
-pub fn unmap_page(virt: VirtAddr) -> Result<PhysFrame, UnmapError>;
-pub fn translate(virt: VirtAddr) -> Option<PhysAddr>;
-
-// TLB management
-pub fn flush_tlb_entry(virt: VirtAddr); // invlpg instruction
-pub fn flush_tlb_all();                  // reload CR3
-```
-
-### 2. Dynamic Page Table Allocation (CRITICAL)
-The `set_entry()` methods in `directory.rs` and `pagetable.rs` are **commented out**. Need:
-- Uncomment and fix `set_entry()` methods
-- Allocate new page tables using `FrameAllocator`
-- Track which page tables are allocated
-
-### 3. Kernel Heap Allocator (CRITICAL)
-Need new file `memory/heap.rs`:
-```rust
-// Simple interface
-pub fn kmalloc(size: usize) -> *mut u8;
-pub fn kfree(ptr: *mut u8);
-pub fn ksize(ptr: *mut u8) -> usize;
-
-// For Rust alloc crate integration
-impl GlobalAlloc for KernelAllocator { ... }
-```
-Suggested heap region: `0xC1000000` to `0xC2000000` (16MB)
-
-### 4. Page Fault Handler (HIGH)
-In interrupts module, add handler for interrupt 14:
-```rust
-extern "x86-interrupt" fn page_fault_handler(
-    stack_frame: InterruptStackFrame,
-    error_code: u64,
-) {
-    let fault_addr: u32;
-    unsafe { asm!("mov {}, cr2", out(reg) fault_addr); }
-    panic!("PAGE FAULT at {:#x}, error: {:#x}", fault_addr, error_code);
-}
-```
-
-### 5. User Space Memory (LOW PRIORITY)
-- Separate page directory per process
-- User-accessible page mappings (USER flag)
-- Syscall interface for memory operations
-
-## Key Constants Reference
+## Key Constants
 
 ```rust
-// From gdt/define.rs
+// gdt/define.rs
 KERNEL_CODE_SELECTOR  = 0x08
 KERNEL_DATA_SELECTOR  = 0x10
 KERNEL_STACK_SELECTOR = 0x18
@@ -122,62 +57,79 @@ USER_STACK_SELECTOR   = 0x33  // 0x30 | 3
 TSS_SELECTOR          = 0x38
 KERNEL_VIRTUAL_BASE   = 0xC0000000
 
-// From memory/define.rs
-PAGE_SIZE             = 4096
-PAGE_TABLE_ENTRIES    = 1024
+// memory/define.rs
+PAGE_SIZE              = 4096
+PAGE_TABLE_ENTRIES     = 1024
 PAGE_DIRECTORY_ENTRIES = 1024
-KERNEL_OFFSET         = 0xC0000000
+KERNEL_OFFSET          = 0xC0000000
 ```
 
 ## Assembly Interfaces
 
 ```nasm
-; Defined in bootstrap.asm (available to Rust via extern)
+; bootstrap.asm - available via extern
 global page_directory      ; Page directory base (4KB aligned)
 global stack_top           ; Kernel stack top
-global stack_bottom        ; Kernel stack bottom (16KB stack)
+global stack_bottom        ; 16KB stack
 
-; Defined in boot.asm
+; boot.asm
 global clear_page1         ; Clears first PDE (removes identity map)
 ```
 
-## Physical Memory Detection
+## Physical Frame Allocator API (physical.rs)
 
-Multiboot2 provides memory map via `multiboot2::meminfo::MemoryInfoEntry`:
 ```rust
-struct MemoryInfoEntry {
-    base_addr: u64,
-    length: u64,
-    typee: u32,  // 1 = available, other = reserved
-}
+// Global instance
+pub static mut FRAME_ALLOCATOR: Option<FrameAllocator>
+
+// Frame operations
+PhysFrame::containing_address(addr: usize) -> PhysFrame
+PhysFrame::start_address(&self) -> usize
+
+// Allocator methods
+allocate_frame() -> Result<PhysFrame, AllocationError>
+allocate_specific_frame(frame) -> Result<(), AllocationError>
+deallocate_frame(frame) -> Result<(), AllocationError>
+total_frames() / used_frames() / free_frames() -> usize
 ```
-Used by `FrameAllocator::new()` to mark available frames.
 
-## Implementation Priority Order
+## What's Missing
 
-1. **Uncomment `set_entry()` methods** in directory.rs/pagetable.rs
-2. **Create `map_page()` / `unmap_page()` API** using FrameAllocator
-3. **Add page fault handler** to IDT (interrupt 14)
-4. **Define heap region** and implement bump allocator
-5. **Upgrade to proper heap** (free list or buddy allocator)
-6. **Implement GlobalAlloc** for Rust `alloc` crate
-7. **Enhance panic handler** with register dump
+### Virtual Memory Manager (memory/virtual.rs - TODO)
+```rust
+pub fn map_page(virt: VirtAddr, phys: PhysFrame, flags: PageFlags) -> Result<(), MapError>;
+pub fn unmap_page(virt: VirtAddr) -> Result<PhysFrame, UnmapError>;
+pub fn translate(virt: VirtAddr) -> Option<PhysAddr>;
+pub fn flush_tlb_entry(virt: VirtAddr);  // invlpg
+pub fn flush_tlb_all();                   // reload CR3
+```
 
-## Testing Checklist
+### Heap Allocator (memory/heap.rs - TODO)
+```rust
+pub fn kmalloc(size: usize) -> *mut u8;
+pub fn kfree(ptr: *mut u8);
+pub fn ksize(ptr: *mut u8) -> usize;
+// Suggested region: 0xC1000000 - 0xC2000000 (16MB)
+```
 
-- [ ] Can allocate physical frame via `FrameAllocator`
-- [ ] Can map new virtual page to physical frame
-- [ ] Can unmap page and free frame
-- [ ] Page fault triggers handler (not triple fault)
-- [ ] `kmalloc()` returns valid pointer
-- [ ] `kfree()` doesn't corrupt heap
-- [ ] Multiple alloc/free cycles work
-- [ ] Kernel stays under 10MB total
+### Page Fault Handler (interrupt 14 - TODO)
+```rust
+// Read faulting address from CR2
+// Print error and halt
+```
 
 ## Common Pitfalls
 
-1. **Virtual vs Physical addresses**: Always subtract `KERNEL_VIRTUAL_BASE` when writing to page tables (they need physical addresses)
-2. **TLB caching**: Must `invlpg` after modifying page tables
-3. **Page alignment**: All page table/directory addresses must be 4KB aligned
-4. **Identity map removal**: `clear_page1()` removes 0-4MB identity map; don't access low memory after this
-5. **Bitmap initialization**: FrameAllocator marks all frames used initially, then frees available regions
+1. **Virtual vs Physical**: Subtract `KERNEL_VIRTUAL_BASE` when writing to page tables
+2. **TLB**: Must `invlpg` after modifying page tables
+3. **Alignment**: Page table addresses must be 4KB aligned
+4. **Identity map**: `clear_page1()` removes 0-4MB mapping - don't access low memory after
+
+## Implementation Priority
+
+1. Uncomment `set_entry()` in directory.rs/pagetable.rs
+2. Create `map_page()` / `unmap_page()` API
+3. Add page fault handler (interrupt 14)
+4. Define heap region, implement bump allocator
+5. Upgrade to free-list heap allocator
+6. Implement `GlobalAlloc` for Rust `alloc` crate
