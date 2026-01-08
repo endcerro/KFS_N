@@ -22,10 +22,10 @@ QEMU := qemu-system-i386
 KVM := kvm
 
 # Flags
-RUST_FLAGS := #--features gdt_test --features verbose
+RUST_FLAGS := --features verbose #--features gdt_test 
 
 # Phony targets
-.PHONY: all kvm qemu qemu_dbg dbg rust_dbg clean
+.PHONY: all kvm qemu qemu_dbg dbg clean
 
 all: $(ISO_FILE)
 
@@ -35,11 +35,11 @@ kvm: $(ISO_FILE)
 
 qemu: $(ISO_FILE)
 	@echo "Starting with QEMU"
-	$(QEMU) -cdrom $(ISO_FILE) -m 12M -serial stdio
+	$(QEMU) -cdrom $(ISO_FILE) -m 256M -serial stdio
 
 qemu_dbg: $(ISO_FILE)
 	@echo "Starting with QEMU in debug mode"
-	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio
+	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio -m 256M
 
 dbg:
 	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio &

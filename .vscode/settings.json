@@ -1,0 +1,32 @@
+{
+    "files.associations": {
+        "*.asm": "nasm",
+        "*.inc": "nasm"
+    },
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/src/**"
+    ],
+    "C_Cpp.default.defines": [],
+    "C_Cpp.default.compilerPath": "/usr/bin/gcc",
+    "C_Cpp.default.cStandard": "c11",
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.intelliSenseMode": "linux-gcc-x86",
+    "rust-analyzer.cargo.target": "i386-unknown-none",
+    "rust-analyzer.cargo.allFeatures": false,
+    "rust-analyzer.checkOnSave.allTargets": false,
+    "rust-analyzer.diagnostics.disabled": [
+        "unresolved-import"
+    ],
+    "editor.formatOnSave": false,
+    "files.exclude": {
+        "**/target": true,
+        "**/obj": true,
+        "**/isofiles": true,
+        "**/*.iso": true
+    },
+    "search.exclude": {
+        "**/target": true,
+        "**/obj": true,
+        "**/isofiles": true
+    }
+}

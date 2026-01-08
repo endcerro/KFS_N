@@ -2,42 +2,117 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Run QEMU",
-            "type": "process",
+            "label": "build-kernel",
+            "type": "shell",
             "command": "make",
-            "args": ["qemu_dbg"],
-            "isBackground": true,
+            "args": ["all"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "problemMatcher": [
-                {
-                    "pattern": [
-                        {
-                            "regexp": ".",
-                            "file": 1,
-                            "location": 2,
-                            "message": 3
-                        }
-                    ],
-                    "background": {
-                        "activeOnStart": true,
-                        "beginsPattern": ".",
-                        "endsPattern": "."
-                    }
-                }
-            ]
+                "$rustc",
+                "$gcc"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true,
+                "showReuseMessage": false
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
         },
         {
-            "label": "Kill QEMU",
+            "label": "clean-kernel",
+            "type": "shell",
+            "command": "make",
+            "args": ["clean"],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "full-clean",
+            "type": "shell",
+            "command": "make",
+            "args": ["fclean"],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "start-qemu-debug",
+            "type": "shell",
+            "command": "qemu-system-i386",
+            "args": [
+                "-cdrom",
+                "os.iso",
+                "-s",
+                "-S",
+                "-m",
+                "256M",
+                "-serial",
+                "stdio",
+                "-no-reboot",
+                "-no-shutdown",
+                "-display",
+                "gtk"
+            ],
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^$"
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^.*$",
+                    "endsPattern": "^.*$"
+                }
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false
+            }
+        },
+        {
+            "label": "kill-qemu",
             "type": "shell",
             "command": "pkill",
-            "args": ["-f", "qemu-system-i386"],
-            "problemMatcher": []
+            "args": ["-9", "qemu-system-i386"],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared"
+            }
         },
         {
-            "label": "Tail QEMU Serial",
-            "type": "shell",
-            "command": "tail",
-            "args": ["-f", "/tmp/qemu_serial.log"],
-            "isBackground": true,
+            "label": "build-and-launch-debug",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "build-kernel",
+                "start-qemu-debug"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always"
+            }
+        },
+        {
+            "label": "rebuild-and-debug",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "clean-kernel",
+                "build-kernel",
+                "start-qemu-debug"
+            ],
             "problemMatcher": []
         }
     ]

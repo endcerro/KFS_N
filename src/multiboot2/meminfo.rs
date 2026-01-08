@@ -1,6 +1,100 @@
 use core::fmt;
 use crate::serial_println;
-use crate::multiboot2::{MultibootInfo, MBOOT_HEADER};
+use crate::multiboot2::{MBOOT_HEADER, MemoryMapTag, MultibootInfo, Tag};
+use crate::multiboot2::MultibootInfoHeader;
+const MAX_MEMORY_ENTRIES: usize = 32;
+// Static buffer to hold memory map entries
+static mut MEMORY_MAP_BUFFER: [MemoryInfoEntry; MAX_MEMORY_ENTRIES] = [MemoryInfoEntry {
+    base_addr: 0,
+    length: 0,
+    typee: 0,
+    reserved: 0,
+}; MAX_MEMORY_ENTRIES];
+
+static mut MEMORY_MAP_COUNT: usize = 0;
+
+
+pub fn get_memory_map() -> Option<&'static [MemoryInfoEntry]> {
+  unsafe {
+        // If we already parsed it, return the cached version
+        if MEMORY_MAP_COUNT > 0 {
+            return Some(&MEMORY_MAP_BUFFER[..MEMORY_MAP_COUNT]);
+        }
+
+        MBOOT_HEADER.as_ref().and_then(|header| {
+            let mut count = 0;
+
+            // Iterate through multiboot tags to find memory map
+            let mut current = (header as *const _ as usize + size_of::<MultibootInfoHeader>()) as *const Tag;
+
+            while (*current).tag_type != 0 {
+                if (*current).tag_type == 6 { // Memory map tag
+                    let mmap_tag = current as *const MemoryMapTag;
+                    let entry_size = (*mmap_tag).entry_size;
+                    let entries_count = ((*mmap_tag).size - size_of::<MemoryMapTag>() as u32) / entry_size;
+
+                    let mut entry_ptr = (mmap_tag as usize + size_of::<MemoryMapTag>()) as *const MemoryInfoEntry;
+
+                    // Copy entries to our static buffer
+                    for _ in 0..entries_count {
+                        if count >= MAX_MEMORY_ENTRIES {
+                            println!("Warning: Memory map has more than {} entries, truncating", MAX_MEMORY_ENTRIES);
+                            break;
+                        }
+
+                        MEMORY_MAP_BUFFER[count] = *entry_ptr;
+                        count += 1;
+
+                        entry_ptr = (entry_ptr as usize + entry_size as usize) as *const MemoryInfoEntry;
+                    }
+
+                    MEMORY_MAP_COUNT = count;
+                    return Some(&MEMORY_MAP_BUFFER[..count]);
+                }
+
+                // Move to next tag (aligned to 8 bytes)
+                let tag_size = (*current).size as usize;
+                let aligned_size = (tag_size + 7) & !7;
+                current = (current as usize + aligned_size) as *const Tag;
+            }
+
+            None
+        })
+    }
+}
+
+/// Get the count of memory map entries
+pub fn get_memory_map_count() -> usize {
+    unsafe { MEMORY_MAP_COUNT }
+}
+
+/// Print memory map for debugging
+pub fn print_memory_map() {
+    if let Some(entries) = get_memory_map() {
+        println!("Memory Map ({} entries):", entries.len());
+        for (i, entry) in entries.iter().enumerate() {
+            let type_str = match entry.typee {
+                1 => "Available",
+                2 => "Reserved",
+                3 => "ACPI Reclaimable",
+                4 => "ACPI NVS",
+                5 => "Bad Memory",
+                _ => "Unknown",
+            };
+            
+            println!("  [{}] {:#010x} - {:#010x} ({} KB) - {}", 
+                i,
+                entry.base_addr,
+                entry.base_addr + entry.length,
+                entry.length / 1024,
+                type_str
+            );
+        }
+    } else {
+        println!("No memory map available from multiboot");
+    }
+}
+
 
 #[derive(Debug, Copy, Clone)]
 pub struct MemoryInfo {
@@ -82,7 +176,7 @@ impl fmt::Display for MemoryInfoEntry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (size, unit) = format_size(self.length);
         let region_type = get_region_type_str(self.typee);
-        write!(f, "Base: 0x{:08x}, Size: {:.2} {}, Type: {}", 
+        write!(f, "Base: 0x{:08x}, Size: {:.2} {}, Type: {}",
             self.base_addr,
             size,
             unit,

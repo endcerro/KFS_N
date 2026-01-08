@@ -38,6 +38,34 @@ pub struct MultibootInfoTag {
     pub size : u32,
 }
 
+// src/multiboot2/mod.rs or wherever your multiboot structures are
+
+#[repr(C, packed)]
+#[derive(Debug, Clone, Copy)]
+pub struct Tag {
+    pub tag_type: u32,
+    pub size: u32,
+}
+
+#[repr(C, packed)]
+#[derive(Debug, Clone, Copy)]
+pub struct MemoryMapTag {
+    pub tag_type: u32,
+    pub size: u32,
+    pub entry_size: u32,
+    pub entry_version: u32,
+    // Entries follow immediately after
+}
+
+#[repr(C, packed)]
+#[derive(Debug, Clone, Copy)]
+pub struct MemoryInfoEntry {
+    pub base_addr: u64,
+    pub length: u64,
+    pub typee: u32,
+    pub _reserved: u32,
+}
+
 impl MultibootInfo {
     pub fn new (ptr : *const MultibootInfoHeader) -> MultibootInfo {
         MultibootInfo {
