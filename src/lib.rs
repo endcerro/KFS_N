@@ -41,27 +41,27 @@ fn init() {
     vga::print_ft();
 
     memory::init();
-    print!("Paging     ");
-    colored_print!((None, Some(Color::Green)), "OK\n");
-
+    // print!("Paging     ");
+    // colored_print!((None, Some(Color::Green)), "OK\n");
+    multiboot2::meminfo::print_meminfo();
     WRITER.lock().change_color(Some(vga::Color::White), Some(vga::Color::Black));
     WRITER.lock().cursor.enable_cursor(0, 15);
-    print!("Serial     ");
+    // print!("Serial     ");
     serial::init();
-    colored_print!((None, Some(Color::Green)), "OK\n");
+    // colored_print!((None, Some(Color::Green)), "OK\n");
     serial_println!("Hello world");
-    print!("GDT        ");
+    // print!("GDT        ");
     gdt::init();
-    colored_print!((None, Some(Color::Green)), "OK\n");
+    // colored_print!((None, Some(Color::Green)), "OK\n");
 
-    print!("Interrupts ");
+    // print!("Interrupts ");
     interrupts::init();
-    colored_print!((None, Some(Color::Green)), "OK\n");
-    print!("Shell      ");
+    // colored_print!((None, Some(Color::Green)), "OK\n");
+    // print!("Shell      ");
     shell::init_shell();
-    colored_print!((None, Some(Color::Green)), "OK\n");
+    // colored_print!((None, Some(Color::Green)), "OK\n");
 
-    multiboot2::meminfo::print_meminfo();
+
 }
 
 #[panic_handler]

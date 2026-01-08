@@ -246,19 +246,19 @@ pub fn print_meminfo() {
     }
 
     // Print memory map header
-    serial_println!("\nMemory Map:");
-    serial_println!("----------------------------------------");
+    println!("\nMemory Map:");
+    println!("----------------------------------------");
     // Print each memory region
     for j in 0..i {
-        serial_println!("Region {}: {}", j, entries[j]);
+        println!("Region {}: {}", j, entries[j]);
     }
     // Print summary
-    serial_println!("----------------------------------------");
+    println!("----------------------------------------");
     let (avail_size, avail_unit) = format_size(total_available);
     let (resv_size, resv_unit) = format_size(total_reserved);
     let (total_size, total_unit) = format_size(total_reserved + total_available);
-    serial_println!("Total Available: {:.2} {}", avail_size, avail_unit);
-    serial_println!("Total Reserved:  {:.2} {}", resv_size, resv_unit);
-    serial_println!("Total Memory:    {:.2} {}", total_size, total_unit);
-    serial_println!("----------------------------------------\n");
+    println!("Total Available: {:.2} {}", avail_size, avail_unit);
+    println!("Total Reserved:  {:.2} {}", resv_size, resv_unit);
+    println!("Total Memory:    {:.2} {}", total_size, total_unit);
+    println!("----------------------------------------\n");
 }
