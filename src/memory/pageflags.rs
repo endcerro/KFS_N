@@ -14,8 +14,24 @@ impl PageFlags {
     pub const HUGE_PAGE: PageFlags = PageFlags(1 << 7);
     pub const GLOBAL: PageFlags = PageFlags(1 << 8);
 
+    /// Get the raw u32 value of the flags
     pub fn value(&self) -> u32 {
         self.0
+    }
+
+    /// Check if the PRESENT flag is set
+    pub fn is_present(&self) -> bool {
+        self.0 & Self::PRESENT.0 != 0
+    }
+
+    /// Check if the WRITABLE flag is set
+    pub fn is_writable(&self) -> bool {
+        self.0 & Self::WRITABLE.0 != 0
+    }
+
+    /// Check if the USER flag is set
+    pub fn is_user(&self) -> bool {
+        self.0 & Self::USER.0 != 0
     }
 }
 

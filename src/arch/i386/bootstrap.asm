@@ -1,9 +1,9 @@
-; Add these to your existing global declarations
 global stack_top
 global stack_bottom
 global setup_paging
 global start
 extern higher_half_start
+global page_table1
 
 section .boot
 

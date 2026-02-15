@@ -14,7 +14,7 @@ RUST_LIB := $(TARGET_DIR)/libkfs.a
 RUST_SRCS := $(shell find $(SRC) -name '*.rs')
 
 # Commands
-RUSTC := cargo build --target $(ASM_SRC)/i386-unknown-none.json
+RUSTC := cargo build --target $(ASM_SRC)/i386-unknown-none.json -Zjson-target-spec
 NASM := nasm -g -f elf32
 LD := ld -m elf_i386 -z noexecstack
 GRUB_MKRESCUE := grub-mkrescue -d /usr/lib/grub/i386-pc
@@ -41,10 +41,10 @@ qemu_dbg: $(ISO_FILE)
 	@echo "Starting with QEMU in debug mode"
 	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio -m 256M
 
-dbg:
-	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio &
-	gdb -x gdb_init.gdb isofiles/kernel.bin
-	pkill qemu
+# dbg:
+# 	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio &
+# 	gdb -x gdb_init.gdb isofiles/kernel.bin
+# 	pkill qemu
 
 # Build rules
 $(OBJ_DIR)/boot.o: $(ASM_SRC)/boot.asm | $(OBJ_DIR)
@@ -76,11 +76,11 @@ $(OBJ_DIR) $(ISO_DIR)/boot/grub $(TARGET_DIR):
 	mkdir -p $@
 
 clean:
-	cargo clean -p kfs
+	cargo clean -Zjson-target-spec -p kfs
 	rm -rf $(OBJ_DIR) $(ISO_DIR) $(ISO_FILE)
 
 fclean: clean
-	cargo clean
+	cargo clean -Zjson-target-spec
 
 re: fclean all
 

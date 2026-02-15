@@ -24,6 +24,27 @@ impl PageTable {
             }
         }
     }
+    pub fn set_entry(&mut self, index: usize, page_phys_addr: u32, flags: super::pageflags::PageFlags) {
+        assert!(index < PAGE_TABLE_ENTRIES, "PTE index out of bounds");
+        assert!(page_phys_addr & 0xFFF == 0, "Page address must be 4KB aligned");
+        
+        unsafe {
+            (*self.get_entry(index)).set(page_phys_addr, flags.value());
+        }
+        
+        #[cfg(feature = "verbose")]
+        println!("PTE[{}] set to phys {:#x} with flags {:#x}", index, page_phys_addr, flags.value());
+    }
+    pub fn clear_entry(&mut self, index: usize) {
+        assert!(index < PAGE_TABLE_ENTRIES, "PTE index out of bounds");
+        
+        unsafe {
+            (*self.get_entry(index)).clear();
+        }
+        
+        #[cfg(feature = "verbose")]
+        println!("PTE[{}] cleared", index);
+    }
 
     // pub fn set_entry(&mut self, index: usize, address: usize, flags: PageFlags) {
     //     unsafe {
@@ -31,7 +52,26 @@ impl PageTable {
     //     }
     // }
     pub fn get_entry(&mut self, index: usize) -> *mut PageTableEntry {
-            self.entries.as_ptr().wrapping_add(index) as  *mut PageTableEntry
+        unsafe {
+            // CRITICAL: Cast to *mut PageTableEntry FIRST, then add index
+            let base = self.entries.as_ptr() as *mut PageTableEntry;
+            base.add(index)
+        }
+    }
+    pub fn zero(&mut self) {
+        unsafe {
+            let entries = self.entries.as_mut();
+            for entry in entries.iter_mut() {
+                entry.clear();
+            }
+        }
+    }
+        /// Get the physical address of this page table
+    /// 
+    /// # Safety
+    /// Assumes this page table is in the higher half and subtracts KERNEL_OFFSET
+    pub fn physical_address(&self) -> u32 {
+        (self.entries.as_ptr() as u32).wrapping_sub(super::define::KERNEL_OFFSET as u32)
     }
 }
 
@@ -39,7 +79,34 @@ impl PageTable {
 #[repr(C, align(4096))]
 pub struct PageTableEntry(pub u32);
 
+
 impl PageTableEntry {
+    pub fn new(phys_addr: u32, flags: u32) -> Self {
+        // Ensure address is 4KB aligned (bits 0-11 must be 0)
+        debug_assert!(phys_addr & 0xFFF == 0, "PTE address must be 4KB aligned");
+        PageTableEntry((phys_addr & 0xFFFFF000) | (flags & 0xFFF))
+    }
+
+    /// Create an empty (non-present) PTE
+    pub const fn empty() -> Self {
+        PageTableEntry(0)
+    }
+
+    /// Set this PTE to point to a physical page at the given address
+    pub fn set(&mut self, phys_addr: u32, flags: u32) {
+        debug_assert!(phys_addr & 0xFFF == 0, "PTE address must be 4KB aligned");
+        self.0 = (phys_addr & 0xFFFFF000) | (flags & 0xFFF);
+    }
+
+    /// Clear this PTE (mark as not present)
+    pub fn clear(&mut self) {
+        self.0 = 0;
+    }
+
+    /// Get the raw u32 value
+    #[inline] pub fn value(&self) -> u32 {
+        self.0
+    }
     #[inline] pub fn present(&self) -> bool {
         self.0 & PRESENT > 0
     }
@@ -67,7 +134,12 @@ impl PageTableEntry {
     #[inline] pub fn global(&self) -> bool {
         self.0 & GLOBAL > 0
     }
+    /// Get the physical address this entry points to
     #[inline] pub fn address(&self) -> u32 {
+        self.0 & 0xFFFFF000
+    }
+    /// Get the page frame number (address >> 12)
+    #[inline] pub fn page_frame_number(&self) -> u32 {
         self.0 >> 12
     }
 }
