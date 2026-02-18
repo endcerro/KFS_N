@@ -6,7 +6,7 @@ pub mod define;
 
 use interrupts::Interrupt;
 use define::{DPL0_INTERRUPT_GATE, IDT_SIZE};
-use crate::{gdt::define::KERNEL_CODE_SELECTOR, serial_println, utils::enable_interrupts};
+use crate::{gdt::define::KERNEL_CODE_SELECTOR, utils::enable_interrupts};
 
 
 pub fn init() {
@@ -23,8 +23,8 @@ pub fn init() {
                 set_interrupt_handler(i.try_into().unwrap(), handlers::default);
             }
             else {
-                #[cfg(feature = "verbose")]
-                serial_println!("Not setting default handler for {:?}", Interrupt::from_u8(i.try_into().unwrap()).unwrap());
+                // #[cfg(feature = "verbose")]
+                // serial_println!("Not setting default handler for {:?}", Interrupt::from_u8(i.try_into().unwrap()).unwrap());
             }
         }
     }

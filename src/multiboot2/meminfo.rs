@@ -1,5 +1,4 @@
 use core::fmt;
-use crate::serial_println;
 use crate::multiboot2::{MBOOT_HEADER, MemoryMapTag, MultibootInfo, Tag};
 use crate::multiboot2::MultibootInfoHeader;
 const MAX_MEMORY_ENTRIES: usize = 32;

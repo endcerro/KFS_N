@@ -161,13 +161,12 @@ pub fn paging() -> &'static mut PageDirectory {
 pub fn test_paging_infrastructure() {
     use crate::memory::{pageflags::PageFlags, PAGING};
     use crate::memory::directory::PageDirectoryEntry;
-    use crate::memory::pagetable::{PageTable, PageTableEntry};
+    use crate::memory::pagetable::PageTableEntry;
     
     println!("\n=== Testing Paging Infrastructure ===");
     
     // Test 1: PageDirectoryEntry manipulation
     println!("\n[Test 1] PageDirectoryEntry operations");
-    unsafe {
         let mut pde = PageDirectoryEntry::new(0x1000, PageFlags::PRESENT.value());
         assert!(pde.present(), "PDE should be present");
         assert_eq!(pde.address(), 0x1000, "PDE address mismatch");
@@ -181,26 +180,23 @@ pub fn test_paging_infrastructure() {
         assert!(!pde.present(), "PDE should not be present after clear");
         
         println!("  ✓ PageDirectoryEntry tests passed");
-    }
     
     // Test 2: PageTableEntry manipulation
     println!("\n[Test 2] PageTableEntry operations");
-    unsafe {
-        let mut pte = PageTableEntry::new(0x1000, PageFlags::PRESENT.value());
-        assert!(pte.present(), "PTE should be present");
-        assert_eq!(pte.address(), 0x1000, "PTE address mismatch");
-        
-        pte.set(0x3000, (PageFlags::PRESENT | PageFlags::WRITABLE | PageFlags::USER).value());
-        assert!(pte.present(), "PTE should still be present");
-        assert!(pte.writeable(), "PTE should be writable");
-        assert!(pte.user(), "PTE should be user-accessible");
-        assert_eq!(pte.address(), 0x3000, "PTE address should be updated");
-        
-        pte.clear();
-        assert!(!pte.present(), "PTE should not be present after clear");
-        
-        println!("  ✓ PageTableEntry tests passed");
-    }
+    let mut pte = PageTableEntry::new(0x1000, PageFlags::PRESENT.value());
+    assert!(pte.present(), "PTE should be present");
+    assert_eq!(pte.address(), 0x1000, "PTE address mismatch");
+    
+    pte.set(0x3000, (PageFlags::PRESENT | PageFlags::WRITABLE | PageFlags::USER).value());
+    assert!(pte.present(), "PTE should still be present");
+    assert!(pte.writeable(), "PTE should be writable");
+    assert!(pte.user(), "PTE should be user-accessible");
+    assert_eq!(pte.address(), 0x3000, "PTE address should be updated");
+    
+    pte.clear();
+    assert!(!pte.present(), "PTE should not be present after clear");
+    
+    println!("  ✓ PageTableEntry tests passed");
     
     // Test 3: PageFlags operations
     println!("\n[Test 3] PageFlags operations");

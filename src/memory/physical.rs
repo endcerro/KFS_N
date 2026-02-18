@@ -151,7 +151,7 @@ impl FrameAllocator {
                 self.mark_frame_used(frame);
                 self.next_free_frame = (frame + 1) % self.total_frames;
                 
-                #[cfg(feature = "debug_alloc")]
+                #[cfg(feature = "verbose")]
                 println!("Allocated frame {} at phys addr {:#x}", frame, PhysFrame { number: frame }.start_address());
                 
                 return Ok(PhysFrame { number: frame });
@@ -173,7 +173,7 @@ impl FrameAllocator {
         
         self.mark_frame_used(frame.number);
         
-        #[cfg(feature = "debug_alloc")]
+        #[cfg(feature = "verbose")]
         println!("Allocated specific frame {} at phys addr {:#x}", frame.number, frame.start_address());
         
         Ok(())

@@ -16,7 +16,7 @@ pub mod boot;
 
 use core::panic::PanicInfo;
 
-use vga::{Color, WRITER};
+use vga::WRITER;
 use shell::shell_loop;
 
 

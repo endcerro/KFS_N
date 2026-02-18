@@ -4,6 +4,7 @@ use core::ops::{BitOr, BitAnd, Not};
 pub struct PageFlags(u32);
 
 impl PageFlags {
+    pub const NONE: PageFlags = PageFlags(0);
     pub const PRESENT: PageFlags = PageFlags(1 << 0);
     pub const WRITABLE: PageFlags = PageFlags(1 << 1);
     pub const USER: PageFlags = PageFlags(1 << 2);
@@ -13,6 +14,11 @@ impl PageFlags {
     pub const DIRTY: PageFlags = PageFlags(1 << 6);
     pub const HUGE_PAGE: PageFlags = PageFlags(1 << 7);
     pub const GLOBAL: PageFlags = PageFlags(1 << 8);
+
+    /// Construct PageFlags from a raw u32 (useful for reading hardware values)
+    pub const fn from_raw(val: u32) -> Self {
+        PageFlags(val)
+    }
 
     /// Get the raw u32 value of the flags
     pub fn value(&self) -> u32 {
