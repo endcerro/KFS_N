@@ -19,7 +19,7 @@ pub fn init() {
     unsafe {
         PAGING = Some(PageDirectory::new());
     }
-    diagnose_page_directory();
+
     init_physical_memory();
 
     // Install recursive page directory mapping (PDE[1023] → PD itself).
@@ -36,7 +36,7 @@ pub fn init() {
         #[cfg(feature = "verbose")]
         println!("Entry 0 : {}", *PAGING.as_mut().unwrap().get_entry(0));
     }
-
+    diagnose_page_directory();
     // Run VMM self-tests after everything is initialised
     vmm::test_virtual_memory();
 }

@@ -31,11 +31,12 @@ Implement a complete, stable, and functional memory management system for an i38
 | Memory statistics | ✅ Done | `memory_stats()`, `print_stats()` |
 | Error handling | ✅ Done | `AllocationError` enum |
 | Global allocator | ✅ Done | `FRAME_ALLOCATOR: Option<FrameAllocator>` |
+| Bitmap virtual address fix | ✅ Done | Bitmap pointer stores virt addr (phys + KERNEL_OFFSET) to survive identity map removal |
 
 ### Phase 2: Paging Infrastructure ✅ COMPLETE
 | Task | Status | Notes |
 |------|--------|-------|
-| Page flags definition | ✅ Done | `PageFlags` with full bitwise ops (`BitOr`, `BitAnd`, `Not`) |
+| Page flags definition | ✅ Done | `PageFlags` with NONE, PRESENT..GLOBAL, from_raw(), full bitwise ops |
 | Page Directory Entry structure | ✅ Done | `PageDirectoryEntry` with all flag getters/setters |
 | Page Table Entry structure | ✅ Done | `PageTableEntry` with all flag getters/setters |
 | Page Directory wrapper | ✅ Done | `PageDirectory` with `set_entry`, `clear_entry`, `get_entry`, `physical_address` |
@@ -48,23 +49,27 @@ Implement a complete, stable, and functional memory management system for an i38
 | Paging diagnostic tooling | ✅ Done | `diagnose_page_directory()` verifies CR3, PDEs, and higher-half mapping |
 | Paging infrastructure tests | ✅ Done | `test_paging_infrastructure()` tests PDE/PTE/PageFlags operations |
 
-### Phase 3: Virtual Memory Manager ❌ (Not Started)
+### Phase 3: Virtual Memory Manager ✅ COMPLETE
 | Task | Status | Notes |
 |------|--------|-------|
-| Virtual address representation | ❌ TODO | Need `VirtAddr` type |
-| Physical address representation | ❌ TODO | Need `PhysAddr` type |
-| Address translation functions | ❌ TODO | Virtual ↔ Physical conversion |
-| Page mapping function | ❌ TODO | Map virtual to physical page |
-| Page unmapping function | ❌ TODO | Unmap virtual page |
-| TLB invalidation | ❌ TODO | `invlpg` instruction wrapper |
-| Page fault handler | ❌ TODO | Handle page faults in IDT |
+| Virtual address representation | ✅ Done | `VirtAddr` with pde_index(), pte_index(), page_offset(), is_kernel() |
+| Physical address representation | ✅ Done | `PhysAddr` with is_page_aligned() |
+| Recursive page directory mapping | ✅ Done | PDE[1023] → PD itself, page tables at 0xFFC00000 + N*0x1000 |
+| Page mapping function | ✅ Done | `map_page()` — auto-creates page tables, sets PTE, invlpg |
+| Convenience map+alloc | ✅ Done | `map_alloc()` — allocates frame and maps in one call |
+| Page unmapping function | ✅ Done | `unmap_page()` — clears PTE, returns freed phys addr |
+| Address translation | ✅ Done | `translate()` — walks PD→PT via recursive mapping |
+| Mapped predicate | ✅ Done | `is_mapped()` — quick check |
+| TLB invalidation | ✅ Done | `flush_tlb_entry()` (invlpg) and `flush_tlb_all()` (reload CR3) |
+| VMM self-test suite | ✅ Done | 5 tests: recursive reads, map/write/unmap, translate, multi-page, error cases |
+| Error types | ✅ Done | `MapError` (FrameAllocationFailed, AlreadyMapped, InvalidAddress), `UnmapError` |
 
 ### Phase 4: Kernel/User Space Separation ⚠️ (Defined but Not Enforced)
 | Task | Status | Notes |
 |------|--------|-------|
 | Kernel space definition | ✅ Done | `KERNEL_OFFSET = 0xC0000000` |
 | User space definition | ⚠️ Partial | Implied as < 0xC0000000, not explicit |
-| User/Supervisor page flags | ✅ Done | `USER` flag in `PageFlags` |
+| User/Supervisor page flags | ✅ Done | `USER` flag in `PageFlags`, VMM propagates USER to PDE |
 | GDT user segments | ✅ Done | User code/data/stack selectors defined |
 | Ring transition (syscalls) | ❌ TODO | Not implemented |
 
@@ -91,48 +96,50 @@ Implement a complete, stable, and functional memory management system for an i38
 
 ## Current Progress Assessment
 
-### Completed (~60%)
+### Completed (~70%)
 
 1. **Physical Memory Management** - FULLY COMPLETE
    - Bitmap-based frame allocator with all required features
    - Proper initialization from multiboot memory map
    - Protection of kernel and bitmap regions
+   - Bitmap pointer uses virtual address (survives identity map removal)
    - Statistics and debugging capabilities
-   - Error handling for all allocation scenarios
 
-2. **Bootstrap Paging** - The kernel boots with identity mapping and higher-half mapping. The assembly code in `bootstrap.asm` sets up:
+2. **Bootstrap Paging** - FULLY COMPLETE
    - Page directory and page_table1 at known locations, both exported as globals
    - First page table mapping 0-4MB (identity + higher-half at 0xC0000000)
    - Proper CR3 loading and paging enable
    - Identity map cleanup via `clear_page1()`
 
-3. **Paging Data Structures** - FULLY COMPLETE:
-   - `PageFlags` with complete bitwise operations (`BitOr`, `BitAnd`, `Not`)
-   - `PageDirectory` with working `set_entry`, `clear_entry`, `get_entry`, `physical_address`
-   - `PageTable` with working `set_entry`, `clear_entry`, `get_entry`, `zero`, `physical_address`
-   - `PageDirectoryEntry` and `PageTableEntry` with all flag accessors and mutators
+3. **Paging Data Structures** - FULLY COMPLETE
+   - `PageFlags` with NONE, from_raw(), complete bitwise operations
+   - `PageDirectory` / `PageTable` wrappers with full CRUD operations
+   - `PageDirectoryEntry` / `PageTableEntry` with all flag accessors
    - Global `PAGING: Option<PageDirectory>` initialized in `memory::init()`
-   - Diagnostic and test suite verifying correct operation at boot
 
-4. **GDT with User Segments** - User space selectors are defined (ring 3 ready)
+4. **Virtual Memory Manager** - FULLY COMPLETE
+   - Recursive page directory mapping at PDE[1023]
+   - `map_page()` with automatic page table creation
+   - `map_alloc()` convenience function
+   - `unmap_page()` returning freed physical address
+   - `translate()` with page offset preservation
+   - TLB invalidation (invlpg + CR3 reload)
+   - 5-test self-test suite passing at boot
 
-5. **Memory Map Parsing** - Complete multiboot2 memory map parsing in `meminfo.rs`
+5. **GDT with User Segments** - User space selectors are defined (ring 3 ready)
 
-### In Progress (~0%)
+6. **Memory Map Parsing** - Complete multiboot2 memory map parsing in `meminfo.rs`
 
-Nothing currently partially done — previous in-progress items (paging wrappers) are now complete.
+### Not Started (~30%)
 
-### Not Started (~40%)
-
-1. **Virtual Memory Manager** - No abstraction for:
-   - Creating new page mappings
-   - Handling virtual address ranges
-   - Page fault handling
-
-2. **Heap Allocator** - No dynamic memory allocation:
+1. **Heap Allocator** - No dynamic memory allocation:
    - No `kmalloc`/`kfree` implementation
    - No Rust `GlobalAlloc` integration
    - No heap region defined
+
+2. **Page Fault Handler** - Interrupt 14 not wired up:
+   - No CR2 reading
+   - No error code decoding
 
 3. **User Space Support** - While GDT segments exist:
    - No user page tables
@@ -150,12 +157,13 @@ Nothing currently partially done — previous in-progress items (paging wrappers
 
 ```
 memory/
-├── mod.rs           - Memory init: PAGING global, diagnostic, physical allocator, identity map cleanup ✅
+├── mod.rs           - Memory init: PAGING global, VMM init, diagnostic, physical allocator, identity map cleanup ✅
 ├── define.rs        - Constants (PAGE_SIZE, KERNEL_OFFSET, page_directory extern) ✅
-├── pageflags.rs     - PageFlags with full bitwise ops ✅
-├── directory.rs     - PageDirectory + PageDirectoryEntry: COMPLETE ✅
-├── pagetable.rs     - PageTable + PageTableEntry: COMPLETE ✅
-└── physical.rs      - Physical frame allocator ✅ COMPLETE
+├── pageflags.rs     - PageFlags with NONE, from_raw(), full bitwise ops ✅
+├── directory.rs     - PageDirectory + PageDirectoryEntry ✅
+├── pagetable.rs     - PageTable + PageTableEntry ✅
+├── physical.rs      - Physical frame allocator (bitmap at virtual address) ✅
+└── vmm.rs           - Virtual Memory Manager: recursive mapping, map/unmap/translate, self-test ✅
 
 multiboot2/
 ├── mod.rs           - Multiboot2 header/tag parsing ✅
@@ -175,21 +183,8 @@ boot.asm             - clear_page1(), higher_half_start ✅
 
 ## Recommended Next Steps (Priority Order)
 
-### 1. Create Virtual Memory Manager (High Priority)
-New file `memory/virtual.rs`:
-```rust
-pub struct VirtAddr(pub u32);
-pub struct PhysAddr(pub u32);
-
-pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), MapError>;
-pub fn unmap_page(virt: VirtAddr) -> Result<PhysAddr, UnmapError>;
-pub fn translate(virt: VirtAddr) -> Option<PhysAddr>;
-pub fn flush_tlb_entry(virt: VirtAddr);  // invlpg
-pub fn flush_tlb_all();                  // reload CR3
-```
-
-### 2. Implement Page Fault Handler (High Priority)
-In interrupts module, add handler for interrupt 14:
+### 1. Add Page Fault Handler (High Priority)
+Wire up interrupt 14 to read CR2 and decode the error code:
 ```rust
 extern "x86-interrupt" fn page_fault_handler(
     stack_frame: InterruptStackFrame,
@@ -201,7 +196,7 @@ extern "x86-interrupt" fn page_fault_handler(
 }
 ```
 
-### 3. Define Kernel Heap Region (Medium Priority)
+### 2. Define Kernel Heap Region (High Priority)
 Add to `memory/define.rs`:
 ```rust
 pub const KERNEL_HEAP_START: usize = 0xC1000000;
@@ -209,17 +204,23 @@ pub const KERNEL_HEAP_END: usize   = 0xC2000000;  // 16MB heap
 pub const KERNEL_HEAP_SIZE: usize  = KERNEL_HEAP_END - KERNEL_HEAP_START;
 ```
 
-### 4. Implement Basic Heap Allocator (Medium Priority)
+### 3. Implement Heap Allocator (High Priority)
 New file `memory/heap.rs`:
-- Start with bump allocator for simplicity
-- Then upgrade to linked-list free list allocator
+- Start with linked-list free-list allocator
+- `kmalloc(size)`, `kfree(ptr)`, `ksize(ptr)`
+- Map heap pages on demand using `vmm::map_alloc()`
 - Implement `GlobalAlloc` trait for Rust `alloc` crate
 
-### 5. Enhance Kernel Panic (Lower Priority)
+### 4. Enhance Kernel Panic (Medium Priority)
 - Red background / white text for panic screen
 - Print registers (EAX, EBX, ECX, EDX, ESP, EBP, EIP)
 - Print CR2 for page faults
 - Disable interrupts and halt
+
+### 5. User Space Memory (Lower Priority)
+- Per-process page directories
+- User heap allocator
+- Syscall interface
 
 ---
 
@@ -244,24 +245,20 @@ New file `memory/heap.rs`:
 |----------|------------|
 | Physical Memory | **100%** ✅ |
 | Paging Structures | **100%** ✅ |
-| Virtual Memory Manager | ~0% |
+| Virtual Memory Manager | **100%** ✅ |
 | Kernel/User Separation | ~30% |
 | Heap Allocator | 0% |
 | Panic Handler | ~40% |
-| **Overall** | **~55%** |
+| **Overall** | **~70%** |
 
-### Key Accomplishments Since Last Assessment:
-- ✅ `PageDirectory` wrapper COMPLETE — `set_entry`, `clear_entry`, `get_entry`, `physical_address`
-- ✅ `PageTable` wrapper COMPLETE — `set_entry`, `clear_entry`, `get_entry`, `zero`, `physical_address`
-- ✅ `PageFlags` COMPLETE — full `BitOr`, `BitAnd`, `Not` trait implementations
-- ✅ `bootstrap.asm` exports `page_directory` and `page_table1` as global symbols for Rust use
-- ✅ Global `PAGING: Option<PageDirectory>` initialized in `memory::init()`
-- ✅ Boot-time diagnostic (`diagnose_page_directory`) and test suite (`test_paging_infrastructure`) added
+### Key Accomplishments This Session:
+- ✅ `vmm.rs` COMPLETE — recursive page directory mapping, map_page, unmap_page, translate, map_alloc, TLB helpers
+- ✅ VMM self-test suite (5 tests) passing at boot
+- ✅ Fixed bitmap crash: FrameAllocator now stores virtual address for bitmap pointer
+- ✅ `PageFlags::NONE` and `from_raw()` added to pageflags.rs
+- ✅ `memory::init()` updated to call `vmm::init()` then `vmm::test_virtual_memory()`
 
 ### Critical Remaining Work:
-1. Virtual memory manager (`map_page`, `unmap_page`, `translate`)
-2. Page fault handler
-3. Kernel heap allocator (`kmalloc`, `kfree`, `ksize`)
-4. User space memory management (lower priority)
-
-Paging infrastructure is now fully in place. The next major milestone is the virtual memory manager, which can leverage the now-complete `PageDirectory`/`PageTable` APIs to dynamically map pages.
+1. Page fault handler (interrupt 14, CR2)
+2. Kernel heap allocator (`kmalloc`, `kfree`, `ksize`, `GlobalAlloc`)
+3. User space memory management (lower priority)
