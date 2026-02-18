@@ -45,6 +45,8 @@ impl FrameAllocator {
     pub fn new(memory_map: &[MemoryInfoEntry], bitmap_addr: usize) -> Self {
         #[cfg(feature = "verbose")]
         println!("Initializing frame allocator at bitmap address: {:#x}", bitmap_addr);
+        println!("Frame allocator bitmap: phys {:#x}, virt {:#x}",
+            bitmap_addr, bitmap_addr + super::define::KERNEL_OFFSET);
         let mut highest_addr = 0;
 
         // Find highest address to determine number of frames needed
@@ -63,9 +65,10 @@ impl FrameAllocator {
         #[cfg(feature = "verbose")]
         println!("Bitmap size: {} bytes", bitmap_size);
 
-        // Create bitmap accessor
+        // Create bitmap accessor.
         let bitmap = unsafe {
-            let ptr = bitmap_addr as *mut u8;
+            let virt_addr = bitmap_addr + super::define::KERNEL_OFFSET;
+            let ptr = virt_addr as *mut u8;
             // Initialize bitmap to all 1s (all frames marked as used initially)
             for i in 0..bitmap_size {
                 ptr.add(i).write(0xFF);
