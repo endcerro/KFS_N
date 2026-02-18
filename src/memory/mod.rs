@@ -4,7 +4,7 @@ use directory::PageDirectory;
 pub mod pageflags;
 mod pagetable;
 pub mod define;
-
+pub mod vmm;
 
 pub mod directory;
 pub mod physical;
@@ -21,18 +21,24 @@ pub fn init() {
     }
     diagnose_page_directory();
     init_physical_memory();
+
+    // Install recursive page directory mapping (PDE[1023] → PD itself).
+    // This must happen before clear_page1() and before any map/unmap calls,
+    // because the VMM uses the recursive mapping for all page table access.
+    vmm::init();
+
     unsafe {
         #[cfg(feature = "verbose")]
         println!("Entry 0 : {}", *PAGING.as_mut().unwrap().get_entry(0));
         #[cfg(feature = "verbose")]
-        println!("Cleaning..");
+        println!("Cleaning identity map...");
         clear_page1();
         #[cfg(feature = "verbose")]
         println!("Entry 0 : {}", *PAGING.as_mut().unwrap().get_entry(0));
-
-
     }
-    // colored_print!((Some(Color::Green), Some(Color::Black)), "\nPAGING OK");
+
+    // Run VMM self-tests after everything is initialised
+    vmm::test_virtual_memory();
 }
 
 // Diagnostic tool for paging infrastructure
@@ -59,7 +65,7 @@ pub fn diagnose_page_directory() {
         if cr3 != pd_phys {
             println!("WARNING: CR3 doesn't match page_directory!");
         } else {
-            println!("✓ CR3 matches page_directory");
+            println!("CR3 matches page_directory OK");
         }
         
         println!("\n--- Checking Key Entries ---\n");
@@ -94,12 +100,12 @@ pub fn diagnose_page_directory() {
             println!("  page_table1 phys: {:#010x}", pt1_phys);
             
             if (*pde_768).address() == pt1_phys {
-                println!("  ✓ Points to page_table1");
+                println!("  Points to page_table1 OK");
             } else {
-                println!("  ✗ Does NOT point to page_table1!");
+                println!("  Does NOT point to page_table1!");
             }
         } else {
-            println!("  ✗ NOT PRESENT - This is the problem!");
+            println!("  NOT PRESENT - This is the problem!");
         }
         
         // Scan for all present entries
@@ -161,7 +167,7 @@ pub fn paging() -> &'static mut PageDirectory {
 pub fn test_paging_infrastructure() {
     use crate::memory::{pageflags::PageFlags, PAGING};
     use crate::memory::directory::PageDirectoryEntry;
-    use crate::memory::pagetable::PageTableEntry;
+    use crate::memory::pagetable::{PageTable, PageTableEntry};
     
     println!("\n=== Testing Paging Infrastructure ===");
     
@@ -179,7 +185,7 @@ pub fn test_paging_infrastructure() {
         pde.clear();
         assert!(!pde.present(), "PDE should not be present after clear");
         
-        println!("  ✓ PageDirectoryEntry tests passed");
+        println!("  PageDirectoryEntry tests passed");
     
     // Test 2: PageTableEntry manipulation
     println!("\n[Test 2] PageTableEntry operations");
@@ -196,7 +202,7 @@ pub fn test_paging_infrastructure() {
     pte.clear();
     assert!(!pte.present(), "PTE should not be present after clear");
     
-    println!("  ✓ PageTableEntry tests passed");
+    println!("  PageTableEntry tests passed");
     
     // Test 3: PageFlags operations
     println!("\n[Test 3] PageFlags operations");
@@ -212,7 +218,7 @@ pub fn test_paging_infrastructure() {
         assert!(flags3.is_writable(), "Combined flags should have WRITABLE");
         assert!(flags3.is_user(), "Combined flags should have USER");
         
-        println!("  ✓ PageFlags tests passed");
+        println!("  PageFlags tests passed");
     }
     
     // Test 4: Read existing page directory entries
@@ -222,9 +228,9 @@ pub fn test_paging_infrastructure() {
         let pde_0 = PAGING.as_mut().unwrap().get_entry(0);
         println!("  PDE[0] (0x00000000): {}", *pde_0);
         if !(*pde_0).present() {
-            println!("    ✓ Identity mapping correctly cleared");
+            println!("    Identity mapping correctly cleared");
         } else {
-            println!("    ⚠ Warning: Identity mapping still present");
+            println!("    Warning: Identity mapping still present");
             println!("      Value: {:#010x}", (*pde_0).value());
         }
         
@@ -233,11 +239,11 @@ pub fn test_paging_infrastructure() {
         println!("  PDE[768] (0xC0000000): {}", *pde_768);
         
         if (*pde_768).present() {
-            println!("    ✓ PDE[768] is present for higher-half kernel");
+            println!("    PDE[768] is present for higher-half kernel");
             println!("      Points to physical: {:#010x}", (*pde_768).address());
             println!("      Writable: {}", (*pde_768).writeable());
         } else {
-            println!("    ✗ CRITICAL: PDE[768] is NOT present!");
+            println!("    CRITICAL: PDE[768] is NOT present!");
             println!("      Value: {:#010x}", (*pde_768).value());
             println!("      This means 0xC0000000 region is not mapped!");
             
@@ -264,9 +270,9 @@ pub fn test_paging_infrastructure() {
         println!("  CR3 register value: {:#010x}", cr3);
         
         if phys_addr == cr3 {
-            println!("  ✓ Physical address matches CR3");
+            println!("  Physical address matches CR3");
         } else {
-            println!("  ✗ WARNING: Physical address doesn't match CR3!");
+            println!("  WARNING: Physical address doesn't match CR3!");
             println!("    This could indicate the PAGING global is pointing to wrong memory");
         }
     }
