@@ -327,6 +327,101 @@ pub fn is_mapped(virt: VirtAddr) -> bool {
     translate(VirtAddr::new(virt.0 & !0xFFF)).is_some()
 }
 
+
+// ---------------------------------------------------------------------------
+// Range operations
+// ---------------------------------------------------------------------------
+
+/// Map a contiguous range of virtual pages, allocating a fresh physical
+/// frame for each one.  Both `start` and `size` must be page-aligned.
+///
+/// On success returns `Ok(number_of_pages_mapped)`.
+/// On failure the pages that were already mapped are **not** rolled back
+/// (simple policy — the caller should treat this as fatal or handle
+/// cleanup itself).
+pub fn map_range(start: VirtAddr, size: usize, flags: PageFlags) -> Result<usize, MapError> {
+    assert!(start.is_page_aligned(), "map_range: start {:#x} not page-aligned", start.0);
+    assert!(size & 0xFFF == 0, "map_range: size {:#x} not page-aligned", size);
+
+    let pages = size / PAGE_SIZE;
+    for i in 0..pages {
+        let virt = VirtAddr::new(start.0 + (i * PAGE_SIZE) as u32);
+        map_alloc(virt, flags)?;
+    }
+
+    #[cfg(feature = "verbose")]
+    println!(
+        "VMM: mapped range {:#x}..{:#x} ({} pages)",
+        start.0, start.0 as usize + size, pages
+    );
+
+    Ok(pages)
+}
+
+/// Map a contiguous range of virtual pages to a specific contiguous
+/// physical region.  Useful for identity-mapping hardware regions or
+/// mapping a known physical block.  Both addresses and `size` must be
+/// page-aligned.
+pub fn map_range_to(
+    virt_start: VirtAddr,
+    phys_start: PhysAddr,
+    size: usize,
+    flags: PageFlags,
+) -> Result<usize, MapError> {
+    assert!(virt_start.is_page_aligned(), "map_range_to: virt {:#x} not aligned", virt_start.0);
+    assert!(phys_start.is_page_aligned(), "map_range_to: phys {:#x} not aligned", phys_start.0);
+    assert!(size & 0xFFF == 0, "map_range_to: size {:#x} not aligned", size);
+
+    let pages = size / PAGE_SIZE;
+    for i in 0..pages {
+        let virt = VirtAddr::new(virt_start.0 + (i * PAGE_SIZE) as u32);
+        let phys = PhysAddr::new(phys_start.0 + (i * PAGE_SIZE) as u32);
+        map_page(virt, phys, flags)?;
+    }
+
+    #[cfg(feature = "verbose")]
+    println!(
+        "VMM: mapped range virt {:#x}..{:#x} -> phys {:#x}..{:#x} ({} pages)",
+        virt_start.0, virt_start.0 as usize + size,
+        phys_start.0, phys_start.0 as usize + size,
+        pages
+    );
+
+    Ok(pages)
+}
+
+/// Unmap a contiguous range of virtual pages and free their physical
+/// frames.  Both `start` and `size` must be page-aligned.
+///
+/// Pages that are already unmapped are silently skipped.
+/// Returns the number of pages actually unmapped.
+pub fn unmap_range(start: VirtAddr, size: usize) -> usize {
+    assert!(start.is_page_aligned(), "unmap_range: start {:#x} not page-aligned", start.0);
+    assert!(size & 0xFFF == 0, "unmap_range: size {:#x} not page-aligned", size);
+
+    let pages = size / PAGE_SIZE;
+    let mut unmapped = 0;
+    for i in 0..pages {
+        let virt = VirtAddr::new(start.0 + (i * PAGE_SIZE) as u32);
+        if let Ok(phys) = unmap_page(virt) {
+            free_frame(phys);
+            unmapped += 1;
+        }
+        // Silently skip pages that aren't mapped
+    }
+
+    #[cfg(feature = "verbose")]
+    println!(
+        "VMM: unmapped range {:#x}..{:#x} ({}/{} pages freed)",
+        start.0, start.0 as usize + size, unmapped, pages
+    );
+
+    unmapped
+}
+
+
+
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -367,7 +462,7 @@ pub fn test_virtual_memory() {
     test_translate_accuracy();
     test_multi_page();
     test_already_mapped_error();
-
+    test_map_range();
     println!("\n=== VMM Self-Test PASSED ===\n");
 }
 
@@ -524,6 +619,53 @@ fn test_already_mapped_error() {
     // Cleanup
     let _ = unmap_page(test_virt);
     free_frame(phys);
+
+    println!("OK");
+}
+
+/// Test 6 — map_range / unmap_range for contiguous multi-page regions.
+fn test_map_range() {
+    print!("[VMM test 6] map_range / unmap_range ... ");
+
+    // Use a region that hasn't been touched by other tests (PDE[840])
+    let base = VirtAddr::new(0xD200_0000);
+    let size = PAGE_SIZE * 8; // 8 pages = 32 KB
+    let flags = PageFlags::PRESENT | PageFlags::WRITABLE;
+
+    // Map the range
+    let mapped = map_range(base, size, flags).expect("map_range failed");
+    assert_eq!(mapped, 8, "Should have mapped 8 pages");
+
+    // Write a distinct marker to each page and read back
+    for i in 0..8u32 {
+        let addr = (base.0 + i * PAGE_SIZE as u32) as *mut u32;
+        unsafe {
+            addr.write_volatile(0xBEEF_0000 + i);
+        }
+    }
+    for i in 0..8u32 {
+        let addr = (base.0 + i * PAGE_SIZE as u32) as *mut u32;
+        unsafe {
+            let val = addr.read_volatile();
+            assert_eq!(val, 0xBEEF_0000 + i, "map_range readback mismatch at page {}", i);
+        }
+    }
+
+    // All pages should be mapped
+    for i in 0..8u32 {
+        let virt = VirtAddr::new(base.0 + i * PAGE_SIZE as u32);
+        assert!(is_mapped(virt), "Page {} should be mapped", i);
+    }
+
+    // Unmap the range
+    let freed = unmap_range(base, size);
+    assert_eq!(freed, 8, "Should have unmapped 8 pages");
+
+    // Verify none are mapped any more
+    for i in 0..8u32 {
+        let virt = VirtAddr::new(base.0 + i * PAGE_SIZE as u32);
+        assert!(!is_mapped(virt), "Page {} should not be mapped after unmap_range", i);
+    }
 
     println!("OK");
 }
