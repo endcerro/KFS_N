@@ -30,8 +30,8 @@ pub extern "C" fn rust_main(multiboot_struct_ptr: *const multiboot2::MultibootIn
     multiboot2::bind_header(multiboot_struct_ptr);
     init();
     unsafe {
-        utils::enable_interrupts(false);
-        core::arch::asm!("hlt");
+        utils::enable_interrupts(true);
+    //     core::arch::asm!("hlt");
     }
     shell_loop();
 }
@@ -51,14 +51,14 @@ fn init() {
     // // colored_print!((None, Some(Color::Green)), "OK\n");
     // serial_println!("Hello world");
     // // print!("GDT        ");
-    // gdt::init();
+    gdt::init();
     // // colored_print!((None, Some(Color::Green)), "OK\n");
 
     // // print!("Interrupts ");
-    // interrupts::init();
+    interrupts::init();
     // // colored_print!((None, Some(Color::Green)), "OK\n");
     // // print!("Shell      ");
-    // shell::init_shell();
+    shell::init_shell();
     // colored_print!((None, Some(Color::Green)), "OK\n");
 
 

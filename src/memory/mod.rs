@@ -44,6 +44,7 @@ pub fn init() {
     // Map the initial kernel heap region.
     // Must come after vmm::init() and the frame allocator.
     heap::init();
+    heap::test_heap();
     heap::print_stats();
 }
 
