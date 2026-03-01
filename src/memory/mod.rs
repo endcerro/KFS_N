@@ -5,6 +5,7 @@ pub mod pageflags;
 mod pagetable;
 pub mod define;
 pub mod vmm;
+pub mod heap;
 
 pub mod directory;
 pub mod physical;
@@ -22,7 +23,7 @@ pub fn init() {
 
     init_physical_memory();
 
-    // Install recursive page directory mapping (PDE[1023] → PD itself).
+    // Install recursive page directory mapping (PDE[1023] â†’ PD itself).
     // This must happen before clear_page1() and before any map/unmap calls,
     // because the VMM uses the recursive mapping for all page table access.
     vmm::init();
@@ -39,6 +40,11 @@ pub fn init() {
     diagnose_page_directory();
     // Run VMM self-tests after everything is initialised
     vmm::test_virtual_memory();
+
+    // Map the initial kernel heap region.
+    // Must come after vmm::init() and the frame allocator.
+    heap::init();
+    heap::print_stats();
 }
 
 // Diagnostic tool for paging infrastructure
