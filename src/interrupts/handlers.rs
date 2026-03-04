@@ -22,7 +22,7 @@ impl InterruptStackFrame {
 }
 
 // ---------------------------------------------------------------------------
-// Kernel panic helper — prints a formatted panic message and halts.
+// Kernel panic helper - prints a formatted panic message and halts.
 // This disables interrupts and enters an infinite halt loop so the
 // system is completely stopped.  All interrupt handlers that represent
 // unrecoverable faults should call this instead of a bare `loop {}`.
@@ -68,7 +68,7 @@ pub fn kernel_panic(reason: &str, stack_frame: &InterruptStackFrame) {
 
     println!("\nSystem halted.");
 
-    // Infinite halt — interrupts are off so `hlt` won't wake us,
+    // Infinite halt - interrupts are off so `hlt` won't wake us,
     // but loop just in case an NMI fires.
     loop {
         unsafe { core::arch::asm!("hlt", options(nostack, nomem)); }
@@ -79,11 +79,11 @@ pub fn kernel_panic(reason: &str, stack_frame: &InterruptStackFrame) {
 // Page Fault Handler (Interrupt 14)
 //
 // The CPU pushes an error code with this structure:
-//   Bit 0 (P)    — 0 = non-present page, 1 = protection violation
-//   Bit 1 (W/R)  — 0 = read access, 1 = write access
-//   Bit 2 (U/S)  — 0 = supervisor mode, 1 = user mode
-//   Bit 3 (RSVD) — 1 = reserved bit set in page table entry
-//   Bit 4 (I/D)  — 1 = instruction fetch (NX violation, if supported)
+//   Bit 0 (P)    - 0 = non-present page, 1 = protection violation
+//   Bit 1 (W/R)  - 0 = read access, 1 = write access
+//   Bit 2 (U/S)  - 0 = supervisor mode, 1 = user mode
+//   Bit 3 (RSVD) - 1 = reserved bit set in page table entry
+//   Bit 4 (I/D)  - 1 = instruction fetch (NX violation, if supported)
 //
 // CR2 holds the linear (virtual) address that caused the fault.
 // ---------------------------------------------------------------------------
@@ -108,7 +108,7 @@ pub unsafe extern "x86-interrupt" fn page_fault(stack_frame: &InterruptStackFram
     if !reserved.is_empty() { println!("  {}", reserved); }
     if !fetch.is_empty()    { println!("  {}", fetch); }
 
-    // Show which PDE/PTE the fault maps to — helpful for debugging
+    // Show which PDE/PTE the fault maps to - helpful for debugging
     let pde_index = (faulting_address >> 22) as usize;
     let pte_index = ((faulting_address >> 12) & 0x3FF) as usize;
     let page_offset = faulting_address & 0xFFF;
@@ -129,7 +129,7 @@ pub unsafe extern "x86-interrupt" fn divide_by_zero(stack_frame: &InterruptStack
 pub unsafe extern "x86-interrupt" fn default(stack_frame: &InterruptStackFrame) {
     println!("Unhandled interrupt fired!");
     stack_frame.print_debug_info();
-    // Not necessarily fatal — some spurious interrupts can happen.
+    // Not necessarily fatal - some spurious interrupts can happen.
     // We log and return rather than panicking.
 }
 

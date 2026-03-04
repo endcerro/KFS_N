@@ -1,4 +1,4 @@
-// memory/heap.rs — Kernel heap: region management + linked-list free-list allocator
+// memory/heap.rs - Kernel heap: region management + linked-list free-list allocator
 //
 // Memory layout of an allocated block:
 //
@@ -40,7 +40,7 @@ use super::vmm::{self, MapError, VirtAddr};
 const ALLOC_ALIGN: usize = 8;
 
 /// Minimum usable block size.  Blocks smaller than this aren't worth
-/// splitting — they'd just become unfindable fragments.
+/// splitting - they'd just become unfindable fragments.
 const MIN_BLOCK_SIZE: usize = ALLOC_ALIGN;
 
 /// How much to grow the heap when we run out of space (minimum).
@@ -56,7 +56,7 @@ const GROW_INCREMENT: usize = PAGE_SIZE;
 /// Kept small so overhead per allocation is minimal.
 ///
 /// SAFETY: this struct is written into raw heap memory via pointer casts.
-/// It must have a stable layout — hence #[repr(C)].
+/// It must have a stable layout - hence #[repr(C)].
 #[repr(C)]
 struct BlockHeader {
     /// Size of the usable region *after* this header, in bytes.
@@ -83,7 +83,7 @@ static mut FREE_LIST: *mut BlockHeader = core::ptr::null_mut();
 /// [KERNEL_HEAP_START .. HEAP_MAPPED_END) is backed by physical frames.
 static mut HEAP_MAPPED_END: usize = KERNEL_HEAP_START;
 
-/// Simple statistics — not required for correctness but useful for
+/// Simple statistics - not required for correctness but useful for
 /// debugging and the print_stats() diagnostic.
 static mut STATS: HeapStats = HeapStats {
     total_allocs: 0,
@@ -174,7 +174,7 @@ pub fn kmalloc(size: usize) -> *mut u8 {
             return allocate_block(block, aligned_size);
         }
 
-        // No block large enough — try to grow the heap
+        // No block large enough - try to grow the heap
         if try_grow_for(aligned_size).is_ok() {
             // Retry after growing
             if let Some(block) = find_free_block(aligned_size) {
@@ -247,7 +247,7 @@ pub fn ksize(ptr: *mut u8) -> usize {
 /// the frame allocator is exhausted.
 ///
 /// This is useful for pre-growing the heap before a burst of
-/// allocations.  Normal callers don't need this — kmalloc() grows
+/// allocations.  Normal callers don't need this - kmalloc() grows
 /// automatically via try_grow_for().
 pub fn grow_heap(size: usize) -> Result<usize, MapError> {
     assert!(
@@ -291,7 +291,7 @@ unsafe fn grow_mapped_region(size: usize) -> Result<usize, MapError> {
     (*new_block).is_free = true;
     (*new_block).next = core::ptr::null_mut();
 
-    // Insert into free list — will auto-merge with the previous tail
+    // Insert into free list - will auto-merge with the previous tail
     // block if the old last free block ended exactly at old_end.
     insert_free_block(new_block);
 
@@ -589,7 +589,7 @@ fn test_merge_on_free() {
     let c = kmalloc(64);
     assert!(!a.is_null() && !b.is_null() && !c.is_null());
 
-    // Free middle first, then sides — exercises both forward and
+    // Free middle first, then sides - exercises both forward and
     // backward merge paths in insert_free_block().
     kfree(b);
     kfree(a);
@@ -600,7 +600,7 @@ fn test_merge_on_free() {
     let big = kmalloc(200);
     assert!(
         !big.is_null(),
-        "Merge failed — can't allocate 200 bytes after freeing 3x64"
+        "Merge failed - can't allocate 200 bytes after freeing 3x64"
     );
     kfree(big);
 

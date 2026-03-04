@@ -1,4 +1,4 @@
-# Kernel Memory System — Quick Reference
+# Kernel Memory System - Quick Reference
 
 ## Target
 i386 higher-half kernel, Multiboot2, QEMU. Must stay under 10 MB.
@@ -16,38 +16,38 @@ i386 higher-half kernel, Multiboot2, QEMU. Must stay under 10 MB.
 ## File Structure
 
 ### Assembly (boot)
-- `bootstrap.asm` — entry point, sets up stack, identity+higher-half paging, exports `page_directory`, `page_table1`, `stack_top`, `stack_bottom`, `clear_page1`
-- `boot.asm` — higher_half_start, calls `rust_main`, `clear_page1` implementation
+- `bootstrap.asm` - entry point, sets up stack, identity+higher-half paging, exports `page_directory`, `page_table1`, `stack_top`, `stack_bottom`, `clear_page1`
+- `boot.asm` - higher_half_start, calls `rust_main`, `clear_page1` implementation
 
 ### Kernel entry
-- `lib.rs` — `rust_main()` → `init()` → memory::init(), gdt::init(), interrupts::init(), shell::init_shell()
+- `lib.rs` - `rust_main()` → `init()` → memory::init(), gdt::init(), interrupts::init(), shell::init_shell()
 
 ### Memory subsystem (`src/memory/`)
-- `mod.rs` — `init()` orchestrator: physical → vmm → clear identity map → diagnose → vmm tests → heap init → heap tests
-- `define.rs` — PAGE_SIZE=4096, KERNEL_OFFSET=0xC0000000, heap region constants (KERNEL_HEAP_START=0xC1000000, KERNEL_HEAP_END=0xC2000000, KERNEL_HEAP_INITIAL_SIZE=128KB)
-- `pageflags.rs` — PageFlags bitfield (PRESENT, WRITABLE, USER, etc.) with BitOr/BitAnd/Not
-- `directory.rs` — PageDirectory wrapper (NonNull to page_directory symbol), PageDirectoryEntry (u32)
-- `pagetable.rs` — PageTable wrapper (NonNull), PageTableEntry (u32)
-- `physical.rs` — FrameAllocator: bitmap-based, allocate/deallocate/specific frames, kernel+bitmap region protection
-- `vmm.rs` — Virtual Memory Manager using recursive PDE[1023] mapping. map_page, unmap_page, translate, map_alloc, map_range, map_range_to, unmap_range. Full self-test suite.
-- `heap.rs` — Kernel heap: linked-list free-list allocator. kmalloc, kfree, ksize, grow_heap, print_stats. Auto-grows by mapping new pages via VMM. Full self-test suite (7 tests).
+- `mod.rs` - `init()` orchestrator: physical → vmm → clear identity map → diagnose → vmm tests → heap init → heap tests
+- `define.rs` - PAGE_SIZE=4096, KERNEL_OFFSET=0xC0000000, heap region constants (KERNEL_HEAP_START=0xC1000000, KERNEL_HEAP_END=0xC2000000, KERNEL_HEAP_INITIAL_SIZE=128KB)
+- `pageflags.rs` - PageFlags bitfield (PRESENT, WRITABLE, USER, etc.) with BitOr/BitAnd/Not
+- `directory.rs` - PageDirectory wrapper (NonNull to page_directory symbol), PageDirectoryEntry (u32)
+- `pagetable.rs` - PageTable wrapper (NonNull), PageTableEntry (u32)
+- `physical.rs` - FrameAllocator: bitmap-based, allocate/deallocate/specific frames, kernel+bitmap region protection
+- `vmm.rs` - Virtual Memory Manager using recursive PDE[1023] mapping. map_page, unmap_page, translate, map_alloc, map_range, map_range_to, unmap_range. Full self-test suite.
+- `heap.rs` - Kernel heap: linked-list free-list allocator. kmalloc, kfree, ksize, grow_heap, print_stats. Auto-grows by mapping new pages via VMM. Full self-test suite (7 tests).
 
 ### GDT (`src/gdt/`)
-- `mod.rs` — 8 segments: null, kernel code/data/stack, user code/data/stack, TSS
-- `define.rs` — selectors (0x08, 0x10, 0x18, 0x20|3, 0x28|3, 0x30|3, 0x38), KERNEL_VIRTUAL_BASE, GDTADDR, GDTSIZE
-- `descriptor.rs` — SegmentDescriptor (8-byte packed)
-- `tss.rs` — TssSegment, init with kernel stack, user/kernel mode selector switching
+- `mod.rs` - 8 segments: null, kernel code/data/stack, user code/data/stack, TSS
+- `define.rs` - selectors (0x08, 0x10, 0x18, 0x20|3, 0x28|3, 0x30|3, 0x38), KERNEL_VIRTUAL_BASE, GDTADDR, GDTSIZE
+- `descriptor.rs` - SegmentDescriptor (8-byte packed)
+- `tss.rs` - TssSegment, init with kernel stack, user/kernel mode selector switching
 
 ### Interrupts (`src/interrupts/`)
-- `mod.rs` — init: bind handlers, PIC init, load IDT, configure IRQs
-- `idt.rs` — IDT (256 entries), load_idt, configure_interrupts (keyboard enabled)
-- `handlers.rs` — divide_by_zero, page_fault (reads CR2, decodes error code, kernel_panic), keyboard, double_fault, GPF, default. kernel_panic() with register dump + halt.
-- `pic.rs` — 8259 PIC remap to 0x20/0x28, set_irq_state
-- `interrupts.rs` — Interrupt enum (CPU exceptions 0-21, hardware IRQs 32-47, syscall 128)
+- `mod.rs` - init: bind handlers, PIC init, load IDT, configure IRQs
+- `idt.rs` - IDT (256 entries), load_idt, configure_interrupts (keyboard enabled)
+- `handlers.rs` - divide_by_zero, page_fault (reads CR2, decodes error code, kernel_panic), keyboard, double_fault, GPF, default. kernel_panic() with register dump + halt.
+- `pic.rs` - 8259 PIC remap to 0x20/0x28, set_irq_state
+- `interrupts.rs` - Interrupt enum (CPU exceptions 0-21, hardware IRQs 32-47, syscall 128)
 
 ### Multiboot (`src/multiboot2/`)
-- `mod.rs` — MultibootInfo tag iterator
-- `meminfo.rs` — Memory map parsing from multiboot, static buffer (MAX_MEMORY_ENTRIES=32)
+- `mod.rs` - MultibootInfo tag iterator
+- `meminfo.rs` - Memory map parsing from multiboot, static buffer (MAX_MEMORY_ENTRIES=32)
 
 ## Key Constants
 | Constant | Value | Location |
@@ -92,10 +92,10 @@ heap::print_stats()                          // diagnostic output
 ```
 
 ## Remaining Work
-1. **GlobalAlloc trait** — wrap kmalloc/kfree so Rust's `alloc` crate works (Box, Vec, String)
-2. **User space memory** — user page tables, per-process address space, user-accessible mappings
-3. **Page fault recovery** — demand paging, copy-on-write (currently panics on all faults)
-4. **Cleanup** — remove `static mut` patterns, proper locking for SMP readiness
+1. **GlobalAlloc trait** - wrap kmalloc/kfree so Rust's `alloc` crate works (Box, Vec, String)
+2. **User space memory** - user page tables, per-process address space, user-accessible mappings
+3. **Page fault recovery** - demand paging, copy-on-write (currently panics on all faults)
+4. **Cleanup** - remove `static mut` patterns, proper locking for SMP readiness
 
 ## Common Pitfalls
 1. Virtual vs Physical: subtract KERNEL_OFFSET when writing to page tables

@@ -1,4 +1,4 @@
-// memory/vmm.rs — Virtual Memory Manager
+// memory/vmm.rs - Virtual Memory Manager
 //
 // Uses **recursive page directory mapping** to access page tables without
 // needing a separate temporary-mapping mechanism.
@@ -38,11 +38,11 @@ pub struct PhysAddr(pub u32);
 
 impl VirtAddr {
     #[inline] pub fn new(addr: u32) -> Self { VirtAddr(addr) }
-    /// Bits [31:22] — selects one of 1024 page directory entries
+    /// Bits [31:22] - selects one of 1024 page directory entries
     #[inline] pub fn pde_index(&self) -> usize { (self.0 >> 22) as usize }
-    /// Bits [21:12] — selects one of 1024 page table entries
+    /// Bits [21:12] - selects one of 1024 page table entries
     #[inline] pub fn pte_index(&self) -> usize { ((self.0 >> 12) & 0x3FF) as usize }
-    /// Bits [11:0] — byte offset within the 4 KB page
+    /// Bits [11:0] - byte offset within the 4 KB page
     #[inline] pub fn page_offset(&self) -> u32 { self.0 & 0xFFF }
     #[inline] pub fn is_page_aligned(&self) -> bool { self.0 & 0xFFF == 0 }
     /// Is this address in the kernel half (>= 0xC0000000)?
@@ -189,7 +189,7 @@ pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), 
     let pde_idx = virt.pde_index();
     let pte_idx = virt.pte_index();
 
-    // The recursive slot is reserved — never map into it
+    // The recursive slot is reserved - never map into it
     if pde_idx == RECURSIVE_INDEX {
         return Err(MapError::InvalidAddress);
     }
@@ -199,11 +199,11 @@ pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), 
         let pde_val = read_pde(pde_idx);
 
         if pde_val & 0x1 == 0 {
-            // No page table yet — allocate a physical frame for one
+            // No page table yet - allocate a physical frame for one
             let frame = alloc_frame()?;
             let pt_phys = frame.start_address() as u32;
 
-            // PDE flags: permissive — the PTE is the real gatekeeper.
+            // PDE flags: permissive - the PTE is the real gatekeeper.
             // Set USER on the PDE if the caller wants user-accessible pages,
             // otherwise kernel-only.
             let mut pde_flags = PageFlags::PRESENT | PageFlags::WRITABLE;
@@ -217,7 +217,7 @@ pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), 
             // (We're about to access it at PAGE_TABLES_VBASE + pde_idx * 0x1000.)
             flush_tlb_all();
 
-            // Zero the fresh page table — all 1024 PTEs become non-present
+            // Zero the fresh page table - all 1024 PTEs become non-present
             let pt_virt = (PAGE_TABLES_VBASE + pde_idx as u32 * PAGE_SIZE as u32) as *mut u8;
             core::ptr::write_bytes(pt_virt, 0, PAGE_SIZE);
 
@@ -227,7 +227,7 @@ pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), 
                 pt_phys, pde_idx
             );
         } else if flags.is_user() && (pde_val & PageFlags::USER.value()) == 0 {
-            // Page table exists but PDE lacks USER — promote it.
+            // Page table exists but PDE lacks USER - promote it.
             // This happens when a kernel PDE later gets a user mapping.
             write_pde(pde_idx, pde_val | PageFlags::USER.value());
             flush_tlb_all();
@@ -322,7 +322,7 @@ pub fn translate(virt: VirtAddr) -> Option<PhysAddr> {
     }
 }
 
-/// Quick predicate — is this virtual page currently mapped?
+/// Quick predicate - is this virtual page currently mapped?
 pub fn is_mapped(virt: VirtAddr) -> bool {
     translate(VirtAddr::new(virt.0 & !0xFFF)).is_some()
 }
@@ -337,7 +337,7 @@ pub fn is_mapped(virt: VirtAddr) -> bool {
 ///
 /// On success returns `Ok(number_of_pages_mapped)`.
 /// On failure the pages that were already mapped are **not** rolled back
-/// (simple policy — the caller should treat this as fatal or handle
+/// (simple policy - the caller should treat this as fatal or handle
 /// cleanup itself).
 pub fn map_range(start: VirtAddr, size: usize, flags: PageFlags) -> Result<usize, MapError> {
     assert!(start.is_page_aligned(), "map_range: start {:#x} not page-aligned", start.0);
@@ -466,15 +466,15 @@ pub fn test_virtual_memory() {
     println!("\n=== VMM Self-Test PASSED ===\n");
 }
 
-/// Test 1 — Verify the recursive mapping can read known PDEs.
+/// Test 1 - Verify the recursive mapping can read known PDEs.
 fn test_recursive_mapping_reads() {
     print!("[VMM test 1] Recursive mapping reads ... ");
     unsafe {
-        // PDE[768] was set by bootstrap.asm — it must be present
+        // PDE[768] was set by bootstrap.asm - it must be present
         let pde_768 = read_pde(768);
         assert!(pde_768 & 0x1 != 0, "PDE[768] should be present");
 
-        // PDE[1023] is our recursive entry — must be present
+        // PDE[1023] is our recursive entry - must be present
         let pde_rec = read_pde(RECURSIVE_INDEX);
         assert!(pde_rec & 0x1 != 0, "PDE[1023] (recursive) should be present");
 
@@ -490,7 +490,7 @@ fn test_recursive_mapping_reads() {
     println!("OK");
 }
 
-/// Test 2 — Map a page, write a value, read it back, then unmap.
+/// Test 2 - Map a page, write a value, read it back, then unmap.
 fn test_map_write_read_unmap() {
     print!("[VMM test 2] Map → write → read → unmap ... ");
 
@@ -521,7 +521,7 @@ fn test_map_write_read_unmap() {
     println!("OK");
 }
 
-/// Test 3 — Verify translate() returns the correct physical address.
+/// Test 3 - Verify translate() returns the correct physical address.
 fn test_translate_accuracy() {
     print!("[VMM test 3] translate() accuracy ... ");
 
@@ -553,7 +553,7 @@ fn test_translate_accuracy() {
     println!("OK");
 }
 
-/// Test 4 — Map several consecutive pages, write distinct values, read back.
+/// Test 4 - Map several consecutive pages, write distinct values, read back.
 fn test_multi_page() {
     print!("[VMM test 4] Multi-page mapping ... ");
 
@@ -599,7 +599,7 @@ fn test_multi_page() {
     println!("OK");
 }
 
-/// Test 5 — Mapping an already-mapped page should return AlreadyMapped.
+/// Test 5 - Mapping an already-mapped page should return AlreadyMapped.
 fn test_already_mapped_error() {
     print!("[VMM test 5] AlreadyMapped error ... ");
 
@@ -623,7 +623,7 @@ fn test_already_mapped_error() {
     println!("OK");
 }
 
-/// Test 6 — map_range / unmap_range for contiguous multi-page regions.
+/// Test 6 - map_range / unmap_range for contiguous multi-page regions.
 fn test_map_range() {
     print!("[VMM test 6] map_range / unmap_range ... ");
 
