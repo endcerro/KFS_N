@@ -23,20 +23,22 @@ use shell::shell_loop;
 extern "C" {
     static _kernel_start : u8;
     static _kernel_end : u8;
+    static multiboot_ptr: u32;
 }
 
 #[no_mangle]
-pub extern "C" fn rust_main(multiboot_struct_ptr: *const multiboot2::MultibootInfoHeader)  {
-    multiboot2::bind_header(multiboot_struct_ptr);
+pub extern "C" fn rust_main()  {
+
     init();
     unsafe {
         utils::enable_interrupts(true);
-    //     core::arch::asm!("hlt");
+        core::arch::asm!("hlt");
     }
     shell_loop();
 }
 
 fn init() {
+    multiboot2::init();
     vga::clear_screen();
     vga::print_ft();
 
