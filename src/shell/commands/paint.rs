@@ -4,15 +4,12 @@ use crate::vga::{self, *};
 use crate::utils::{self, *};
 use crate::keyboard::*;
 
+static mut PAINT_BUFFER: vga::Buffer = unsafe { core::mem::zeroed() };
+
 pub fn paint()
 {
     vga::clear_screen();
     #[allow(static_mut_refs)]
-    static mut PAINT_BUFFER : vga::Buffer = vga::Buffer{
-        chars : [[vga::ScreenCharacter {
-            ascii_value : b' ',
-            color : ColorCode::new(vga::Color::White, vga::Color::Black)
-        }; vga::VGA_BUFFER_WIDTH]; vga::VGA_BUFFER_HEIGHT] };
         unsafe {
             utils::enable_interrupts(false);
 
