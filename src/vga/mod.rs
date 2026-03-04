@@ -1,28 +1,6 @@
+pub const VGA_BUFFER_ADDR: u32 = 0xC00b8000;
 
-// const HEADER : &str =
-// "/* ************************************************************************** */\n\
-// /*                                                                            */\n\
-// /*                                                        :::      ::::::::   */\n\
-// /*   kfs.rs                                             :+:      :+:    :+:   */\n\
-// /*                                                    +:+ +:+         +:+     */\n\
-// /*   By: edal--ce <edal--ce@student.42.fr>          +#+  +:+       +#+        */\n\
-// /*                                                +#+#+#+#+#+   +#+           */\n\
-// /*   Created: 2023/11/04 14:44:15 by edal--ce          #+#    #+#             */\n\
-// /*   Updated: 2019/12/28 08:17:21 by edal--ce         ###   ########.fr       */\n\
-// /*                                                                            */\n\
-// /* ************************************************************************** */\n";
-
-/*
-	This file contains helper functions to allow us to print to the screen in an easy
-	manner.
-	Please not that this only uses character mode and needs another implmentation for a
-	pixel buffer
- */
-
-// pub const VGA_BUFFER_ADDR : u32 = 0x   b8000;
-pub const VGA_BUFFER_ADDR : u32 = 0xC00b8000;
-
-pub const HEADER_42 : &str =
+pub const HEADER_42: &str =
 "         :::        ::::::::
 	   :+:        :+:    :+:
 	 +:+ +:+           +:+
@@ -30,6 +8,9 @@ pub const HEADER_42 : &str =
  +#+#+#+#+#+     +#+
 	  #+#      #+#
 	 ###     ##########";
+
+/// How many spaces a tab character expands to.
+const TAB_WIDTH: usize = 4;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,8 +31,9 @@ pub enum Color {
 	LightRed = 12,
 	Pink = 13,
 	Yellow = 14,
-	White = 15
+	White = 15,
 }
+
 impl Color {
 	fn cycle(&self) -> Self {
 		use Color::*;
@@ -71,39 +53,40 @@ impl Color {
 			LightRed => Pink,
 			Pink => Yellow,
 			Yellow => White,
-			White => Black
+			White => Black,
 		}
 	}
+
 	pub fn all() -> impl Iterator<Item = Color> {
-        (0..=15).map(|i| unsafe { core::mem::transmute(i as u8) })
-    }
+		(0..=15).map(|i| unsafe { core::mem::transmute(i as u8) })
+	}
 
 }
 
 impl core::str::FromStr for Color {
-    type Err = ();
+	type Err = ();
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "black" => Ok(Color::Black),
-            "blue" => Ok(Color::Blue),
-            "green" => Ok(Color::Green),
-            "cyan" => Ok(Color::Cyan),
-            "red" => Ok(Color::Red),
-            "magenta" => Ok(Color::Magenta),
-            "brown" => Ok(Color::Brown),
-            "lightgray" => Ok(Color::LightGray),
-            "darkgray" => Ok(Color::DarkGray),
-            "lightblue" => Ok(Color::LightBlue),
-            "lightgreen" => Ok(Color::LightGreen),
-            "lightcyan" => Ok(Color::LightCyan),
-            "lightred" => Ok(Color::LightRed),
-            "pink" => Ok(Color::Pink),
-            "yellow" => Ok(Color::Yellow),
-            "white" => Ok(Color::White),
-            _ => Err(()),
-        }
-    }
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"black"      => Ok(Color::Black),
+			"blue"       => Ok(Color::Blue),
+			"green"      => Ok(Color::Green),
+			"cyan"       => Ok(Color::Cyan),
+			"red"        => Ok(Color::Red),
+			"magenta"    => Ok(Color::Magenta),
+			"brown"      => Ok(Color::Brown),
+			"lightgray"  => Ok(Color::LightGray),
+			"darkgray"   => Ok(Color::DarkGray),
+			"lightblue"  => Ok(Color::LightBlue),
+			"lightgreen" => Ok(Color::LightGreen),
+			"lightcyan"  => Ok(Color::LightCyan),
+			"lightred"   => Ok(Color::LightRed),
+			"pink"       => Ok(Color::Pink),
+			"yellow"     => Ok(Color::Yellow),
+			"white"      => Ok(Color::White),
+			_            => Err(()),
+		}
+	}
 }
 
 #[repr(transparent)]
@@ -111,7 +94,7 @@ impl core::str::FromStr for Color {
 pub struct ColorCode(u8);
 
 impl ColorCode {
-	pub const fn new(foreground : Color, background: Color) -> ColorCode {
+	pub const fn new(foreground: Color, background: Color) -> ColorCode {
 		ColorCode((background as u8) << 4 | (foreground as u8))
 	}
 }
@@ -119,186 +102,180 @@ impl ColorCode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
 pub struct ScreenCharacter {
-	pub ascii_value : u8,
-	pub color : ColorCode
+	pub ascii_value: u8,
+	pub color: ColorCode,
 }
 
-
-pub const VGA_BUFFER_HEIGHT : usize = 25;
-pub const VGA_BUFFER_WIDTH : usize = 80;
+pub const VGA_BUFFER_HEIGHT: usize = 25;
+pub const VGA_BUFFER_WIDTH: usize = 80;
 
 #[repr(transparent)]
 pub struct Buffer {
-	pub chars: [[ScreenCharacter; VGA_BUFFER_WIDTH]; VGA_BUFFER_HEIGHT]
+	pub chars: [[ScreenCharacter; VGA_BUFFER_WIDTH]; VGA_BUFFER_HEIGHT],
 }
 
 impl Buffer {
-	pub fn copy_from(&mut self, other : &Buffer) {
+	pub fn copy_from(&mut self, other: &Buffer) {
 		for i in 0..VGA_BUFFER_HEIGHT {
 			for j in 0..VGA_BUFFER_WIDTH {
-				self.chars[i][j] = other.chars[i][j]
+				self.chars[i][j] = other.chars[i][j];
 			}
 		}
 	}
 }
 
 pub struct Writer {
-	column_position : usize,
-	row_position : usize,
-	color_code : ColorCode,
-	pub background : Color,
-	pub foreground : Color,
-	pub cursor : Cursor,
-	pub buffer : &'static mut Buffer,
+	column_position: usize,
+	row_position: usize,
+	color_code: ColorCode,
+	pub background: Color,
+	pub foreground: Color,
+	pub cursor: Cursor,
+	pub buffer: &'static mut Buffer,
 }
+
 use spin::Mutex;
 use lazy_static::lazy_static;
-
 use crate::utils::{Cursor, Direction};
 
 lazy_static! {
-	pub static ref WRITER : Mutex<Writer> = Mutex::new(Writer::new());
+	pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer::new());
 }
 
 impl Writer {
 	pub const fn new() -> Self {
 		Self {
-			column_position : 0,
+			column_position: 0,
 			row_position: 0,
-			color_code : ColorCode::new(Color::White, Color::Black),
-			background : Color::Black,
-			foreground : Color::White,
-			cursor : Cursor::new(),
-			buffer : unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer)}
+			color_code: ColorCode::new(Color::White, Color::Black),
+			background: Color::Black,
+			foreground: Color::White,
+			cursor: Cursor::new(),
+			buffer: unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer) },
 		}
 	}
+
 	pub fn write_byte(&mut self, byte: u8) {
 		match byte {
 			b'\n' => self.new_line(),
 			byte => {
 				if self.column_position >= VGA_BUFFER_WIDTH {
-					self.new_line()
+					self.new_line();
 				}
 				self.buffer.chars[self.row_position][self.column_position] = ScreenCharacter {
 					ascii_value: byte,
-					color : self.color_code
+					color: self.color_code,
 				};
-				self.column_position +=1;
+				self.column_position += 1;
 			}
 		}
-		if self.column_position > 0
-		{
-			self.cursor.update_cursor(self.column_position, self.row_position);
+		self.cursor.update_cursor(self.column_position, self.row_position);
+	}
+
+	pub fn write_at(&mut self, col: usize, row: usize, byte: u8) {
+		if col < VGA_BUFFER_WIDTH && row < VGA_BUFFER_HEIGHT {
+			self.buffer.chars[row][col] = ScreenCharacter {
+				ascii_value: byte,
+				color: self.color_code,
+			};
 		}
 	}
-	pub fn write_byte_at_pos(&mut self, byte: u8, x : usize, y : usize){
-		match byte {
-			byte => {
-				if self.column_position >= VGA_BUFFER_WIDTH {
-					self.new_line()
+
+	pub fn write_byte_at_cursor(&mut self, byte: u8) {
+		let (x, y) = (self.cursor.x, self.cursor.y);
+		if x < VGA_BUFFER_WIDTH && y < VGA_BUFFER_HEIGHT {
+			self.buffer.chars[y][x] = ScreenCharacter {
+				ascii_value: byte,
+				color: self.color_code,
+			};
+		}
+	}
+
+	pub fn write_char(&mut self, char: char) {
+		match char {
+			'\t' => {
+				for _ in 0..TAB_WIDTH {
+					self.write_byte(b' ');
 				}
-				self.buffer.chars[x][y] = ScreenCharacter {
-					ascii_value: byte,
-					color : self.color_code
-				};
 			}
+			_ => self.write_byte(char as u8),
 		}
 	}
-	pub fn write_byte_at_cursor(&mut self, byte: u8)
-	{
-		match byte {
-			byte => {
-				self.buffer.chars[self.cursor.y][self.cursor.x] = ScreenCharacter {
-					ascii_value: byte,
-					color : self.color_code
-				};
-			}
-		}
+
+	pub fn write_char_at_cursor(&mut self, char: char) {
+		self.write_byte_at_cursor(char as u8);
 	}
-	pub fn write_char(&mut self, char : char) {
-		match char {
-			'\t' => for _ in 0..4 {self.write_byte(b' ');}
-			_ => self.write_byte(char as u8)
-		}
-	}
-	pub fn write_char_at_cursor(&mut self, char : char) {
-		match char {
-			_ => self.write_byte(char as u8)
-		}
-	}
-	pub fn write_string(&mut self, str : &str) {
+
+	pub fn write_string(&mut self, str: &str) {
 		for char in str.bytes() {
 			match char {
 				0x20..=0x7e | 0x0A => self.write_char(char as char),
-				_ => self.write_byte(0xfe)
+				_ => self.write_byte(0xfe),
 			}
 		}
 	}
+
 	fn new_line(&mut self) {
-		if self.row_position < VGA_BUFFER_HEIGHT - 1{
+		if self.row_position < VGA_BUFFER_HEIGHT - 1 {
 			self.row_position += 1;
 			self.column_position = 0;
 			return;
 		}
 		for row in 1..VGA_BUFFER_HEIGHT {
 			for col in 0..VGA_BUFFER_WIDTH {
-				let character = self.buffer.chars[row][col];
-				self.buffer.chars[row - 1][col] = character;
+				self.buffer.chars[row - 1][col] = self.buffer.chars[row][col];
 			}
 		}
-		self.clear_row(self.row_position);
+		self.clear_row(VGA_BUFFER_HEIGHT - 1);
 		self.column_position = 0;
-		// self.row_position = 0;
+	}
 
-	}
-	fn clear_row(&mut self, index : usize){
-		for col in 0..VGA_BUFFER_WIDTH {
-			self.buffer.chars[index][col] = ScreenCharacter {
-				ascii_value : 0x20,
-				color : self.color_code
-			};
-		}
-	}
-	pub fn clear_screen(&mut self){
-		for row in 0..VGA_BUFFER_HEIGHT {
-			for col in 0..VGA_BUFFER_WIDTH {
-				self.buffer.chars[row][col] = ScreenCharacter {
-					ascii_value : 0x20,
-					color : self.color_code
-				};
-			}
+	fn clear_row(&mut self, index: usize) {
+		let blank = ScreenCharacter {
+			ascii_value: 0x20,
+			color: self.color_code,
 		};
+		for col in 0..VGA_BUFFER_WIDTH {
+			self.buffer.chars[index][col] = blank;
+		}
 	}
-	pub fn delete_char(&mut self){
-	{
-		if self.column_position > 0
-		{
-			self.column_position -= 1;
+
+	pub fn clear_screen(&mut self) {
+		for row in 0..VGA_BUFFER_HEIGHT {
+			self.clear_row(row);
 		}
-		self.write_byte(b' ');
+		self.row_position = 0;
+		self.column_position = 0;
+		self.cursor.update_cursor(0, 0);
+	}
+
+	pub fn delete_char(&mut self) {
+		if self.column_position == 0 {
+			return;
+		}
 		self.column_position -= 1;
-		if self.column_position > 0
-		{
-			self.cursor.update_cursor(self.column_position, self.row_position);
+
+		self.buffer.chars[self.row_position][self.column_position] = ScreenCharacter {
+			ascii_value: b' ',
+			color: self.color_code,
+		};
+		self.cursor.update_cursor(self.column_position, self.row_position);
+	}
+
+	pub fn change_color(&mut self, foreground: Option<Color>, background: Option<Color>) {
+		if let Some(c) = background {
+			self.background = c;
 		}
-			}
-		}
-	pub fn change_color(&mut self, foreground : Option<Color>,  background : Option<Color>){
-		match background {
-			Some(c) => self.background = c,
-			_ => ()
-		}
-		match foreground {
-			Some(c) => self.foreground = c,
-			_ => ()
+		if let Some(c) = foreground {
+			self.foreground = c;
 		}
 		self.color_code = ColorCode::new(self.foreground, self.background);
 	}
-	pub fn get_color(& self) -> (Color, Color) {
+
+	pub fn get_color(&self) -> (Color, Color) {
 		(self.foreground, self.background)
 	}
 }
-
 
 impl core::fmt::Write for Writer {
 	fn write_str(&mut self, s: &str) -> core::fmt::Result {
@@ -307,6 +284,9 @@ impl core::fmt::Write for Writer {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Public helpers — each acquires the lock exactly once per call.
+// ---------------------------------------------------------------------------
 
 pub fn delete_char() {
 	WRITER.lock().delete_char();
@@ -318,52 +298,74 @@ pub fn clear_screen() {
 
 pub fn print_ft() {
 
-	let old_foreground = WRITER.lock().foreground;
-	let mut foreground_color = old_foreground;
-	for c in HEADER_42.bytes() {
-		match c {
-			b'\n' => {
-				WRITER.lock().new_line();
-				foreground_color = foreground_color.cycle();
-				while foreground_color == WRITER.lock().background  {
-					foreground_color = foreground_color.cycle();
-				 }
-				WRITER.lock().change_color(Some(foreground_color), None);
-
-			},
-			c => WRITER.lock().write_char(c as char)
-		}
+	let flags: u32;
+	//Save the state of the interrupts and disable them
+	unsafe {
+		core::arch::asm!("pushfd; pop {}", out(reg) flags, options(nomem));
+		core::arch::asm!("cli", options(nomem, nostack));
 	}
-	WRITER.lock().change_color(Some(old_foreground), None);
-	WRITER.lock().write_char('\n');
+
+	{
+		let mut writer = WRITER.lock();
+		let old_foreground = writer.foreground;
+		let mut foreground_color = old_foreground;
+
+		for c in HEADER_42.bytes() {
+			if c == b'\n' {
+				writer.new_line();
+				foreground_color = foreground_color.cycle();
+				// Skip colors that match the background so text is readable
+				while foreground_color == writer.background {
+					foreground_color = foreground_color.cycle();
+				}
+				writer.change_color(Some(foreground_color), None);
+			} else {
+				writer.write_char(c as char);
+			}
+		}
+		writer.change_color(Some(old_foreground), None);
+		writer.write_char('\n');
+	} // lock released here
+
+	// Restore the interrupt flag
+	unsafe {
+		core::arch::asm!("push {}; popfd", in(reg) flags, options(nomem));
+	}
 }
 
+// ---------------------------------------------------------------------------
+// Macros
+// ---------------------------------------------------------------------------
 
 #[macro_export]
 macro_rules! print {
 	($($arg:tt)*) => ($crate::vga::_print(format_args!($($arg)*)));
 }
-#[macro_export]
-macro_rules! colored_println {
-    () => ($crate::print!("\n"));
-    (($fg:expr, $bg:expr), $($arg:tt)*) => {{
-        $crate::colored_print!(($fg, $bg), $($arg)*);
-        $crate::print!("\n");
-    }};
-}
-
-macro_rules! colored_print {
-    (($fg:expr, $bg:expr), $($arg:tt)*) => {{
-         $crate::vga::_print_color(format_args!($($arg)*), ($fg, $bg));
-     }};
-}
-
 
 #[macro_export]
 macro_rules! println {
 	() => ($crate::print!("\n"));
 	($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
+
+#[macro_export]
+macro_rules! colored_println {
+	() => ($crate::print!("\n"));
+	(($fg:expr, $bg:expr), $($arg:tt)*) => {{
+		$crate::colored_print!(($fg, $bg), $($arg)*);
+		$crate::print!("\n");
+	}};
+}
+
+macro_rules! colored_print {
+	(($fg:expr, $bg:expr), $($arg:tt)*) => {{
+		$crate::vga::_print_color(format_args!($($arg)*), ($fg, $bg));
+	}};
+}
+
+// ---------------------------------------------------------------------------
+// Internal print helpers — each acquires the lock exactly once.
+// ---------------------------------------------------------------------------
 
 #[doc(hidden)]
 pub fn _print(args: core::fmt::Arguments) {
@@ -372,56 +374,55 @@ pub fn _print(args: core::fmt::Arguments) {
 }
 
 #[doc(hidden)]
-pub fn _print_color(args: core::fmt::Arguments, colors : (Option<Color>,Option<Color>)) {
+pub fn _print_color(args: core::fmt::Arguments, colors: (Option<Color>, Option<Color>)) {
 	use core::fmt::Write;
-	let (oldfg, oldbg) = WRITER.lock().get_color();
-	WRITER.lock().change_color(colors.0, colors.1);
-	WRITER.lock().write_fmt(args).unwrap();
-	WRITER.lock().change_color(Some(oldfg), Some(oldbg));
+	let mut writer = WRITER.lock();
+	let (oldfg, oldbg) = writer.get_color();
+	writer.change_color(colors.0, colors.1);
+	writer.write_fmt(args).unwrap();
+	writer.change_color(Some(oldfg), Some(oldbg));
+	// Lock released here — color is restored inside the same critical section
 }
 
-
-
+// ---------------------------------------------------------------------------
+// Cursor
+// ---------------------------------------------------------------------------
 
 impl Cursor {
-	pub const fn new() -> Self
-	{
-		Self {
-			x : 0,
-			y : 0
-		}
+	pub const fn new() -> Self {
+		Self { x: 0, y: 0 }
 	}
-	pub fn enable_cursor(&mut self, start :u8, end :u8)
-	{
+
+	pub fn enable_cursor(&mut self, start: u8, end: u8) {
 		crate::utils::outb(0x3D4, 0x0A);
 		crate::utils::outb(0x3D5, (crate::utils::inb(0x3D5) & 0xC0) | start);
-
 		crate::utils::outb(0x3D4, 0x0B);
 		crate::utils::outb(0x3D5, (crate::utils::inb(0x3D5) & 0xE0) | end);
-		self.update_cursor(0,0);
+		self.update_cursor(0, 0);
 	}
-	pub fn disable_cursor()
-	{
+
+	pub fn disable_cursor() {
 		crate::utils::outb(0x3D4, 0x0A);
 		crate::utils::outb(0x3D5, 0x20);
 	}
-	pub fn update_cursor(&mut self, x : usize,  y : usize)
-	{
-		let pos = y * VGA_BUFFER_WIDTH + x;
 
+	pub fn update_cursor(&mut self, x: usize, y: usize) {
+		self.x = x;
+		self.y = y;
+		let pos = y * VGA_BUFFER_WIDTH + x;
 		crate::utils::outb(0x3D4, 0x0F);
-		crate::utils::outb(0x3D5,  (pos & 0xFF) as u8);
+		crate::utils::outb(0x3D5, (pos & 0xFF) as u8);
 		crate::utils::outb(0x3D4, 0x0E);
-		crate::utils::outb(0x3D5, ((pos >> 8) & 0xFF)as u8);
+		crate::utils::outb(0x3D5, ((pos >> 8) & 0xFF) as u8);
 	}
-	pub fn move_cursors(&mut self, dir : Direction) {
+
+	pub fn move_cursors(&mut self, dir: Direction) {
 		match dir {
-			Direction::Top => if self.y > 0 {self.y -= 1},
-			Direction::Down => if self.y < VGA_BUFFER_HEIGHT - 1  {self.y += 1},
-			Direction::Left => if self.x > 0 {self.x -= 1},
-			Direction::Right => if self.x < VGA_BUFFER_WIDTH - 1 {self.x += 1}
+			Direction::Top   => { if self.y > 0                    { self.y -= 1; } }
+			Direction::Down  => { if self.y < VGA_BUFFER_HEIGHT - 1 { self.y += 1; } }
+			Direction::Left  => { if self.x > 0                    { self.x -= 1; } }
+			Direction::Right => { if self.x < VGA_BUFFER_WIDTH - 1  { self.x += 1; } }
 		}
-		// serial_print!("Moving cursor to {}, {}", self.x,self.y);
 		self.update_cursor(self.x, self.y);
 	}
 }
