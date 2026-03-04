@@ -13,7 +13,7 @@ static SHELL_ID : &str = "kernel@ring0:/#";
 struct Command {
     name: &'static str,
     function: fn(&[&str]),
-    description: &'static str, // Added for help functionality
+    description: &'static str,
 }
 
 pub struct Shell {
@@ -71,7 +71,6 @@ impl Shell {
 }
 
 pub fn init_shell() {
-// In your init function or wherever appropriate:
     unsafe {
         SHELL.add_command("echo", echo::run, "Echo the input arguments");
         SHELL.add_command("clear", clear::run, "Clear the screen");
@@ -88,39 +87,71 @@ pub fn hello_shell () {
     colored_print!((Some(Color::Red), Some(Color::Black)), "\n{SHELL_ID} ");
 }
 
+/// Halt the CPU until the next interrupt.
+#[inline]
+fn wait_for_interrupt() {
+    unsafe {
+        core::arch::asm!("hlt", options(nomem, nostack));
+    }
+}
+
 pub fn shell_loop() -> ! {
-    let mut paint_mode :bool;
+    let mut paint_mode: bool;
+
     loop {
         paint_mode = false;
         hello_shell();
+
+        // Inner loop: wait for Enter key
         loop {
-        if let Some(event) = get_next_key_event() {
-            if event.pressed == true {
-                    // println!("{event}");
+            // Process all pending key events (there may be multiple if typing fast)
+            let mut got_enter = false;
+
+            while let Some(event) = get_next_key_event() {
+                if !event.pressed {
+                    continue; // Ignore key release events
+                }
+
                 match event.code {
-                    KeyCode::Control(ControlKey::Enter) => break,
-                    KeyCode::Char(c) =>
-                    {
-                        if event.modifiers == CTRL && c == '2'{
+                    KeyCode::Control(ControlKey::Enter) => {
+                        got_enter = true;
+                        break; // Exit the while loop
+                    }
+                    KeyCode::Char(c) => {
+                        if event.modifiers == CTRL && c == '2' {
                             paint_mode = true;
+                            got_enter = true; // Reuse flag to break outer loop
                             break;
                         }
-                        print!("{c}")
-                    },
+                        print!("{c}");
+                    }
                     KeyCode::Control(ControlKey::Backspace) => {
                         if !keyboard::input_buffer_empty() {
                             vga::WRITER.lock().delete_char();
-                        }},
-                    _ => ()}}}}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            // If Enter was pressed, break out of the input loop
+            if got_enter {
+                break;
+            }
+
+            wait_for_interrupt();
+        }
+
+        // Process command or enter paint mode
         if paint_mode {
             crate::shell::paint::paint();
         } else {
-            let len = keyboard::get_input_string();
+            let input = keyboard::get_input_string();
             unsafe {
-                SHELL.run_command(len);
+                SHELL.run_command(input);
             }
         }
-
+        keyboard::clear_input();
     }
 }
 
