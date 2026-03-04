@@ -23,19 +23,20 @@ pub fn paint()
     while done == false {
         loop {
                 if let Some(event) = get_next_key_event() {
+                
                 if event.pressed == true {
-
+                    let mut writer = vga::WRITER.lock();
                     match event.code {
-                        KeyCode::Control(ControlKey::UpArrow) => vga::WRITER.lock().cursor.move_cursors(Direction::Top),
-                        KeyCode::Control(ControlKey::DownArrow) => vga::WRITER.lock().cursor.move_cursors(Direction::Down),
-                        KeyCode::Control(ControlKey::LeftArrow) => vga::WRITER.lock().cursor.move_cursors(Direction::Left),
-                        KeyCode::Control(ControlKey::RightArrow) => vga::WRITER.lock().cursor.move_cursors(Direction::Right),
+                        KeyCode::Control(ControlKey::UpArrow) => writer.cursor.move_cursors(Direction::Top),
+                        KeyCode::Control(ControlKey::DownArrow) => writer.cursor.move_cursors(Direction::Down),
+                        KeyCode::Control(ControlKey::LeftArrow) => writer.cursor.move_cursors(Direction::Left),
+                        KeyCode::Control(ControlKey::RightArrow) => writer.cursor.move_cursors(Direction::Right),
                         KeyCode::Char(c) =>  {
                             if event.modifiers == CTRL && c == '1'{
                                 done = true;
                                 break;
                             }
-                            WRITER.lock().write_byte_at_cursor(c as u8 );
+                            writer.write_byte_at_cursor(c as u8 );
                         }
                         _ => ()
                     }
