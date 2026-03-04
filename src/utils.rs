@@ -49,6 +49,29 @@ pub fn inb(port: u16) -> u8 {
     result
 }
 
+pub fn outw(port: u16, value: u16) {
+    unsafe {
+        core::arch::asm!(
+            "out dx, ax",
+            in("dx") port,
+            in("ax") value,
+            options(nostack, nomem)
+        );
+    }
+}
+
+pub fn inw(port: u16, value: u16) {
+    let result : u16;
+    unsafe {
+        core::arch::asm!(
+            "in dx, ax",
+            out("ax") result,
+            in("dx") port,
+            options(nostack, nomem)
+        );
+    }
+}
+
 pub fn send_eoi(irq: u8) {
         if irq >= 8 {
             outb(0xA0, 0x20);
