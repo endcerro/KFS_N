@@ -32,7 +32,7 @@ pub extern "C" fn rust_main()  {
     init();
     unsafe {
         utils::enable_interrupts(true);
-        core::arch::asm!("hlt");
+        // core::arch::asm!("hlt");
     }
     shell_loop();
 }
