@@ -120,7 +120,7 @@ pub fn init() {
         initial > HEADER_SIZE,
         "Initial heap too small for even one block"
     );
-
+    #[cfg(feature = "verbose")]
     println!(
         "Heap: mapping initial region {:#x}..{:#x} ({} KB)",
         KERNEL_HEAP_START,
@@ -143,6 +143,7 @@ pub fn init() {
         FREE_LIST = first_block;
     }
 
+    #[cfg(feature = "verbose")]
     println!(
         "Heap: {} pages mapped, allocator ready ({} KB usable)",
         pages,
@@ -295,6 +296,7 @@ unsafe fn grow_mapped_region(size: usize) -> Result<usize, MapError> {
     // block if the old last free block ended exactly at old_end.
     insert_free_block(new_block);
 
+    #[cfg(feature = "verbose")]
     println!(
         "Heap: grew by {} KB, mapped end now {:#x}",
         size / 1024,

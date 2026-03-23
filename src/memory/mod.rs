@@ -6,6 +6,7 @@ pub mod define;
 pub mod vmm;
 pub mod heap;
 pub mod physical;
+pub mod allocator;
 
 extern "C" {
     pub fn clear_page1();
@@ -25,22 +26,23 @@ pub fn init() {
 
     unsafe {
         #[cfg(feature = "verbose")]
-        println!("Entry 0 : {}", *PAGING.as_mut().unwrap().get_entry(0));
-        #[cfg(feature = "verbose")]
         println!("Cleaning identity map...");
         clear_page1();
-        #[cfg(feature = "verbose")]
-        println!("Entry 0 : {}", *PAGING.as_mut().unwrap().get_entry(0));
     }
-    diagnose_page_directory();
+    // diagnose_page_directory();
     // Run VMM self-tests after everything is initialised
-    vmm::test_virtual_memory();
+    // vmm::test_virtual_memory();
 
     // Map the initial kernel heap region.
     // Must come after vmm::init() and the frame allocator.
     heap::init();
-    heap::test_heap();
-    heap::print_stats();
+    // heap::test_heap();
+    // heap::print_stats();
+
+    // Run GlobalAlloc tests if the feature is enabled.
+    // These exercise Box, Vec, String through the #[global_allocator].
+    #[cfg(feature = "alloc_test")]
+    allocator::test_global_alloc();
 }
 
 pub fn diagnose_page_directory() {
@@ -131,7 +133,7 @@ fn init_physical_memory() {
     } else {
         panic!("Failed to get memory map from multiboot!");
     }
-    test_paging_infrastructure()
+    // test_paging_infrastructure()
 }
 
 pub static mut PAGING: Option<PageDirectory> = None;

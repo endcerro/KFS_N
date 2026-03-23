@@ -44,9 +44,11 @@ impl FrameAllocator {
     // Initialize the frame allocator from multiboot memory map
     pub fn new(memory_map: &[MemoryInfoEntry], bitmap_addr: usize) -> Self {
         #[cfg(feature = "verbose")]
-        println!("Initializing frame allocator at bitmap address: {:#x}", bitmap_addr);
-        println!("Frame allocator bitmap: phys {:#x}, virt {:#x}",
-            bitmap_addr, bitmap_addr + super::define::KERNEL_OFFSET);
+        {
+            println!("Initializing frame allocator at bitmap address: {:#x}", bitmap_addr);
+            println!("Frame allocator bitmap: phys {:#x}, virt {:#x}",
+                bitmap_addr, bitmap_addr + super::define::KERNEL_OFFSET);
+        }
         let mut highest_addr = 0;
 
         // Find highest address to determine number of frames needed
@@ -88,6 +90,7 @@ impl FrameAllocator {
             if entry.typee == 1 { // Available memory
                 let start_frame = PhysFrame::containing_address(entry.base_addr as usize);
                 let end_frame = PhysFrame::containing_address((entry.base_addr + entry.length) as usize);
+                #[cfg(feature = "verbose")]
                 println!("Marking frames {}-{} as free (region {:#x}-{:#x})", start_frame.number, end_frame.number, entry.base_addr, entry.base_addr + entry.length);
                 for frame in start_frame.number..end_frame.number {
                     allocator.mark_frame_free(frame);
@@ -283,6 +286,7 @@ pub fn init_frame_allocator(memory_map: &[MemoryInfoEntry]) {
     unsafe {
         FRAME_ALLOCATOR = Some(FrameAllocator::new(memory_map, bitmap_addr));
         
+        #[cfg(feature = "verbose")]
         if let Some(ref allocator) = FRAME_ALLOCATOR {
             allocator.print_stats();
         }

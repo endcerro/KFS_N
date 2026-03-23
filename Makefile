@@ -22,7 +22,7 @@ QEMU := qemu-system-i386
 KVM := kvm
 
 # Flags
-RUST_FLAGS := --features verbose #--features gdt_test 
+RUST_FLAGS :=#--features gdt_test 
 
 # Phony targets
 .PHONY: all kvm qemu qemu_dbg dbg clean

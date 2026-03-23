@@ -13,9 +13,12 @@ panic = "abort"
 [target.'cfg(target_os = "none")']
 rustflags = ["-C", "link-arg=-Tlinker.ld"]
 [features]
+default = []
 gdt_test = []
 verbose = []
 debug = []
+alloc_test = []
+
 
 [dependencies]
 spin = "0.9.8"

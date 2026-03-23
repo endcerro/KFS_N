@@ -30,6 +30,7 @@ static mut MBOOT_HEADER: *const MultibootInfoHeader = null();
 pub fn init() {
     unsafe {
         let raw = multiboot_ptr;
+        #[cfg(feature = "verbose")]
         println!("Multiboot2: raw pointer value = {:#x}", raw);
 
         let ptr = raw as *const MultibootInfoHeader;
@@ -40,6 +41,7 @@ pub fn init() {
         // Sanity check: read the total_size field - should be reasonable
         // (typically a few hundred bytes, never zero or gigabytes)
         let header = &*ptr;
+        #[cfg(feature = "verbose")]
         println!("Multiboot2: total_size = {}, reserved = {}",
             header.total_size, header.reserverd);
 
@@ -50,6 +52,7 @@ pub fn init() {
 
         MBOOT_HEADER = ptr;
     }
+    #[cfg(feature = "verbose")]
     println!("Multiboot2: info structure parsed OK");
 }
 

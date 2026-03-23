@@ -55,18 +55,28 @@ Implement a complete, stable and functional memory system for an i386 higher-hal
 - General protection fault handler with selector decoding
 - All wired into IDT
 
-### Phase 6: Remaining - TODO
-- [ ] GlobalAlloc trait implementation (enables Rust alloc crate: Box, Vec, String)
+### Phase 6: GlobalAlloc - 100% ✅
+- `allocator.rs`: KernelAllocator struct implementing `core::alloc::GlobalAlloc`
+- Registered as `#[global_allocator]` in lib.rs, enables `extern crate alloc` (Box, Vec, String)
+- Fast path (align ≤ 8): direct kmalloc/kfree with zero overhead
+- Slow path (align > 8): over-allocate, find aligned position, stash original pointer for dealloc
+- Zero-size allocations return a non-null sentinel per GlobalAlloc contract
+- `#[alloc_error_handler]`: panics with size/align on OOM
+- 6 self-tests behind `alloc_test` feature (Box, Vec, String, vec!, large Vec, over-aligned alloc)
+- Forward-compatible: stateless kernel allocator, user processes will use a separate mechanism
+
+### Phase 7: Remaining - TODO
 - [ ] User space memory management (per-process address spaces)
 - [ ] Demand paging / CoW in page fault handler
 - [ ] Proper locking (replace `static mut` with spinlocks)
 
 ## Overall Assessment
 
-**~85% complete** - All core requirements are met. The kernel has working physical frame allocation, virtual memory mapping with recursive paging, a heap allocator with kmalloc/kfree/ksize, and proper kernel panic handling. The main gaps are GlobalAlloc (quality-of-life for Rust idioms) and user space memory (needed for processes but not part of the base memory system requirement).
+**~90% complete** - All core requirements are fully met. The kernel has working physical frame allocation, virtual memory mapping with recursive paging, a heap allocator with kmalloc/kfree/ksize, proper kernel panic handling, and a GlobalAlloc implementation enabling idiomatic Rust heap types (Box, Vec, String). The remaining gaps are user space memory (needed for processes) and robustness improvements (demand paging, locking).
 
 ## Changelog
 - **Session 1-3**: Physical frame allocator, paging data structures
 - **Session 4**: VMM with recursive mapping, 6 self-tests
 - **Session 5**: Page fault handler, GPF handler, double fault handler, kernel_panic()
 - **Session 6**: Kernel heap (heap.rs) - kmalloc/kfree/ksize, auto-growth, 7 self-tests, heap constants in define.rs
+- **Session 7**: GlobalAlloc trait (allocator.rs) - KernelAllocator wrapping kmalloc/kfree, over-aligned allocation support, alloc error handler, `extern crate alloc` in lib.rs, 6 self-tests behind `alloc_test` feature

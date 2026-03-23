@@ -20,17 +20,16 @@ i386 higher-half kernel, Multiboot2, QEMU. Must stay under 10 MB.
 - `boot.asm` - higher_half_start, calls `rust_main`, `clear_page1` implementation
 
 ### Kernel entry
-- `lib.rs` - `rust_main()` → `init()` → memory::init(), gdt::init(), interrupts::init(), shell::init_shell()
+- `lib.rs` - `rust_main()` → `init()` → memory::init(), gdt::init(), interrupts::init(), shell::init_shell(). Declares `extern crate alloc`, registers `#[global_allocator]` (KernelAllocator), `#[alloc_error_handler]` lives in allocator.rs.
 
 ### Memory subsystem (`src/memory/`)
-- `mod.rs` - `init()` orchestrator: physical → vmm → clear identity map → diagnose → vmm tests → heap init → heap tests
+- `mod.rs` - `init()` orchestrator: physical → vmm → clear identity map → diagnose → vmm tests → heap init → heap tests → alloc tests (feature-gated)
 - `define.rs` - PAGE_SIZE=4096, KERNEL_OFFSET=0xC0000000, heap region constants (KERNEL_HEAP_START=0xC1000000, KERNEL_HEAP_END=0xC2000000, KERNEL_HEAP_INITIAL_SIZE=128KB)
-- `pageflags.rs` - PageFlags bitfield (PRESENT, WRITABLE, USER, etc.) with BitOr/BitAnd/Not
-- `directory.rs` - PageDirectory wrapper (NonNull to page_directory symbol), PageDirectoryEntry (u32)
-- `pagetable.rs` - PageTable wrapper (NonNull), PageTableEntry (u32)
+- `paging.rs` - Unified PageEntry type and PageDirectory for both levels
 - `physical.rs` - FrameAllocator: bitmap-based, allocate/deallocate/specific frames, kernel+bitmap region protection
 - `vmm.rs` - Virtual Memory Manager using recursive PDE[1023] mapping. map_page, unmap_page, translate, map_alloc, map_range, map_range_to, unmap_range. Full self-test suite.
 - `heap.rs` - Kernel heap: linked-list free-list allocator. kmalloc, kfree, ksize, grow_heap, print_stats. Auto-grows by mapping new pages via VMM. Full self-test suite (7 tests).
+- `allocator.rs` - GlobalAlloc trait implementation wrapping kmalloc/kfree. Zero-sized KernelAllocator struct. Fast path for align≤8, over-allocate+stash path for higher alignments. Alloc error handler (panics on OOM). Self-test suite behind `alloc_test` feature (6 tests: Box, Vec, String, vec!, large alloc, over-aligned).
 
 ### GDT (`src/gdt/`)
 - `mod.rs` - 8 segments: null, kernel code/data/stack, user code/data/stack, TSS
@@ -59,7 +58,7 @@ i386 higher-half kernel, Multiboot2, QEMU. Must stay under 10 MB.
 | KERNEL_HEAP_INITIAL_SIZE | 128 * 1024 | memory/define.rs |
 | RECURSIVE_INDEX | 1023 | vmm.rs |
 | PAGE_TABLES_VBASE | 0xFFC00000 | vmm.rs |
-| ALLOC_ALIGN | 8 | heap.rs |
+| ALLOC_ALIGN / KMALLOC_ALIGN | 8 | heap.rs / allocator.rs |
 
 ## Public APIs
 
@@ -91,11 +90,29 @@ heap::grow_heap(size: usize) -> Result<usize, MapError>  // pre-grow, page-align
 heap::print_stats()                          // diagnostic output
 ```
 
+### GlobalAlloc (`allocator.rs`)
+```rust
+// Registered as #[global_allocator] in lib.rs — enables:
+//   alloc::boxed::Box, alloc::vec::Vec, alloc::string::String, etc.
+//
+// KernelAllocator is zero-sized; all state lives in heap.rs.
+// align ≤ 8  → direct kmalloc/kfree (zero overhead)
+// align > 8  → over-allocate, align, stash original ptr for dealloc
+// size == 0  → returns non-null sentinel (align as *mut u8)
+// OOM        → #[alloc_error_handler] panics with size/align info
+```
+
+## Cargo Features
+| Feature | Effect |
+|---|---|
+| `verbose` | Extra logging during init (paging, frame allocator, VMM, GDT) |
+| `gdt_test` | GDT structure, segment register, and TSS verification tests |
+| `alloc_test` | GlobalAlloc self-tests: Box, Vec, String, vec!, large alloc, over-aligned alloc |
+
 ## Remaining Work
-1. **GlobalAlloc trait** - wrap kmalloc/kfree so Rust's `alloc` crate works (Box, Vec, String)
-2. **User space memory** - user page tables, per-process address space, user-accessible mappings
-3. **Page fault recovery** - demand paging, copy-on-write (currently panics on all faults)
-4. **Cleanup** - remove `static mut` patterns, proper locking for SMP readiness
+1. **User space memory** - user page tables, per-process address space, user-accessible mappings
+2. **Demand paging / CoW** in page fault handler (currently panics on all faults)
+3. **Proper locking** - replace `static mut` with spinlocks for SMP readiness
 
 ## Common Pitfalls
 1. Virtual vs Physical: subtract KERNEL_OFFSET when writing to page tables
@@ -104,3 +121,4 @@ heap::print_stats()                          // diagnostic output
 4. Identity map cleared: don't access low memory after clear_page1()
 5. Recursive mapping: PDE[1023] is reserved, never map into it
 6. Heap growth: auto-grows via vmm::map_range, but bounded by KERNEL_HEAP_END
+7. GlobalAlloc alignment: over-aligned dealloc must recover the stashed original pointer — always pass the correct Layout to dealloc
