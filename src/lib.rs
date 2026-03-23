@@ -12,7 +12,6 @@ pub mod utils;
 pub mod interrupts;
 pub mod serial;
 pub mod shell;
-pub mod boot;
 
 use core::panic::PanicInfo;
 

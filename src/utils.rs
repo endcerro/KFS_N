@@ -60,7 +60,7 @@ pub fn outw(port: u16, value: u16) {
     }
 }
 
-pub fn inw(port: u16, value: u16) {
+pub fn inw(port: u16) -> u16{
     let result : u16;
     unsafe {
         core::arch::asm!(
@@ -70,6 +70,7 @@ pub fn inw(port: u16, value: u16) {
             options(nostack, nomem)
         );
     }
+    result
 }
 
 pub fn send_eoi(irq: u8) {

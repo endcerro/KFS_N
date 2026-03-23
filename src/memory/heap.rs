@@ -35,40 +35,40 @@ use super::vmm::{self, MapError, VirtAddr};
 // Constants
 // ---------------------------------------------------------------------------
 
-/// Minimum alignment for all allocations (and the header itself).
-/// 8 bytes keeps u64 and pointer-pair structs happy on i386.
+// Minimum alignment for all allocations (and the header itself).
+// 8 bytes keeps u64 and pointer-pair structs happy on i386.
 const ALLOC_ALIGN: usize = 8;
 
-/// Minimum usable block size.  Blocks smaller than this aren't worth
-/// splitting - they'd just become unfindable fragments.
+// Minimum usable block size.  Blocks smaller than this aren't worth
+// splitting - they'd just become unfindable fragments.
 const MIN_BLOCK_SIZE: usize = ALLOC_ALIGN;
 
-/// How much to grow the heap when we run out of space (minimum).
-/// One page (4 KB) at a time keeps waste low while avoiding excessive
-/// map_range calls for tight loops of small allocations.
+// How much to grow the heap when we run out of space (minimum).
+// One page (4 KB) at a time keeps waste low while avoiding excessive
+// map_range calls for tight loops of small allocations.
 const GROW_INCREMENT: usize = PAGE_SIZE;
 
 // ---------------------------------------------------------------------------
 // Block header
 // ---------------------------------------------------------------------------
 
-/// Header placed immediately before every block (free or allocated).
-/// Kept small so overhead per allocation is minimal.
-///
-/// SAFETY: this struct is written into raw heap memory via pointer casts.
-/// It must have a stable layout - hence #[repr(C)].
+// Header placed immediately before every block (free or allocated).
+// Kept small so overhead per allocation is minimal.
+//
+// SAFETY: this struct is written into raw heap memory via pointer casts.
+// It must have a stable layout - hence #[repr(C)].
 #[repr(C)]
 struct BlockHeader {
-    /// Size of the usable region *after* this header, in bytes.
+    // Size of the usable region *after* this header, in bytes.
     size: usize,
-    /// True if this block is on the free list.
+    // True if this block is on the free list.
     is_free: bool,
-    /// Next free block (only meaningful when is_free == true).
+    // Next free block (only meaningful when is_free == true).
     next: *mut BlockHeader,
 }
 
-/// Header size, rounded up to ALLOC_ALIGN so the usable region that
-/// follows is always aligned.
+// Header size, rounded up to ALLOC_ALIGN so the usable region that
+// follows is always aligned.
 const HEADER_SIZE: usize =
     (core::mem::size_of::<BlockHeader>() + ALLOC_ALIGN - 1) & !(ALLOC_ALIGN - 1);
 
@@ -76,15 +76,15 @@ const HEADER_SIZE: usize =
 // Global state
 // ---------------------------------------------------------------------------
 
-/// Head of the free list (sorted by address, lowest first).
+// Head of the free list (sorted by address, lowest first).
 static mut FREE_LIST: *mut BlockHeader = core::ptr::null_mut();
 
-/// Current end of the mapped heap region.  Everything in
-/// [KERNEL_HEAP_START .. HEAP_MAPPED_END) is backed by physical frames.
+// Current end of the mapped heap region.  Everything in
+// [KERNEL_HEAP_START .. HEAP_MAPPED_END) is backed by physical frames.
 static mut HEAP_MAPPED_END: usize = KERNEL_HEAP_START;
 
-/// Simple statistics - not required for correctness but useful for
-/// debugging and the print_stats() diagnostic.
+// Simple statistics - not required for correctness but useful for
+// debugging and the print_stats() diagnostic.
 static mut STATS: HeapStats = HeapStats {
     total_allocs: 0,
     total_frees: 0,
@@ -94,7 +94,7 @@ static mut STATS: HeapStats = HeapStats {
 struct HeapStats {
     total_allocs: usize,
     total_frees: usize,
-    /// Sum of usable sizes of currently-allocated blocks.
+    // Sum of usable sizes of currently-allocated blocks.
     current_used_bytes: usize,
 }
 
@@ -102,10 +102,10 @@ struct HeapStats {
 // Initialisation
 // ---------------------------------------------------------------------------
 
-/// Initialise the kernel heap: map the initial pages and set up the free
-/// list with a single large free block spanning the entire region.
-///
-/// Must be called after vmm::init() and the physical frame allocator.
+// Initialise the kernel heap: map the initial pages and set up the free
+// list with a single large free block spanning the entire region.
+//
+// Must be called after vmm::init() and the physical frame allocator.
 pub fn init() {
     let initial = KERNEL_HEAP_INITIAL_SIZE;
     assert!(
@@ -154,12 +154,12 @@ pub fn init() {
 // Public API
 // ---------------------------------------------------------------------------
 
-/// Allocate `size` bytes from the kernel heap.
-///
-/// Returns a pointer to the usable region (after the header), or null
-/// if the allocation cannot be satisfied even after growing the heap.
-///
-/// The returned pointer is aligned to ALLOC_ALIGN (8 bytes).
+// Allocate `size` bytes from the kernel heap.
+//
+// Returns a pointer to the usable region (after the header), or null
+// if the allocation cannot be satisfied even after growing the heap.
+//
+// The returned pointer is aligned to ALLOC_ALIGN (8 bytes).
 pub fn kmalloc(size: usize) -> *mut u8 {
     if size == 0 {
         return core::ptr::null_mut();
@@ -188,10 +188,10 @@ pub fn kmalloc(size: usize) -> *mut u8 {
     }
 }
 
-/// Free a previously allocated block.
-///
-/// `ptr` must be a pointer returned by kmalloc().  Passing null is a
-/// safe no-op.  Double-free is detected and logged.
+// Free a previously allocated block.
+//
+// `ptr` must be a pointer returned by kmalloc().  Passing null is a
+// safe no-op.  Double-free is detected and logged.
 pub fn kfree(ptr: *mut u8) {
     if ptr.is_null() {
         return;
@@ -225,10 +225,10 @@ pub fn kfree(ptr: *mut u8) {
     }
 }
 
-/// Return the usable size of an allocation (the size that was rounded
-/// up to alignment, which is >= the size originally requested).
-///
-/// `ptr` must be a pointer returned by kmalloc().
+// Return the usable size of an allocation (the size that was rounded
+// up to alignment, which is >= the size originally requested).
+//
+// `ptr` must be a pointer returned by kmalloc().
 pub fn ksize(ptr: *mut u8) -> usize {
     if ptr.is_null() {
         return 0;
@@ -239,16 +239,16 @@ pub fn ksize(ptr: *mut u8) -> usize {
     }
 }
 
-/// Grow the mapped heap region by `size` bytes (must be page-aligned).
-///
-/// The new memory is added to the free list and merged with the tail
-/// block if adjacent.  Returns the start address of the newly mapped
-/// region, or an error if the heap would exceed KERNEL_HEAP_END or
-/// the frame allocator is exhausted.
-///
-/// This is useful for pre-growing the heap before a burst of
-/// allocations.  Normal callers don't need this - kmalloc() grows
-/// automatically via try_grow_for().
+// Grow the mapped heap region by `size` bytes (must be page-aligned).
+//
+// The new memory is added to the free list and merged with the tail
+// block if adjacent.  Returns the start address of the newly mapped
+// region, or an error if the heap would exceed KERNEL_HEAP_END or
+// the frame allocator is exhausted.
+//
+// This is useful for pre-growing the heap before a burst of
+// allocations.  Normal callers don't need this - kmalloc() grows
+// automatically via try_grow_for().
 pub fn grow_heap(size: usize) -> Result<usize, MapError> {
     assert!(
         size % PAGE_SIZE == 0,
@@ -262,13 +262,13 @@ pub fn grow_heap(size: usize) -> Result<usize, MapError> {
 // Internal: heap growth (single implementation)
 // ---------------------------------------------------------------------------
 
-/// The single implementation backing both the public grow_heap() and the
-/// internal try_grow_for().  Maps `size` bytes at HEAP_MAPPED_END,
-/// creates a free block in the new region, and merges it into the list.
-///
-/// `size` must be page-aligned.  Caller is responsible for the assert.
-///
-/// Returns the start address of the newly mapped region.
+// The single implementation backing both the public grow_heap() and the
+// internal try_grow_for().  Maps `size` bytes at HEAP_MAPPED_END,
+// creates a free block in the new region, and merges it into the list.
+//
+// `size` must be page-aligned.  Caller is responsible for the assert.
+//
+// Returns the start address of the newly mapped region.
 unsafe fn grow_mapped_region(size: usize) -> Result<usize, MapError> {
     let old_end = HEAP_MAPPED_END;
     let new_end = old_end + size;
@@ -304,9 +304,9 @@ unsafe fn grow_mapped_region(size: usize) -> Result<usize, MapError> {
     Ok(old_end)
 }
 
-/// Called automatically by kmalloc() when no free block is large enough.
-/// Computes how much to grow (at least GROW_INCREMENT, or enough for the
-/// request) and delegates to grow_mapped_region().
+// Called automatically by kmalloc() when no free block is large enough.
+// Computes how much to grow (at least GROW_INCREMENT, or enough for the
+// request) and delegates to grow_mapped_region().
 unsafe fn try_grow_for(needed: usize) -> Result<(), MapError> {
     // We need HEADER_SIZE overhead for the new free block, plus the
     // requested amount.  Round up to whole pages.
@@ -328,7 +328,7 @@ unsafe fn try_grow_for(needed: usize) -> Result<(), MapError> {
 // Internal: allocation
 // ---------------------------------------------------------------------------
 
-/// Walk the free list and return the first block with size >= `needed`.
+// Walk the free list and return the first block with size >= `needed`.
 unsafe fn find_free_block(needed: usize) -> Option<*mut BlockHeader> {
     let mut current = FREE_LIST;
     while !current.is_null() {
@@ -340,10 +340,10 @@ unsafe fn find_free_block(needed: usize) -> Option<*mut BlockHeader> {
     None
 }
 
-/// Mark `block` as allocated.  If the block is significantly larger
-/// than `needed`, split it so the remainder stays on the free list.
-///
-/// Returns the usable-region pointer (header + HEADER_SIZE).
+// Mark `block` as allocated.  If the block is significantly larger
+// than `needed`, split it so the remainder stays on the free list.
+//
+// Returns the usable-region pointer (header + HEADER_SIZE).
 unsafe fn allocate_block(block: *mut BlockHeader, needed: usize) -> *mut u8 {
     // Try to split: only worth it if the remainder can hold a header
     // plus at least MIN_BLOCK_SIZE usable bytes.
@@ -370,7 +370,7 @@ unsafe fn allocate_block(block: *mut BlockHeader, needed: usize) -> *mut u8 {
     (block as usize + HEADER_SIZE) as *mut u8
 }
 
-/// Remove a block from the free list.
+// Remove a block from the free list.
 unsafe fn remove_from_free_list(block: *mut BlockHeader) {
     if FREE_LIST == block {
         FREE_LIST = (*block).next;
@@ -391,12 +391,12 @@ unsafe fn remove_from_free_list(block: *mut BlockHeader) {
 // Internal: free + merge
 // ---------------------------------------------------------------------------
 
-/// Insert a freed block back into the address-sorted free list, then
-/// merge with the previous and/or next block if they are adjacent.
-///
-/// Merging is the key to avoiding fragmentation: if three 64-byte
-/// blocks are freed in sequence, they coalesce into a single ~192-byte
-/// block rather than staying as three separate entries.
+// Insert a freed block back into the address-sorted free list, then
+// merge with the previous and/or next block if they are adjacent.
+//
+// Merging is the key to avoiding fragmentation: if three 64-byte
+// blocks are freed in sequence, they coalesce into a single ~192-byte
+// block rather than staying as three separate entries.
 unsafe fn insert_free_block(block: *mut BlockHeader) {
     let addr = block as usize;
 
@@ -443,33 +443,33 @@ unsafe fn insert_free_block(block: *mut BlockHeader) {
 // Utilities
 // ---------------------------------------------------------------------------
 
-/// Round `val` up to the next multiple of `align` (must be power of 2).
+// Round `val` up to the next multiple of `align` (must be power of 2).
 #[inline]
 const fn align_up(val: usize, align: usize) -> usize {
     (val + align - 1) & !(align - 1)
 }
 
-/// Returns the start of the usable heap region.
+// Returns the start of the usable heap region.
 pub fn heap_start() -> usize {
     KERNEL_HEAP_START
 }
 
-/// Returns the current end of the *mapped* heap region.
+// Returns the current end of the *mapped* heap region.
 pub fn heap_mapped_end() -> usize {
     unsafe { HEAP_MAPPED_END }
 }
 
-/// Returns the maximum possible heap end address.
+// Returns the maximum possible heap end address.
 pub fn heap_max() -> usize {
     KERNEL_HEAP_END
 }
 
-/// Returns how many bytes are currently mapped for the heap.
+// Returns how many bytes are currently mapped for the heap.
 pub fn heap_mapped_size() -> usize {
     unsafe { HEAP_MAPPED_END - KERNEL_HEAP_START }
 }
 
-/// Print heap allocator statistics.
+// Print heap allocator statistics.
 pub fn print_stats() {
     unsafe {
         let mapped = heap_mapped_size();
@@ -508,7 +508,7 @@ pub fn print_stats() {
 // Self-test suite
 // ---------------------------------------------------------------------------
 
-/// Run after init() to verify the heap allocator works.
+// Run after init() to verify the heap allocator works.
 pub fn test_heap() {
     println!("\n=== Heap Allocator Self-Test ===\n");
 

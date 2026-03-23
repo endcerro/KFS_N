@@ -15,18 +15,18 @@ pub mod meminfo;
 // ---------------------------------------------------------------------------
 
 extern "C" {
-    /// Virtual address of the multiboot2 info structure.
-    /// Set by bootstrap.asm before calling rust_main.
+    // Virtual address of the multiboot2 info structure.
+    // Set by bootstrap.asm before calling rust_main.
     static multiboot_ptr: u32;
 }
 
-/// Global cache of the multiboot header pointer.
-/// Initialised once by `init()`, then read by all subsystems.
+// Global cache of the multiboot header pointer.
+// Initialised once by `init()`, then read by all subsystems.
 static mut MBOOT_HEADER: *const MultibootInfoHeader = null();
 
-/// Read the multiboot pointer from the assembly global and cache it.
-/// Must be called once at the very start of rust_main, before anything
-/// that needs multiboot data (memory map, etc.).
+// Read the multiboot pointer from the assembly global and cache it.
+// Must be called once at the very start of rust_main, before anything
+// that needs multiboot data (memory map, etc.).
 pub fn init() {
     unsafe {
         let raw = multiboot_ptr;

@@ -62,12 +62,12 @@ pub fn get_memory_map() -> Option<&'static [MemoryInfoEntry]> {
     }
 }
 
-/// Get the count of memory map entries
+// Get the count of memory map entries
 pub fn get_memory_map_count() -> usize {
     unsafe { MEMORY_MAP_COUNT }
 }
 
-/// Print memory map for debugging
+// Print memory map for debugging
 pub fn print_memory_map() {
     if let Some(entries) = get_memory_map() {
         println!("Memory Map ({} entries):", entries.len());

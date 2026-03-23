@@ -9,7 +9,7 @@ pub const HEADER_42: &str =
 	  #+#      #+#
 	 ###     ##########";
 
-/// How many spaces a tab character expands to.
+// How many spaces a tab character expands to.
 const TAB_WIDTH: usize = 4;
 
 #[allow(dead_code)]
@@ -285,7 +285,7 @@ impl core::fmt::Write for Writer {
 }
 
 // ---------------------------------------------------------------------------
-// Public helpers — each acquires the lock exactly once per call.
+// Public helpers - each acquires the lock exactly once per call.
 // ---------------------------------------------------------------------------
 
 pub fn delete_char() {
@@ -364,7 +364,7 @@ macro_rules! colored_print {
 }
 
 // ---------------------------------------------------------------------------
-// Internal print helpers — each acquires the lock exactly once.
+// Internal print helpers - each acquires the lock exactly once.
 // ---------------------------------------------------------------------------
 
 #[doc(hidden)]
@@ -381,7 +381,7 @@ pub fn _print_color(args: core::fmt::Arguments, colors: (Option<Color>, Option<C
 	writer.change_color(colors.0, colors.1);
 	writer.write_fmt(args).unwrap();
 	writer.change_color(Some(oldfg), Some(oldbg));
-	// Lock released here — color is restored inside the same critical section
+	// Lock released here - color is restored inside the same critical section
 }
 
 // ---------------------------------------------------------------------------

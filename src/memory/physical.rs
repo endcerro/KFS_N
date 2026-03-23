@@ -41,7 +41,7 @@ pub enum AllocationError {
 }
 
 impl FrameAllocator {
-    /// Initialize the frame allocator from multiboot memory map
+    // Initialize the frame allocator from multiboot memory map
     pub fn new(memory_map: &[MemoryInfoEntry], bitmap_addr: usize) -> Self {
         #[cfg(feature = "verbose")]
         println!("Initializing frame allocator at bitmap address: {:#x}", bitmap_addr);
@@ -89,7 +89,7 @@ impl FrameAllocator {
                 let start_frame = PhysFrame::containing_address(entry.base_addr as usize);
                 let end_frame = PhysFrame::containing_address((entry.base_addr + entry.length) as usize);
                 println!("Marking frames {}-{} as free (region {:#x}-{:#x})", start_frame.number, end_frame.number, entry.base_addr, entry.base_addr + entry.length);
-                for frame in start_frame.number..=end_frame.number {
+                for frame in start_frame.number..end_frame.number {
                     allocator.mark_frame_free(frame);
                 }
             }
@@ -129,7 +129,7 @@ impl FrameAllocator {
         }
     }
 
-    /// Protect bitmap memory region from allocation
+    // Protect bitmap memory region from allocation
     fn protect_bitmap_region(&mut self, bitmap_addr: usize, bitmap_size: usize) {
         let start_frame = PhysFrame::containing_address(bitmap_addr);
         let end_frame = PhysFrame::containing_address(bitmap_addr + bitmap_size - 1);
@@ -144,7 +144,7 @@ impl FrameAllocator {
             }
         }
     }
-    /// Allocate a physical frame
+    // Allocate a physical frame
     pub fn allocate_frame(&mut self) -> Result<PhysFrame, AllocationError> {
         // Start searching from next_free_frame
         for offset in 0..self.total_frames {
@@ -164,7 +164,7 @@ impl FrameAllocator {
         Err(AllocationError::NoFramesAvailable)
     }
 
-        /// Allocate a specific physical frame (useful for DMA or memory-mapped I/O)
+        // Allocate a specific physical frame (useful for DMA or memory-mapped I/O)
     pub fn allocate_specific_frame(&mut self, frame: PhysFrame) -> Result<(), AllocationError> {
         if frame.number >= self.total_frames {
             return Err(AllocationError::InvalidFrame);
@@ -181,7 +181,7 @@ impl FrameAllocator {
         
         Ok(())
     }
-    /// Deallocate a physical frame
+    // Deallocate a physical frame
     pub fn deallocate_frame(&mut self, frame: PhysFrame) -> Result<(), AllocationError> {
         if frame.number >= self.total_frames {
             return Err(AllocationError::InvalidFrame);
@@ -199,7 +199,7 @@ impl FrameAllocator {
         Ok(())
     }
 
-    /// Check if a frame is marked as used
+    // Check if a frame is marked as used
     fn is_frame_used(&self, frame: usize) -> bool {
         let byte_index = frame / 8;
         let bit_index = frame % 8;
@@ -209,7 +209,7 @@ impl FrameAllocator {
         }
     }
 
-    /// Mark a frame as used in the bitmap
+    // Mark a frame as used in the bitmap
     fn mark_frame_used(&mut self, frame: usize) {
         if !self.is_frame_used(frame) {
             let byte_index = frame / 8;
@@ -222,7 +222,7 @@ impl FrameAllocator {
         }
     }
 
-    /// Mark a frame as free in the bitmap
+    // Mark a frame as free in the bitmap
     fn mark_frame_free(&mut self, frame: usize) {
         let byte_index = frame / 8;
         let bit_index = frame % 8;
@@ -230,25 +230,26 @@ impl FrameAllocator {
             let bitmap = self.bitmap.as_mut();
             bitmap[byte_index] &= !(1 << bit_index);
         }
+        //TODO This is a bug waiting to happen as it can underflow
         self.used_frames -= 1;
     }
 
-    /// Get the total number of frames
+    // Get the total number of frames
     pub fn total_frames(&self) -> usize {
         self.total_frames
     }
     
-    /// Get the number of used frames
+    // Get the number of used frames
     pub fn used_frames(&self) -> usize {
         self.used_frames
     }
 
-    /// Get the number of free frames
+    // Get the number of free frames
     pub fn free_frames(&self) -> usize {
         self.total_frames - self.used_frames
     }
 
-    /// Get memory statistics in bytes
+    // Get memory statistics in bytes
     pub fn memory_stats(&self) -> (usize, usize, usize) {
         let total_bytes = self.total_frames * PAGE_SIZE;
         let used_bytes = self.used_frames * PAGE_SIZE;
@@ -256,7 +257,7 @@ impl FrameAllocator {
         (total_bytes, used_bytes, free_bytes)
     }
 
-    /// Print memory statistics
+    // Print memory statistics
     pub fn print_stats(&self) {
         let (total, used, free) = self.memory_stats();
         println!("Physical Memory Statistics:");

@@ -88,7 +88,7 @@ pub fn hello_shell () {
     colored_print!((Some(Color::Red), Some(Color::Black)), "\n{SHELL_ID} ");
 }
 
-/// Halt the CPU until the next interrupt.
+// Halt the CPU until the next interrupt.
 #[inline]
 fn wait_for_interrupt() {
     unsafe {

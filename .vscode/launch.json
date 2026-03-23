@@ -167,6 +167,6 @@
             ],
             "preLaunchTask": "build-and-launch-debug",
             "postDebugTask": "kill-qemu"
-        }
+        },
     ]
 }
