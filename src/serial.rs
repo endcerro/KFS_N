@@ -102,3 +102,25 @@ macro_rules! dbg_println {
         $crate::println!($($arg)*);
     }};
 }
+
+#[macro_export]
+macro_rules! m_print {
+    ($($arg:tt)*) => {{
+        // Always emit to serial - works before VGA is up, zero cost when not reading.
+        $crate::serial_print!($($arg)*);
+        // Mirror to VGA screen only when the feature is compiled in.
+        $crate::print!($($arg)*);
+    }};
+}
+
+
+#[macro_export]
+macro_rules! m_println {
+    () => {
+        $crate::m_print!("\n");
+    };
+    ($($arg:tt)*) => {{
+        $crate::serial_println!($($arg)*);
+        $crate::println!($($arg)*);
+    }};
+}
