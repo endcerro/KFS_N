@@ -67,7 +67,7 @@ fn init() {
     // memory::diagnose_page_directory();
     // memory::test_paging_infrastructure();
     // WRITER.lock().change_color(Some(vga::Color::White), Some(vga::Color::Black));
-    // WRITER.lock().cursor.enable_cursor(0, 15);
+    WRITER.lock().cursor.enable_cursor(0, 15);
 
     // serial_println!("Hello world");
     print!("GDT        ");
