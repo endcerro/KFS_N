@@ -38,7 +38,6 @@ static ALLOCATOR: memory::allocator::KernelAllocator = memory::allocator::Kernel
 extern "C" {
     static _kernel_start : u8;
     static _kernel_end : u8;
-    static multiboot_ptr: u32;
 }
 
 #[no_mangle]

@@ -1,9 +1,7 @@
 
 pub fn shutdown() -> ! {
-    unsafe {
-        // QEMU ACPI shutdown
-        crate::utils::outw(0x604, 0x2000);
-    }
+    // QEMU ACPI shutdown
+    crate::utils::outw(0x604, 0x2000);
     // Fallback: halt loop if ACPI didn't work
     loop {
         unsafe { core::arch::asm!("hlt", options(nostack, nomem)); }

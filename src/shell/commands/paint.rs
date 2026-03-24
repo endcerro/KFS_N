@@ -1,6 +1,6 @@
 use core::ptr::addr_of;
 
-use crate::vga::{self, *};
+use crate::vga;
 use crate::utils::{self, *};
 use crate::keyboard::*;
 
