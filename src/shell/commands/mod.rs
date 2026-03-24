@@ -8,4 +8,8 @@ pub mod colors;
 pub mod meminfo;
 pub mod shutdown;
 pub mod vmalloc;   // virtual memory allocation demo
+pub mod vfree;
+pub mod vsize;
+pub mod vread;
+pub mod vwrite;
 

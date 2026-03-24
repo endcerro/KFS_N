@@ -72,16 +72,20 @@ impl Shell {
 
 pub fn init_shell() {
     unsafe {
-        SHELL.add_command("echo", echo::run, "Echo the input arguments");
-        SHELL.add_command("clear", clear::run, "Clear the screen");
-        SHELL.add_command("credits", credits::run, "Credits");
-        SHELL.add_command("colors", colors::run, "Run a custom command");
-        SHELL.add_command("ft", print_ft_42::run, "Print 42 logo");
-        SHELL.add_command("stack", print_stack::run, "Print stack information");
-        SHELL.add_command("help", help, "Display help information");
-        SHELL.add_command("meminfo", meminfo::run, "Displays memory mappings from multiboot2");
-        SHELL.add_command("exit", shutdown::run, "Shutdowns");
-        SHELL.add_command("vmalloc", vmalloc::run, "Demo: allocate, write, read, free a virtual page");
+        SHELL.add_command("echo",    echo::run,        "Echo the input arguments");
+        SHELL.add_command("clear",   clear::run,       "Clear the screen");
+        SHELL.add_command("credits", credits::run,     "Credits");
+        SHELL.add_command("colors",  colors::run,      "Change terminal colors");
+        SHELL.add_command("ft",      print_ft_42::run, "Print 42 logo");
+        SHELL.add_command("stack",   print_stack::run, "Print stack information");
+        SHELL.add_command("help",    help,             "Display help information");
+        SHELL.add_command("meminfo", meminfo::run,     "Displays memory mappings from multiboot2");
+        SHELL.add_command("exit",    shutdown::run,    "Shutdown");
+        SHELL.add_command("vmalloc", vmalloc::run,     "Map virtual pages:    vmalloc <addr> <size>");
+        SHELL.add_command("vfree",   vfree::run,       "Unmap virtual pages:  vfree <addr> <size>");
+        SHELL.add_command("vsize",   vsize::run,       "Query mapped size:    vsize <addr>");
+        SHELL.add_command("vwrite",  vwrite::run,      "Write to virt addr:   vwrite <addr> <val> [u8|u32|u64]");
+        SHELL.add_command("vread",   vread::run,       "Read from virt addr:  vread <addr> [u8|u32|u64]");
     }
 }
 

@@ -90,6 +90,108 @@ pub enum UnmapError {
     PageTableNotPresent,
 }
 
+/// Errors returned by vmalloc / vfree.
+#[derive(Debug)]
+pub enum VmError {
+    /// size argument was zero.
+    ZeroSize,
+    /// Address or range overlaps the recursive-mapping region (0xFFC00000+).
+    /// That region is the live page directory — it cannot be remapped.
+    RecursiveRegion,
+    /// No free physical frames available.
+    OutOfMemory,
+    /// One or more pages in the requested range are already mapped.
+    AlreadyMapped,
+}
+
+// ---------------------------------------------------------------------------
+// Internal helper: round an address up to the next page boundary.
+// If already aligned, the value is unchanged.
+// ---------------------------------------------------------------------------
+#[inline]
+fn page_align_up(addr: u32) -> u32 {
+    (addr.saturating_add(PAGE_SIZE as u32 - 1)) & !(PAGE_SIZE as u32 - 1)
+}
+
+// ---------------------------------------------------------------------------
+// vmalloc / vfree / vsize
+//
+// Design:
+//   - Any virtual address is accepted; addr is rounded UP to the nearest
+//     page boundary before use.
+//   - The only hard block is the recursive-mapping region (0xFFC00000+)
+//     which is a hardware constraint — PDE[1023] is the page directory
+//     itself and cannot be remapped.
+//   - No bookkeeping table.  The caller owns (addr, size), mirroring
+//     POSIX mmap/munmap.  vsize walks the live page tables directly.
+// ---------------------------------------------------------------------------
+
+/// Map `size` bytes starting at `addr` (rounded up to page boundary).
+///
+/// Returns `(aligned_addr, pages_mapped)` so the caller always knows
+/// the actual base that was mapped even if rounding occurred.
+pub fn vmalloc(addr: u32, size: usize) -> Result<(u32, usize), VmError> {
+    if size == 0 {
+        return Err(VmError::ZeroSize);
+    }
+
+    let aligned_addr = page_align_up(addr);
+    let pages        = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+    let byte_size    = pages * PAGE_SIZE;
+
+    // Only hard constraint: must not touch the recursive-mapping region.
+    if (aligned_addr as usize).saturating_add(byte_size) > 0xFFC0_0000 {
+        return Err(VmError::RecursiveRegion);
+    }
+
+    map_range(VirtAddr::new(aligned_addr), byte_size, PageFlags::PRESENT | PageFlags::WRITABLE)
+        .map_err(|e| match e {
+            MapError::FrameAllocationFailed => VmError::OutOfMemory,
+            MapError::AlreadyMapped         => VmError::AlreadyMapped,
+            MapError::InvalidAddress        => VmError::RecursiveRegion,
+        })?;
+
+    Ok((aligned_addr, pages))
+}
+
+/// Unmap `size` bytes starting at `addr` (rounded up to match vmalloc).
+///
+/// Returns the number of pages actually freed.
+pub fn vfree(addr: u32, size: usize) -> Result<usize, VmError> {
+    if size == 0 {
+        return Err(VmError::ZeroSize);
+    }
+
+    let aligned_addr = page_align_up(addr);
+    let pages        = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+    let byte_size    = pages * PAGE_SIZE;
+
+    let freed = unmap_range(VirtAddr::new(aligned_addr), byte_size);
+    Ok(freed)
+}
+
+/// Count consecutive mapped pages from `addr` (rounded up to page boundary).
+///
+/// Walks the live page tables — the page tables are the ground truth.
+/// Returns the number of mapped bytes, or 0 if the address is not mapped.
+pub fn vsize(addr: u32) -> usize {
+    let aligned_addr = page_align_up(addr);
+    let mut count: usize = 0;
+
+    loop {
+        let cur = (aligned_addr as usize).saturating_add(count * PAGE_SIZE);
+        if cur >= 0xFFC0_0000 {
+            break;
+        }
+        if !is_mapped(VirtAddr::new(cur as u32)) {
+            break;
+        }
+        count += 1;
+    }
+
+    count * PAGE_SIZE
+}
+
 // ---------------------------------------------------------------------------
 // TLB helpers
 // ---------------------------------------------------------------------------
@@ -410,172 +512,6 @@ fn free_frame(phys: PhysAddr) {
             let _ = alloc.deallocate_frame(frame);
         }
     }
-}
-
-// ---------------------------------------------------------------------------
-// demo_virt_alloc - end-to-end virtual memory allocation demonstration
-//
-// Intended to be called from the shell (`vmalloc` command).  Shows the
-// full pipeline in one visible, logged sequence:
-//
-//   physical frame allocation
-//     → page table creation (if the PDE was empty)
-//     → PTE write + TLB flush
-//     → read / write through the virtual address
-//     → address-translation verification via translate()
-//     → clean unmap + frame free
-//
-// Address choice: 0xD0CA_F000  ("D0 CAFE 000", page-aligned)
-//   - Above the kernel heap region  (ends at 0xC2000000)
-//   - Well below the recursive-mapping zone (starts at 0xFFC00000)
-//   - Does NOT overlap any VMM self-test address:
-//       0xD000_0000  test 2
-//       0xD000_1000  test 3
-//       0xD010_0000–0xD010_3000  test 4
-//       0xD020_0000  test 5
-//       0xD200_0000–0xD200_7000  test 6
-// ---------------------------------------------------------------------------
-pub fn demo_virt_alloc() {
-    // const DEMO_PAGE: u32 = 0xD0CA_F000; // "D0 CAFE 000", page-aligned
-    // const DEMO_PAGE: u32 = 0x06969_F000;
-    const DEMO_PAGE: u32    = 0x6942_F000;
-    let virt  = VirtAddr::new(DEMO_PAGE);
-    let flags = PageFlags::PRESENT | PageFlags::WRITABLE;
-
-    println!("\n=== Virtual Memory Allocation Demo ===\n");
-    println!("  Target virtual address : {:#010x}", DEMO_PAGE);
-    println!("  (kernel heap ends at   : 0xc2000000)");
-    println!("  (recursive map starts  : 0xffc00000)\n");
-
-    // ------------------------------------------------------------------
-    // Step 1 — confirm the page is free
-    //
-    // Defensive cleanup: if the shell command is run twice in a row
-    // the page will still be mapped from the first call.  We detect
-    // this and clean up gracefully instead of returning AlreadyMapped.
-    // ------------------------------------------------------------------
-    if is_mapped(virt) {
-        println!("[demo] Page already mapped — cleaning up stale mapping...");
-        if let Ok(old_phys) = unmap_page(virt) {
-            free_frame(old_phys);
-        }
-    }
-    println!("[demo] 1. Page {:#010x} is not mapped  OK", DEMO_PAGE);
-
-    // ------------------------------------------------------------------
-    // Step 2 — allocate a physical frame and install the mapping
-    //
-    // map_alloc() does three things atomically from the caller's view:
-    //   a) asks the physical frame allocator for a free 4 KB frame
-    //   b) if no page table exists for PDE[pde_idx], allocates a second
-    //      frame for the page table, writes the PDE, flushes the whole TLB
-    //   c) writes the PTE pointing to the frame from (a), then invlpg
-    // ------------------------------------------------------------------
-    println!("[demo] 2. Calling map_alloc({:#010x}, PRESENT|WRITABLE)...", DEMO_PAGE);
-    let phys = match map_alloc(virt, flags) {
-        Ok(p)  => p,
-        Err(e) => { println!("[demo]    FAILED: {:?}", e); return; }
-    };
-    println!("[demo]    Physical frame allocated : {:#010x}", phys.0);
-    println!("[demo]    Virtual  page  mapped    : {:#010x}", virt.0);
-
-    // ------------------------------------------------------------------
-    // Step 3 — verify the hardware page-walk via translate()
-    //
-    // translate() reads PDE → PTE through the recursive mapping and
-    // rebuilds the physical address.  This mirrors exactly what the MMU
-    // does on every load/store, so a mismatch here means a bug in
-    // how we wrote the PDE or PTE.
-    // ------------------------------------------------------------------
-    println!("[demo] 3. Verifying address translation...");
-    let translated = match translate(virt) {
-        Some(p) => p,
-        None    => { println!("[demo]    translate() returned None — BUG!"); return; }
-    };
-    println!("[demo]    translate({:#010x}) -> {:#010x}", virt.0, translated.0);
-    if translated.0 == phys.0 {
-        println!("[demo]    Matches allocated frame  OK");
-    } else {
-        println!("[demo]    MISMATCH: expected {:#010x}, got {:#010x}", phys.0, translated.0);
-        return;
-    }
-
-    // ------------------------------------------------------------------
-    // Step 4 — write a pattern at four offsets within the page
-    //
-    // Offsets are spread across the full 4 KB page to prove the entire
-    // frame is accessible, not just the first cache line.
-    // write_volatile prevents the compiler from optimising the stores away.
-    // ------------------------------------------------------------------
-    println!("[demo] 4. Writing test pattern (4 x u32 spread across the 4 KB page)...");
-    let pattern: [(u32, u32); 4] = [
-        (0x000, 0xDEAD_BEEF),   // first word of the page
-        (0x400, 0xCAFE_BABE),   // +1 KB
-        (0x800, 0x1337_C0DE),   // +2 KB
-        (0xFFC, 0xABCD_EF01),   // last word of the page (+4092)
-    ];
-    unsafe {
-        for (offset, value) in pattern {
-            let ptr = (virt.0 + offset) as *mut u32;
-            ptr.write_volatile(value);
-            println!("[demo]    wrote {:#010x}  ->  [{:#010x}]",
-                value, virt.0 + offset);
-        }
-    }
-
-    // ------------------------------------------------------------------
-    // Step 5 — read back and verify every word
-    // ------------------------------------------------------------------
-    println!("[demo] 5. Reading back...");
-    let mut all_ok = true;
-    unsafe {
-        for (offset, expected) in pattern {
-            let ptr = (virt.0 + offset) as *const u32;
-            let got = ptr.read_volatile();
-            let ok  = got == expected;
-            println!("[demo]    [{:#010x}] = {:#010x}  {}",
-                virt.0 + offset, got,
-                if ok { "OK" } else { "MISMATCH!" });
-            if !ok { all_ok = false; }
-        }
-    }
-    if all_ok {
-        println!("[demo]    All values match — virtual memory R/W working correctly.");
-    } else {
-        println!("[demo]    FAILURE: readback mismatch detected!");
-    }
-
-    // ------------------------------------------------------------------
-    // Step 6 — unmap the page and free the physical frame
-    //
-    // unmap_page() clears the PTE and issues invlpg for this address.
-    // After this returns, any access to DEMO_PAGE will #PF, which is
-    // exactly the behaviour we want.  free_frame() returns the physical
-    // frame to the bitmap allocator for future use.
-    // ------------------------------------------------------------------
-    println!("[demo] 6. Unmapping {:#010x} and freeing physical frame...", DEMO_PAGE);
-    match unmap_page(virt) {
-        Ok(returned) => {
-            if returned.0 == phys.0 {
-                println!("[demo]    unmap_page returned {:#010x}  OK", returned.0);
-            } else {
-                println!("[demo]    WARNING: unmap returned {:#010x}, expected {:#010x}",
-                    returned.0, phys.0);
-            }
-            free_frame(returned);
-            println!("[demo]    Frame {:#010x} returned to allocator.", returned.0);
-        }
-        Err(e) => println!("[demo]    unmap_page FAILED: {:?}", e),
-    }
-
-    // Final sanity: confirm the page is no longer reachable
-    if !is_mapped(virt) {
-        println!("[demo]    is_mapped({:#010x}) = false  OK", DEMO_PAGE);
-    } else {
-        println!("[demo]    ERROR: page still appears mapped after unmap!");
-    }
-
-    // println!("\n=== Demo complete ===\n");
 }
 
 // ---------------------------------------------------------------------------
