@@ -6,12 +6,8 @@ edition = "2021"
 crate-type = ["staticlib"]
 [profile.dev]
 panic = "abort"
-debug = true
-verbose = false
 [profile.release]
 panic = "abort"
-[target.'cfg(target_os = "none")']
-rustflags = ["-C", "link-arg=-Tlinker.ld"]
 [features]
 default = []
 gdt_test = []
