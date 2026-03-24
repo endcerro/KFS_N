@@ -6,7 +6,8 @@ mod layouts;
 // Constants
 const BUFFER_SIZE: usize = 256;
 
-const CURRENT_LAYOUT: layouts::Layout = layouts::_AZERTY_LAYOUT;
+// const CURRENT_LAYOUT: layouts::Layout = layouts::_AZERTY_LAYOUT;
+const CURRENT_LAYOUT: layouts::Layout = layouts::_QWERTY_LAYOUT;
 
 // Bitflags for modifiers
 pub const SHIFT: u8 = 0b0000_0001;

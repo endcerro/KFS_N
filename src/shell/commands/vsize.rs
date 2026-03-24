@@ -9,8 +9,8 @@
 //   vsize 0xD0000000
 //   vsize 4096
 
+use super::parse::{page_align_up, parse_u32};
 use crate::memory::vmm;
-use super::parse::{parse_u32, page_align_up};
 
 pub fn run(args: &[&str]) {
     if args.len() != 1 {
@@ -22,12 +22,18 @@ pub fn run(args: &[&str]) {
 
     let addr = match parse_u32(args[0]) {
         Some(v) => v,
-        None    => { println!("\nvsize: invalid address '{}'", args[0]); return; }
+        None => {
+            println!("\nvsize: invalid address '{}'", args[0]);
+            return;
+        }
     };
 
     let aligned = page_align_up(addr);
     if aligned != addr {
-        println!("\nNote: address rounded up {:#010x} -> {:#010x}", addr, aligned);
+        println!(
+            "\nNote: address rounded up {:#010x} -> {:#010x}",
+            addr, aligned
+        );
     }
 
     let bytes = vmm::vsize(addr);
@@ -36,7 +42,14 @@ pub fn run(args: &[&str]) {
         println!("\nvsize({:#010x}): not mapped", aligned);
     } else {
         let pages = bytes / 4096;
-        println!("\nvsize({:#010x}): {} bytes ({} page(s))", aligned, bytes, pages);
-        println!("  Range: {:#010x} .. {:#010x}", aligned, aligned as usize + bytes);
+        println!(
+            "\nvsize({:#010x}): {} bytes ({} page(s))",
+            aligned, bytes, pages
+        );
+        println!(
+            "  Range: {:#010x} .. {:#010x}",
+            aligned,
+            aligned as usize + bytes
+        );
     }
 }

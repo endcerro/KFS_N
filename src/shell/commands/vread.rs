@@ -12,12 +12,14 @@
 //   vread 0xD0000000 u8
 //   vread 0xD0000000 u64
 
-use super::parse::{parse_u32, page_align_up};
+use super::parse::{page_align_up, parse_u32};
 
 pub fn run(args: &[&str]) {
     if args.is_empty() || args.len() > 2 {
         println!("\nUsage: vread <addr> [u8|u32|u64]");
-        println!("  addr   virtual address to read from (hex or decimal, rounded up to page boundary)");
+        println!(
+            "  addr   virtual address to read from (hex or decimal, rounded up to page boundary)"
+        );
         println!("  width  u8 | u32 | u64               (default: u32)");
         println!("\nNote: reading from an unmapped address will page fault.");
         println!("\nExamples:");
@@ -29,12 +31,18 @@ pub fn run(args: &[&str]) {
 
     let addr = match parse_u32(args[0]) {
         Some(v) => v,
-        None    => { println!("\nvread: invalid address '{}'", args[0]); return; }
+        None => {
+            println!("\nvread: invalid address '{}'", args[0]);
+            return;
+        }
     };
 
     let aligned = page_align_up(addr);
     if aligned != addr {
-        println!("\nNote: address rounded up {:#010x} -> {:#010x}", addr, aligned);
+        println!(
+            "\nNote: address rounded up {:#010x} -> {:#010x}",
+            addr, aligned
+        );
     }
 
     let width = if args.len() == 2 { args[1] } else { "u32" };
