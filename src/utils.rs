@@ -1,4 +1,3 @@
-use crate::serial_println;
 use crate::m_println;
 use crate::m_print;
 

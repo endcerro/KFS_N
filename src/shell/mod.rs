@@ -4,6 +4,7 @@ use crate::keyboard::*;
 use crate::vga::Color;
 pub mod commands;
 use commands::{*, paint};
+use crate::vga::get_current_colors;
 
 const MAX_COMMANDS: usize = 20;
 const _MAX_COMMAND_LENGTH: usize = 20;
@@ -90,7 +91,16 @@ pub fn init_shell() {
 }
 
 pub fn hello_shell () {
-    colored_print!((Some(Color::Red), Some(Color::Black)), "\n{SHELL_ID} ");
+    let mut color_pair: (Option<Color>, Option<Color>) = (None, None);
+    if get_current_colors() == (Color::White, Color::Black)
+    {
+        color_pair.0 = Some(Color::Red);
+        // colored_print!((Some(Color::Red), None), "\n{SHELL_ID} ");
+    }
+    // else {
+    colored_print!((color_pair.0, color_pair.1), "\n{SHELL_ID} ");
+    // }
+
 }
 
 // Halt the CPU until the next interrupt.

@@ -129,7 +129,7 @@ pub fn init() {
     );
 
     let flags = PageFlags::PRESENT | PageFlags::WRITABLE;
-    let pages = vmm::map_range(VirtAddr::new(KERNEL_HEAP_START as u32), initial, flags)
+    let _pages: usize = vmm::map_range(VirtAddr::new(KERNEL_HEAP_START as u32), initial, flags)
         .expect("Heap: failed to map initial region");
 
     unsafe {

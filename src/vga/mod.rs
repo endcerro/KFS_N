@@ -384,6 +384,12 @@ pub fn _print_color(args: core::fmt::Arguments, colors: (Option<Color>, Option<C
 	// Lock released here - color is restored inside the same critical section
 }
 
+pub fn get_current_colors() -> (Color, Color)
+{
+	let writer = WRITER.lock();
+	writer.get_color()
+}
+
 // ---------------------------------------------------------------------------
 // Cursor
 // ---------------------------------------------------------------------------
