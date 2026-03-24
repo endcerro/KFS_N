@@ -12,3 +12,4 @@ pub mod vmalloc; // virtual memory allocation demo
 pub mod vread;
 pub mod vsize;
 pub mod vwrite;
+pub mod parse;
