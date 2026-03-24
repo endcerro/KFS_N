@@ -29,7 +29,10 @@ pub fn run(args: &[&str]) {
 
     let addr: u32 = match parse_u32(args[0]) {
         Some(v) => v,
-        None    => { println!("\nvread: invalid address '{}'", args[0]); return; }
+        None => {
+            println!("\nvread: invalid address '{}'", args[0]);
+            return;
+        }
     };
 
     let width = if args.len() == 2 { args[1] } else { "u32" };

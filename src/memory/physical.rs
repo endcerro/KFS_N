@@ -1,5 +1,5 @@
-use core::ptr::NonNull;
 use crate::multiboot2::meminfo::MemoryInfoEntry;
+use core::ptr::NonNull;
 
 pub const PAGE_SIZE: usize = 4096;
 
@@ -10,7 +10,9 @@ pub struct PhysFrame {
 
 impl PhysFrame {
     pub fn containing_address(address: usize) -> PhysFrame {
-        PhysFrame { number: address / PAGE_SIZE }
+        PhysFrame {
+            number: address / PAGE_SIZE,
+        }
     }
 
     pub fn start_address(&self) -> usize {
@@ -45,9 +47,15 @@ impl FrameAllocator {
     pub fn new(memory_map: &[MemoryInfoEntry], bitmap_addr: usize) -> Self {
         #[cfg(feature = "verbose")]
         {
-            println!("Initializing frame allocator at bitmap address: {:#x}", bitmap_addr);
-            println!("Frame allocator bitmap: phys {:#x}, virt {:#x}",
-                bitmap_addr, bitmap_addr + super::define::KERNEL_OFFSET);
+            println!(
+                "Initializing frame allocator at bitmap address: {:#x}",
+                bitmap_addr
+            );
+            println!(
+                "Frame allocator bitmap: phys {:#x}, virt {:#x}",
+                bitmap_addr,
+                bitmap_addr + super::define::KERNEL_OFFSET
+            );
         }
         let mut highest_addr = 0;
 
@@ -63,7 +71,11 @@ impl FrameAllocator {
         let bitmap_size = (total_frames + 7) / 8; // Round up to nearest byte
 
         #[cfg(feature = "verbose")]
-        println!("Total frames to manage: {} ({} MB)", total_frames, (total_frames * PAGE_SIZE) / (1024 * 1024));
+        println!(
+            "Total frames to manage: {} ({} MB)",
+            total_frames,
+            (total_frames * PAGE_SIZE) / (1024 * 1024)
+        );
         #[cfg(feature = "verbose")]
         println!("Bitmap size: {} bytes", bitmap_size);
 
@@ -82,16 +94,24 @@ impl FrameAllocator {
             bitmap,
             total_frames,
             next_free_frame: 0,
-            used_frames: total_frames,// Start with all frames marked as used
+            used_frames: total_frames, // Start with all frames marked as used
         };
 
         // Mark available regions as free
         for entry in memory_map {
-            if entry.typee == 1 { // Available memory
+            if entry.typee == 1 {
+                // Available memory
                 let start_frame = PhysFrame::containing_address(entry.base_addr as usize);
-                let end_frame = PhysFrame::containing_address((entry.base_addr + entry.length) as usize);
+                let end_frame =
+                    PhysFrame::containing_address((entry.base_addr + entry.length) as usize);
                 #[cfg(feature = "verbose")]
-                println!("Marking frames {}-{} as free (region {:#x}-{:#x})", start_frame.number, end_frame.number, entry.base_addr, entry.base_addr + entry.length);
+                println!(
+                    "Marking frames {}-{} as free (region {:#x}-{:#x})",
+                    start_frame.number,
+                    end_frame.number,
+                    entry.base_addr,
+                    entry.base_addr + entry.length
+                );
                 for frame in start_frame.number..end_frame.number {
                     allocator.mark_frame_free(frame);
                 }
@@ -101,28 +121,33 @@ impl FrameAllocator {
         allocator.protect_kernel_region();
         allocator.protect_bitmap_region(bitmap_addr, bitmap_size);
         #[cfg(feature = "verbose")]
-        println!("Frame allocator initialized: {} free frames available",
-            allocator.total_frames - allocator.used_frames);
+        println!(
+            "Frame allocator initialized: {} free frames available",
+            allocator.total_frames - allocator.used_frames
+        );
         allocator
     }
 
     fn protect_kernel_region(&mut self) {
-    extern "C" {
+        extern "C" {
             static _kernel_start: u8;
             static _kernel_end: u8;
         }
 
         unsafe {
-            let kernel_start_phys = (&_kernel_start as *const u8 as usize).saturating_sub(super::define::KERNEL_OFFSET);
-            let kernel_end_phys = (&_kernel_end as *const u8 as usize).saturating_sub(super::define::KERNEL_OFFSET);
+            let kernel_start_phys =
+                (&_kernel_start as *const u8 as usize).saturating_sub(super::define::KERNEL_OFFSET);
+            let kernel_end_phys =
+                (&_kernel_end as *const u8 as usize).saturating_sub(super::define::KERNEL_OFFSET);
 
             let start_frame = PhysFrame::containing_address(kernel_start_phys);
             let end_frame = PhysFrame::containing_address(kernel_end_phys);
 
             #[cfg(feature = "verbose")]
-            println!("Protecting kernel frames {}-{} (phys {:#x}-{:#x})",
-                start_frame.number, end_frame.number,
-                kernel_start_phys, kernel_end_phys);
+            println!(
+                "Protecting kernel frames {}-{} (phys {:#x}-{:#x})",
+                start_frame.number, end_frame.number, kernel_start_phys, kernel_end_phys
+            );
 
             for frame_num in start_frame.number..=end_frame.number {
                 if frame_num < self.total_frames && !self.is_frame_used(frame_num) {
@@ -138,8 +163,10 @@ impl FrameAllocator {
         let end_frame = PhysFrame::containing_address(bitmap_addr + bitmap_size - 1);
 
         #[cfg(feature = "verbose")]
-        println!("Protecting bitmap frames {}-{} (addr {:#x}, size {})",
-            start_frame.number, end_frame.number, bitmap_addr, bitmap_size);
+        println!(
+            "Protecting bitmap frames {}-{} (addr {:#x}, size {})",
+            start_frame.number, end_frame.number, bitmap_addr, bitmap_size
+        );
 
         for frame_num in start_frame.number..=end_frame.number {
             if frame_num < self.total_frames && !self.is_frame_used(frame_num) {
@@ -152,14 +179,18 @@ impl FrameAllocator {
         // Start searching from next_free_frame
         for offset in 0..self.total_frames {
             let frame = (self.next_free_frame + offset) % self.total_frames;
-            
+
             if !self.is_frame_used(frame) {
                 self.mark_frame_used(frame);
                 self.next_free_frame = (frame + 1) % self.total_frames;
-                
+
                 #[cfg(feature = "verbose")]
-                println!("Allocated frame {} at phys addr {:#x}", frame, PhysFrame { number: frame }.start_address());
-                
+                println!(
+                    "Allocated frame {} at phys addr {:#x}",
+                    frame,
+                    PhysFrame { number: frame }.start_address()
+                );
+
                 return Ok(PhysFrame { number: frame });
             }
         }
@@ -167,21 +198,25 @@ impl FrameAllocator {
         Err(AllocationError::NoFramesAvailable)
     }
 
-        // Allocate a specific physical frame (useful for DMA or memory-mapped I/O)
+    // Allocate a specific physical frame (useful for DMA or memory-mapped I/O)
     pub fn allocate_specific_frame(&mut self, frame: PhysFrame) -> Result<(), AllocationError> {
         if frame.number >= self.total_frames {
             return Err(AllocationError::InvalidFrame);
         }
-        
+
         if self.is_frame_used(frame.number) {
             return Err(AllocationError::FrameInUse);
         }
-        
+
         self.mark_frame_used(frame.number);
-        
+
         #[cfg(feature = "verbose")]
-        println!("Allocated specific frame {} at phys addr {:#x}", frame.number, frame.start_address());
-        
+        println!(
+            "Allocated specific frame {} at phys addr {:#x}",
+            frame.number,
+            frame.start_address()
+        );
+
         Ok(())
     }
     // Deallocate a physical frame
@@ -196,7 +231,10 @@ impl FrameAllocator {
         if frame.number < self.next_free_frame {
             self.next_free_frame = frame.number;
             #[cfg(feature = "debug")]
-            println!("Warning: Attempting to free already-free frame {}", frame.number);
+            println!(
+                "Warning: Attempting to free already-free frame {}",
+                frame.number
+            );
         }
 
         Ok(())
@@ -241,7 +279,7 @@ impl FrameAllocator {
     pub fn total_frames(&self) -> usize {
         self.total_frames
     }
-    
+
     // Get the number of used frames
     pub fn used_frames(&self) -> usize {
         self.used_frames
@@ -264,9 +302,21 @@ impl FrameAllocator {
     pub fn print_stats(&self) {
         let (total, used, free) = self.memory_stats();
         println!("Physical Memory Statistics:");
-        println!("  Total: {} MB ({} frames)", total / (1024 * 1024), self.total_frames);
-        println!("  Used:  {} MB ({} frames)", used / (1024 * 1024), self.used_frames);
-        println!("  Free:  {} MB ({} frames)", free / (1024 * 1024), self.free_frames());
+        println!(
+            "  Total: {} MB ({} frames)",
+            total / (1024 * 1024),
+            self.total_frames
+        );
+        println!(
+            "  Used:  {} MB ({} frames)",
+            used / (1024 * 1024),
+            self.used_frames
+        );
+        println!(
+            "  Free:  {} MB ({} frames)",
+            free / (1024 * 1024),
+            self.free_frames()
+        );
     }
 }
 
@@ -276,16 +326,17 @@ pub fn init_frame_allocator(memory_map: &[MemoryInfoEntry]) {
     extern "C" {
         static _kernel_end: u8;
     }
-    
+
     let bitmap_addr = unsafe {
-        let kernel_end_phys = (&_kernel_end as *const u8 as usize).saturating_sub(super::define::KERNEL_OFFSET);
+        let kernel_end_phys =
+            (&_kernel_end as *const u8 as usize).saturating_sub(super::define::KERNEL_OFFSET);
         // Align to next page boundary
         (kernel_end_phys + PAGE_SIZE - 1) & !(PAGE_SIZE - 1)
     };
-    
+
     unsafe {
         FRAME_ALLOCATOR = Some(FrameAllocator::new(memory_map, bitmap_addr));
-        
+
         #[cfg(feature = "verbose")]
         if let Some(ref allocator) = FRAME_ALLOCATOR {
             allocator.print_stats();

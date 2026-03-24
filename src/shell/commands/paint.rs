@@ -1,44 +1,53 @@
 use core::ptr::addr_of;
 
-use crate::vga;
-use crate::utils::{self, *};
 use crate::keyboard::*;
+use crate::utils::{self, *};
+use crate::vga;
 
 static mut PAINT_BUFFER: vga::Buffer = unsafe { core::mem::zeroed() };
 
-pub fn paint()
-{
+pub fn paint() {
     vga::clear_screen();
     #[allow(static_mut_refs)]
-        unsafe {
-            utils::enable_interrupts(false);
+    unsafe {
+        utils::enable_interrupts(false);
 
-            vga::WRITER.lock().buffer.copy_from(addr_of!(PAINT_BUFFER).as_ref().unwrap());
-            crate::utils::enable_interrupts(true);
-        }
+        vga::WRITER
+            .lock()
+            .buffer
+            .copy_from(addr_of!(PAINT_BUFFER).as_ref().unwrap());
+        crate::utils::enable_interrupts(true);
+    }
     vga::WRITER.lock().cursor.x = 0;
     vga::WRITER.lock().cursor.y = 0;
     vga::WRITER.lock().cursor.update_cursor(0, 0);
-    let mut done : bool = false;
+    let mut done: bool = false;
     while done == false {
         loop {
-                if let Some(event) = get_next_key_event() {
-                
+            if let Some(event) = get_next_key_event() {
                 if event.pressed == true {
                     let mut writer = vga::WRITER.lock();
                     match event.code {
-                        KeyCode::Control(ControlKey::UpArrow) => writer.cursor.move_cursors(Direction::Top),
-                        KeyCode::Control(ControlKey::DownArrow) => writer.cursor.move_cursors(Direction::Down),
-                        KeyCode::Control(ControlKey::LeftArrow) => writer.cursor.move_cursors(Direction::Left),
-                        KeyCode::Control(ControlKey::RightArrow) => writer.cursor.move_cursors(Direction::Right),
-                        KeyCode::Char(c) =>  {
-                            if event.modifiers == CTRL && c == '1'{
+                        KeyCode::Control(ControlKey::UpArrow) => {
+                            writer.cursor.move_cursors(Direction::Top)
+                        }
+                        KeyCode::Control(ControlKey::DownArrow) => {
+                            writer.cursor.move_cursors(Direction::Down)
+                        }
+                        KeyCode::Control(ControlKey::LeftArrow) => {
+                            writer.cursor.move_cursors(Direction::Left)
+                        }
+                        KeyCode::Control(ControlKey::RightArrow) => {
+                            writer.cursor.move_cursors(Direction::Right)
+                        }
+                        KeyCode::Char(c) => {
+                            if event.modifiers == CTRL && c == '1' {
                                 done = true;
                                 break;
                             }
-                            writer.write_byte_at_cursor(c as u8 );
+                            writer.write_byte_at_cursor(c as u8);
                         }
-                        _ => ()
+                        _ => (),
                     }
                 }
             }
@@ -48,16 +57,16 @@ pub fn paint()
         utils::enable_interrupts(false);
         PAINT_BUFFER.copy_from(vga::WRITER.lock().buffer);
         vga::WRITER.lock().clear_screen();
-        let key : KeyEvent = KeyEvent {
-            code : KeyCode::Control(ControlKey::Enter),
-            modifiers : 0,
-            pressed : true,
+        let key: KeyEvent = KeyEvent {
+            code: KeyCode::Control(ControlKey::Enter),
+            modifiers: 0,
+            pressed: true,
         };
         KEYBOARD.update_input_buffer(&key);
-        let key : KeyEvent = KeyEvent {
-            code : KeyCode::Control(ControlKey::Enter),
-            modifiers : 0,
-            pressed : false,
+        let key: KeyEvent = KeyEvent {
+            code: KeyCode::Control(ControlKey::Enter),
+            modifiers: 0,
+            pressed: false,
         };
         KEYBOARD.update_input_buffer(&key);
 

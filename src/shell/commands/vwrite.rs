@@ -30,7 +30,10 @@ pub fn run(args: &[&str]) {
 
     let addr: u32 = match parse_u32(args[0]) {
         Some(v) => v,
-        None    => { println!("\nvwrite: invalid address '{}'", args[0]); return; }
+        None => {
+            println!("\nvwrite: invalid address '{}'", args[0]);
+            return;
+        }
     };
 
     let width = if args.len() == 3 { args[2] } else { "u32" };
@@ -41,25 +44,40 @@ pub fn run(args: &[&str]) {
         "u8" => {
             let val = match parse_u64(args[1]).and_then(|v| u8::try_from(v).ok()) {
                 Some(v) => v,
-                None    => { println!("  Error: '{}' is not a valid u8 (0-255).", args[1]); return; }
+                None => {
+                    println!("  Error: '{}' is not a valid u8 (0-255).", args[1]);
+                    return;
+                }
             };
-            unsafe { (addr as *mut u8).write_volatile(val); }
+            unsafe {
+                (addr as *mut u8).write_volatile(val);
+            }
             println!("  Wrote u8  {:#04x} ({}) to [{:#010x}]", val, val, addr);
         }
         "u32" => {
             let val = match parse_u32(args[1]) {
                 Some(v) => v,
-                None    => { println!("  Error: '{}' is not a valid u32.", args[1]); return; }
+                None => {
+                    println!("  Error: '{}' is not a valid u32.", args[1]);
+                    return;
+                }
             };
-            unsafe { (addr as *mut u32).write_volatile(val); }
+            unsafe {
+                (addr as *mut u32).write_volatile(val);
+            }
             println!("  Wrote u32 {:#010x} ({}) to [{:#010x}]", val, val, addr);
         }
         "u64" => {
             let val = match parse_u64(args[1]) {
                 Some(v) => v,
-                None    => { println!("  Error: '{}' is not a valid u64.", args[1]); return; }
+                None => {
+                    println!("  Error: '{}' is not a valid u64.", args[1]);
+                    return;
+                }
             };
-            unsafe { (addr as *mut u64).write_volatile(val); }
+            unsafe {
+                (addr as *mut u64).write_volatile(val);
+            }
             println!("  Wrote u64 {:#018x} to [{:#010x}]", val, addr);
         }
         other => {

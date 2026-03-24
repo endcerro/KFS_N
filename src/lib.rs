@@ -10,18 +10,18 @@ extern crate alloc;
 #[macro_use]
 pub mod vga;
 pub mod gdt;
+pub mod interrupts;
 pub mod keyboard;
 pub mod memory;
 pub mod multiboot2;
-pub mod utils;
-pub mod interrupts;
 pub mod serial;
 pub mod shell;
+pub mod utils;
 
 use core::panic::PanicInfo;
 
-use vga::WRITER;
 use shell::shell_loop;
+use vga::WRITER;
 
 use crate::vga::Color;
 // ---------------------------------------------------------------------------
@@ -36,13 +36,12 @@ use crate::vga::Color;
 static ALLOCATOR: memory::allocator::KernelAllocator = memory::allocator::KernelAllocator;
 
 extern "C" {
-    static _kernel_start : u8;
-    static _kernel_end : u8;
+    static _kernel_start: u8;
+    static _kernel_end: u8;
 }
 
 #[no_mangle]
-pub extern "C" fn rust_main()  {
-
+pub extern "C" fn rust_main() {
     init();
     unsafe {
         utils::enable_interrupts(true);
@@ -81,8 +80,6 @@ fn init() {
     print!("Shell      ");
     shell::init_shell();
     colored_print!((None, Some(Color::Green)), "OK\n");
-
-
 }
 
 #[panic_handler]

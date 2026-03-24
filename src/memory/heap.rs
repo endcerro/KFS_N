@@ -25,9 +25,7 @@
 // 32-bit).  The header size is rounded up to ALLOC_ALIGN so the
 // usable region is always aligned.
 
-use super::define::{
-    KERNEL_HEAP_END, KERNEL_HEAP_INITIAL_SIZE, KERNEL_HEAP_START, PAGE_SIZE,
-};
+use super::define::{KERNEL_HEAP_END, KERNEL_HEAP_INITIAL_SIZE, KERNEL_HEAP_START, PAGE_SIZE};
 use super::pageflags::PageFlags;
 use super::vmm::{self, MapError, VirtAddr};
 
@@ -204,8 +202,7 @@ pub fn kfree(ptr: *mut u8) {
 
         // Sanity checks
         debug_assert!(
-            (header as usize) >= KERNEL_HEAP_START
-                && (header as usize) < HEAP_MAPPED_END,
+            (header as usize) >= KERNEL_HEAP_START && (header as usize) < HEAP_MAPPED_END,
             "kfree: pointer {:#x} outside heap region",
             ptr as usize
         );
@@ -480,11 +477,15 @@ pub fn print_stats() {
         println!("Kernel Heap:");
         println!(
             "  Region:      {:#x}..{:#x} ({} KB max)",
-            KERNEL_HEAP_START, KERNEL_HEAP_END, max / 1024
+            KERNEL_HEAP_START,
+            KERNEL_HEAP_END,
+            max / 1024
         );
         println!(
             "  Mapped:      {:#x}..{:#x} ({} KB)",
-            KERNEL_HEAP_START, HEAP_MAPPED_END, mapped / 1024
+            KERNEL_HEAP_START,
+            HEAP_MAPPED_END,
+            mapped / 1024
         );
         println!("  Allocs:      {}", STATS.total_allocs);
         println!("  Frees:       {}", STATS.total_frees);
@@ -531,8 +532,7 @@ fn test_basic_alloc_free() {
     let ptr = kmalloc(64);
     assert!(!ptr.is_null(), "kmalloc(64) returned null");
     assert!(
-        ptr as usize >= KERNEL_HEAP_START
-            && (ptr as usize) < unsafe { HEAP_MAPPED_END },
+        ptr as usize >= KERNEL_HEAP_START && (ptr as usize) < unsafe { HEAP_MAPPED_END },
         "Pointer outside heap region"
     );
 

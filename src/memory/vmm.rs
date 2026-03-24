@@ -41,21 +41,45 @@ pub struct VirtAddr(pub u32);
 pub struct PhysAddr(pub u32);
 
 impl VirtAddr {
-    #[inline] pub fn new(addr: u32) -> Self { VirtAddr(addr) }
+    #[inline]
+    pub fn new(addr: u32) -> Self {
+        VirtAddr(addr)
+    }
     // Bits [31:22] - selects one of 1024 page directory entries
-    #[inline] pub fn pde_index(&self) -> usize { (self.0 >> 22) as usize }
+    #[inline]
+    pub fn pde_index(&self) -> usize {
+        (self.0 >> 22) as usize
+    }
     // Bits [21:12] - selects one of 1024 page table entries
-    #[inline] pub fn pte_index(&self) -> usize { ((self.0 >> 12) & 0x3FF) as usize }
+    #[inline]
+    pub fn pte_index(&self) -> usize {
+        ((self.0 >> 12) & 0x3FF) as usize
+    }
     // Bits [11:0] - byte offset within the 4 KB page
-    #[inline] pub fn page_offset(&self) -> u32 { self.0 & 0xFFF }
-    #[inline] pub fn is_page_aligned(&self) -> bool { self.0 & 0xFFF == 0 }
+    #[inline]
+    pub fn page_offset(&self) -> u32 {
+        self.0 & 0xFFF
+    }
+    #[inline]
+    pub fn is_page_aligned(&self) -> bool {
+        self.0 & 0xFFF == 0
+    }
     // Is this address in the kernel half (>= 0xC0000000)?
-    #[inline] pub fn is_kernel(&self) -> bool { self.0 >= KERNEL_OFFSET as u32 }
+    #[inline]
+    pub fn is_kernel(&self) -> bool {
+        self.0 >= KERNEL_OFFSET as u32
+    }
 }
 
 impl PhysAddr {
-    #[inline] pub fn new(addr: u32) -> Self { PhysAddr(addr) }
-    #[inline] pub fn is_page_aligned(&self) -> bool { self.0 & 0xFFF == 0 }
+    #[inline]
+    pub fn new(addr: u32) -> Self {
+        PhysAddr(addr)
+    }
+    #[inline]
+    pub fn is_page_aligned(&self) -> bool {
+        self.0 & 0xFFF == 0
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -136,20 +160,24 @@ pub fn vmalloc(addr: u32, size: usize) -> Result<(u32, usize), VmError> {
     }
 
     let aligned_addr = page_align_up(addr);
-    let pages        = (size + PAGE_SIZE - 1) / PAGE_SIZE;
-    let byte_size    = pages * PAGE_SIZE;
+    let pages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+    let byte_size = pages * PAGE_SIZE;
 
     // Only hard constraint: must not touch the recursive-mapping region.
     if (aligned_addr as usize).saturating_add(byte_size) > 0xFFC0_0000 {
         return Err(VmError::RecursiveRegion);
     }
 
-    map_range(VirtAddr::new(aligned_addr), byte_size, PageFlags::PRESENT | PageFlags::WRITABLE)
-        .map_err(|e| match e {
-            MapError::FrameAllocationFailed => VmError::OutOfMemory,
-            MapError::AlreadyMapped         => VmError::AlreadyMapped,
-            MapError::InvalidAddress        => VmError::RecursiveRegion,
-        })?;
+    map_range(
+        VirtAddr::new(aligned_addr),
+        byte_size,
+        PageFlags::PRESENT | PageFlags::WRITABLE,
+    )
+    .map_err(|e| match e {
+        MapError::FrameAllocationFailed => VmError::OutOfMemory,
+        MapError::AlreadyMapped => VmError::AlreadyMapped,
+        MapError::InvalidAddress => VmError::RecursiveRegion,
+    })?;
 
     Ok((aligned_addr, pages))
 }
@@ -163,8 +191,8 @@ pub fn vfree(addr: u32, size: usize) -> Result<usize, VmError> {
     }
 
     let aligned_addr = page_align_up(addr);
-    let pages        = (size + PAGE_SIZE - 1) / PAGE_SIZE;
-    let byte_size    = pages * PAGE_SIZE;
+    let pages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+    let byte_size = pages * PAGE_SIZE;
 
     let freed = unmap_range(VirtAddr::new(aligned_addr), byte_size);
     Ok(freed)
@@ -239,16 +267,14 @@ unsafe fn write_pde(index: usize, entry: PageEntry) {
 // Read PTE[pte_index] inside page table `pde_index`.
 #[inline]
 unsafe fn read_pte(pde_index: usize, pte_index: usize) -> PageEntry {
-    let pt_base = (PAGE_TABLES_VBASE + pde_index as u32 * PAGE_SIZE as u32)
-        as *const PageEntry;
+    let pt_base = (PAGE_TABLES_VBASE + pde_index as u32 * PAGE_SIZE as u32) as *const PageEntry;
     pt_base.add(pte_index).read_volatile()
 }
 
 // Write PTE[pte_index] inside page table `pde_index`.
 #[inline]
 unsafe fn write_pte(pde_index: usize, pte_index: usize, entry: PageEntry) {
-    let pt_base = (PAGE_TABLES_VBASE + pde_index as u32 * PAGE_SIZE as u32)
-        as *mut PageEntry;
+    let pt_base = (PAGE_TABLES_VBASE + pde_index as u32 * PAGE_SIZE as u32) as *mut PageEntry;
     pt_base.add(pte_index).write_volatile(entry);
 }
 
@@ -276,7 +302,10 @@ pub fn init() {
     }
 
     #[cfg(feature = "verbose")]
-    println!("VMM: recursive mapping installed at PDE[{}]", RECURSIVE_INDEX);
+    println!(
+        "VMM: recursive mapping installed at PDE[{}]",
+        RECURSIVE_INDEX
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -292,8 +321,16 @@ pub fn init() {
 // PRESENT | WRITABLE (and USER if `flags` includes USER), which is the
 // standard "permissive PDE, restrictive PTE" policy.
 pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), MapError> {
-    assert!(virt.is_page_aligned(), "virt addr {:#x} not page-aligned", virt.0);
-    assert!(phys.is_page_aligned(), "phys addr {:#x} not page-aligned", phys.0);
+    assert!(
+        virt.is_page_aligned(),
+        "virt addr {:#x} not page-aligned",
+        virt.0
+    );
+    assert!(
+        phys.is_page_aligned(),
+        "phys addr {:#x} not page-aligned",
+        phys.0
+    );
 
     let pde_idx = virt.pde_index();
     let pte_idx = virt.pte_index();
@@ -328,13 +365,13 @@ pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), 
             core::ptr::write_bytes(pt_virt, 0, PAGE_SIZE);
 
             #[cfg(feature = "verbose")]
-            println!("VMM: allocated PT frame {:#x} for PDE[{}]", pt_phys, pde_idx);
+            println!(
+                "VMM: allocated PT frame {:#x} for PDE[{}]",
+                pt_phys, pde_idx
+            );
         } else if flags.is_user() && !pde.user() {
             // Page table exists but PDE lacks USER - promote it
-            let promoted = PageEntry::new(
-                pde.address(),
-                pde.flags() | PageFlags::USER,
-            );
+            let promoted = PageEntry::new(pde.address(), pde.flags() | PageFlags::USER);
             write_pde(pde_idx, promoted);
             flush_tlb_all();
         }
@@ -350,7 +387,10 @@ pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), 
     }
 
     #[cfg(feature = "verbose")]
-    println!("VMM: mapped virt {:#x} -> phys {:#x} (flags {})", virt.0, phys.0, flags);
+    println!(
+        "VMM: mapped virt {:#x} -> phys {:#x} (flags {})",
+        virt.0, phys.0, flags
+    );
 
     Ok(())
 }
@@ -426,8 +466,16 @@ pub fn is_mapped(virt: VirtAddr) -> bool {
 // Map a contiguous range of virtual pages, allocating a fresh physical
 // frame for each one.
 pub fn map_range(start: VirtAddr, size: usize, flags: PageFlags) -> Result<usize, MapError> {
-    assert!(start.is_page_aligned(), "map_range: start {:#x} not page-aligned", start.0);
-    assert!(size & 0xFFF == 0, "map_range: size {:#x} not page-aligned", size);
+    assert!(
+        start.is_page_aligned(),
+        "map_range: start {:#x} not page-aligned",
+        start.0
+    );
+    assert!(
+        size & 0xFFF == 0,
+        "map_range: size {:#x} not page-aligned",
+        size
+    );
 
     let pages = size / PAGE_SIZE;
     for i in 0..pages {
@@ -436,8 +484,12 @@ pub fn map_range(start: VirtAddr, size: usize, flags: PageFlags) -> Result<usize
     }
 
     #[cfg(feature = "verbose")]
-    println!("VMM: mapped range {:#x}..{:#x} ({} pages)",
-        start.0, start.0 as usize + size, pages);
+    println!(
+        "VMM: mapped range {:#x}..{:#x} ({} pages)",
+        start.0,
+        start.0 as usize + size,
+        pages
+    );
 
     Ok(pages)
 }
@@ -449,9 +501,21 @@ pub fn map_range_to(
     size: usize,
     flags: PageFlags,
 ) -> Result<usize, MapError> {
-    assert!(virt_start.is_page_aligned(), "map_range_to: virt {:#x} not aligned", virt_start.0);
-    assert!(phys_start.is_page_aligned(), "map_range_to: phys {:#x} not aligned", phys_start.0);
-    assert!(size & 0xFFF == 0, "map_range_to: size {:#x} not aligned", size);
+    assert!(
+        virt_start.is_page_aligned(),
+        "map_range_to: virt {:#x} not aligned",
+        virt_start.0
+    );
+    assert!(
+        phys_start.is_page_aligned(),
+        "map_range_to: phys {:#x} not aligned",
+        phys_start.0
+    );
+    assert!(
+        size & 0xFFF == 0,
+        "map_range_to: size {:#x} not aligned",
+        size
+    );
 
     let pages = size / PAGE_SIZE;
     for i in 0..pages {
@@ -461,9 +525,14 @@ pub fn map_range_to(
     }
 
     #[cfg(feature = "verbose")]
-    println!("VMM: mapped range virt {:#x}..{:#x} -> phys {:#x}..{:#x} ({} pages)",
-        virt_start.0, virt_start.0 as usize + size,
-        phys_start.0, phys_start.0 as usize + size, pages);
+    println!(
+        "VMM: mapped range virt {:#x}..{:#x} -> phys {:#x}..{:#x} ({} pages)",
+        virt_start.0,
+        virt_start.0 as usize + size,
+        phys_start.0,
+        phys_start.0 as usize + size,
+        pages
+    );
 
     Ok(pages)
 }
@@ -471,8 +540,16 @@ pub fn map_range_to(
 // Unmap a contiguous range and free their physical frames.
 // Already-unmapped pages are silently skipped.
 pub fn unmap_range(start: VirtAddr, size: usize) -> usize {
-    assert!(start.is_page_aligned(), "unmap_range: start {:#x} not page-aligned", start.0);
-    assert!(size & 0xFFF == 0, "unmap_range: size {:#x} not page-aligned", size);
+    assert!(
+        start.is_page_aligned(),
+        "unmap_range: start {:#x} not page-aligned",
+        start.0
+    );
+    assert!(
+        size & 0xFFF == 0,
+        "unmap_range: size {:#x} not page-aligned",
+        size
+    );
 
     let pages = size / PAGE_SIZE;
     let mut unmapped = 0;
@@ -485,8 +562,13 @@ pub fn unmap_range(start: VirtAddr, size: usize) -> usize {
     }
 
     #[cfg(feature = "verbose")]
-    println!("VMM: unmapped range {:#x}..{:#x} ({}/{} pages freed)",
-        start.0, start.0 as usize + size, unmapped, pages);
+    println!(
+        "VMM: unmapped range {:#x}..{:#x} ({}/{} pages freed)",
+        start.0,
+        start.0 as usize + size,
+        unmapped,
+        pages
+    );
 
     unmapped
 }
@@ -541,8 +623,11 @@ fn test_recursive_mapping_reads() {
 
         let pd = super::PAGING.as_mut().unwrap();
         let pd_phys = pd.physical_address();
-        assert_eq!(pde_rec.address(), pd_phys,
-            "Recursive PDE should point to page directory");
+        assert_eq!(
+            pde_rec.address(),
+            pd_phys,
+            "Recursive PDE should point to page directory"
+        );
     }
     println!("OK");
 }
@@ -564,8 +649,14 @@ fn test_map_write_read_unmap() {
     }
 
     let returned_phys = unmap_page(test_virt).expect("unmap failed");
-    assert_eq!(returned_phys, phys, "Unmap should return original phys addr");
-    assert!(!is_mapped(test_virt), "Page should not be mapped after unmap");
+    assert_eq!(
+        returned_phys, phys,
+        "Unmap should return original phys addr"
+    );
+    assert!(
+        !is_mapped(test_virt),
+        "Page should not be mapped after unmap"
+    );
     free_frame(phys);
 
     println!("OK");
@@ -580,12 +671,18 @@ fn test_translate_accuracy() {
     let phys = map_alloc(test_virt, flags).expect("map_alloc failed");
 
     let translated = translate(test_virt).expect("translate returned None");
-    assert_eq!(translated.0, phys.0,
-        "translate mismatch: got {:#x}, expected {:#x}", translated.0, phys.0);
+    assert_eq!(
+        translated.0, phys.0,
+        "translate mismatch: got {:#x}, expected {:#x}",
+        translated.0, phys.0
+    );
 
     let with_offset = translate(VirtAddr::new(0xD000_1ABC)).expect("translate+offset None");
-    assert_eq!(with_offset.0, phys.0 | 0xABC,
-        "translate should preserve page offset");
+    assert_eq!(
+        with_offset.0,
+        phys.0 | 0xABC,
+        "translate should preserve page offset"
+    );
 
     let _ = unmap_page(test_virt);
     free_frame(phys);
@@ -605,14 +702,21 @@ fn test_multi_page() {
         let virt = VirtAddr::new(base + i * PAGE_SIZE as u32);
         let phys = map_alloc(virt, flags).expect("map_alloc failed in multi-page");
         phys_addrs[i as usize] = phys;
-        unsafe { (virt.0 as *mut u32).write_volatile(0xCAFE_0000 + i); }
+        unsafe {
+            (virt.0 as *mut u32).write_volatile(0xCAFE_0000 + i);
+        }
     }
 
     for i in 0..count {
         let virt = VirtAddr::new(base + i * PAGE_SIZE as u32);
         unsafe {
             let val = (virt.0 as *mut u32).read_volatile();
-            assert_eq!(val, 0xCAFE_0000 + i, "Multi-page readback mismatch at page {}", i);
+            assert_eq!(
+                val,
+                0xCAFE_0000 + i,
+                "Multi-page readback mismatch at page {}",
+                i
+            );
         }
     }
 
@@ -658,13 +762,20 @@ fn test_map_range() {
 
     for i in 0..8u32 {
         let addr = (base.0 + i * PAGE_SIZE as u32) as *mut u32;
-        unsafe { addr.write_volatile(0xBEEF_0000 + i); }
+        unsafe {
+            addr.write_volatile(0xBEEF_0000 + i);
+        }
     }
     for i in 0..8u32 {
         let addr = (base.0 + i * PAGE_SIZE as u32) as *mut u32;
         unsafe {
             let val = addr.read_volatile();
-            assert_eq!(val, 0xBEEF_0000 + i, "map_range readback mismatch at page {}", i);
+            assert_eq!(
+                val,
+                0xBEEF_0000 + i,
+                "map_range readback mismatch at page {}",
+                i
+            );
         }
     }
 
@@ -678,7 +789,11 @@ fn test_map_range() {
 
     for i in 0..8u32 {
         let virt = VirtAddr::new(base.0 + i * PAGE_SIZE as u32);
-        assert!(!is_mapped(virt), "Page {} should not be mapped after unmap_range", i);
+        assert!(
+            !is_mapped(virt),
+            "Page {} should not be mapped after unmap_range",
+            i
+        );
     }
 
     println!("OK");

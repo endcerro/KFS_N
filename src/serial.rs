@@ -2,7 +2,7 @@ use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
 
-use crate::utils::{outb, inb};
+use crate::utils::{inb, outb};
 
 const PORT: u16 = 0x3F8; // COM1
 
@@ -62,7 +62,10 @@ pub fn init() {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    SERIAL1.lock().write_fmt(args).expect("Printing to serial failed");
+    SERIAL1
+        .lock()
+        .write_fmt(args)
+        .expect("Printing to serial failed");
 }
 
 #[macro_export]
@@ -77,8 +80,6 @@ macro_rules! serial_println {
     () => ($crate::serial_print!("\n"));
     ($($arg:tt)*) => ($crate::serial_print!("{}\n", format_args!($($arg)*)));
 }
-
-
 
 #[macro_export]
 macro_rules! dbg_print {
@@ -112,7 +113,6 @@ macro_rules! m_print {
         $crate::print!($($arg)*);
     }};
 }
-
 
 #[macro_export]
 macro_rules! m_println {

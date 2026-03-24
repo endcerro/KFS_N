@@ -1,5 +1,5 @@
-use crate::m_println;
 use crate::m_print;
+use crate::m_println;
 
 // Number of bytes displayed per hexdump row.
 const HEXDUMP_ROW: usize = 16;
@@ -16,7 +16,9 @@ fn print_hexdump_row(addr: usize, bytes: &[u8]) {
 
     // --- hex columns (split into two groups of 8 with an extra space) ---
     for (i, b) in bytes.iter().enumerate() {
-        if i == 8 { m_print!(" "); }   // visual gap between the two halves
+        if i == 8 {
+            m_print!(" ");
+        } // visual gap between the two halves
         m_print!("{:02x} ", b);
     }
 
@@ -24,7 +26,11 @@ fn print_hexdump_row(addr: usize, bytes: &[u8]) {
     m_print!(" |");
     for b in bytes.iter() {
         // Printable ASCII range: 0x20 (' ') through 0x7E ('~')
-        let ch = if *b >= 0x20 && *b <= 0x7e { *b as char } else { '.' };
+        let ch = if *b >= 0x20 && *b <= 0x7e {
+            *b as char
+        } else {
+            '.'
+        };
         m_print!("{}", ch);
     }
     m_println!("|");
@@ -70,16 +76,24 @@ pub fn print_kernel_stack() {
     // The stack grows downward: ESP (stack_bottom of live data) → stack_top symbol.
     // We walk from ESP up to stack_top, inclusive.
     let start = esp;
-    let end   = stack_top_addr;
+    let end = stack_top_addr;
 
     if start >= end {
-        m_println!("Stack: nothing to dump (esp={:#x} >= stack_top={:#x})", start, end);
+        m_println!(
+            "Stack: nothing to dump (esp={:#x} >= stack_top={:#x})",
+            start,
+            end
+        );
         return;
     }
 
     let total = end - start;
-    m_println!("\nKernel stack dump  ESP={:#010x}  TOP={:#010x}  ({} bytes)\n",
-        start, end, total);
+    m_println!(
+        "\nKernel stack dump  ESP={:#010x}  TOP={:#010x}  ({} bytes)\n",
+        start,
+        end,
+        total
+    );
     // serial_println!("\nKernel stack dump  ESP={:#010x}  TOP={:#010x}  ({} bytes)\n",
     //     start, end, total);
 
@@ -88,7 +102,7 @@ pub fn print_kernel_stack() {
     let aligned_start = start & !(HEXDUMP_ROW - 1);
 
     let mut row_addr = aligned_start;
-    let mut row_buf  = [0u8; HEXDUMP_ROW];
+    let mut row_buf = [0u8; HEXDUMP_ROW];
 
     while row_addr < end {
         for i in 0..HEXDUMP_ROW {
@@ -108,7 +122,7 @@ pub fn print_kernel_stack() {
     m_println!();
 }
 
-pub fn memcpy(dest : *mut u8, src : *const u8, size : usize) {
+pub fn memcpy(dest: *mut u8, src: *const u8, size: usize) {
     if dest.is_null() || src.is_null() {
         panic!("memcpy called with null pointers");
     }
@@ -144,8 +158,8 @@ pub fn outw(port: u16, value: u16) {
     }
 }
 
-pub fn inw(port: u16) -> u16{
-    let result : u16;
+pub fn inw(port: u16) -> u16 {
+    let result: u16;
     unsafe {
         core::arch::asm!(
             "in dx, ax",
@@ -158,13 +172,13 @@ pub fn inw(port: u16) -> u16{
 }
 
 pub fn send_eoi(irq: u8) {
-        if irq >= 8 {
-            outb(0xA0, 0x20);
-        }
-        outb(0x20, 0x20);
+    if irq >= 8 {
+        outb(0xA0, 0x20);
+    }
+    outb(0x20, 0x20);
 }
 
-pub unsafe fn enable_interrupts(enable : bool) {
+pub unsafe fn enable_interrupts(enable: bool) {
     if enable {
         core::arch::asm!("sti", options(nomem, nostack));
     } else {
@@ -173,12 +187,12 @@ pub unsafe fn enable_interrupts(enable : bool) {
 }
 
 pub struct Cursor {
-	pub x : usize,
-	pub y : usize
+    pub x: usize,
+    pub y: usize,
 }
 pub enum Direction {
-	Top,
-	Down,
-	Left,
-	Right
+    Top,
+    Down,
+    Left,
+    Right,
 }

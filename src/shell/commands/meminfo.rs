@@ -1,8 +1,7 @@
 use crate::multiboot2;
 
 pub fn run(_args: &[&str]) {
-    if _args.len() > 0
-    {
+    if _args.len() > 0 {
         usage()
     }
     multiboot2::meminfo::print_meminfo();

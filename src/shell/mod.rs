@@ -1,15 +1,15 @@
 use crate::keyboard;
-use crate::vga;
 use crate::keyboard::*;
+use crate::vga;
 use crate::vga::Color;
 pub mod commands;
-use commands::{*, paint};
 use crate::vga::get_current_colors;
+use commands::{paint, *};
 
 const MAX_COMMANDS: usize = 20;
 const _MAX_COMMAND_LENGTH: usize = 20;
 const MAX_ARGS: usize = 10;
-static SHELL_ID : &str = "kernel@ring0:/#";
+static SHELL_ID: &str = "kernel@ring0:/#";
 #[derive(Clone, Copy)]
 struct Command {
     name: &'static str,
@@ -22,18 +22,30 @@ pub struct Shell {
     command_count: usize,
 }
 
-
 impl Shell {
     const fn new() -> Self {
         Shell {
-            commands: [Command { name: "", function: Shell::dummy_command, description: "" }; MAX_COMMANDS],
+            commands: [Command {
+                name: "",
+                function: Shell::dummy_command,
+                description: "",
+            }; MAX_COMMANDS],
             command_count: 0,
         }
     }
 
-    fn add_command(&mut self, name: &'static str, function: fn(&[&str]), description: &'static str) {
+    fn add_command(
+        &mut self,
+        name: &'static str,
+        function: fn(&[&str]),
+        description: &'static str,
+    ) {
         if self.command_count < MAX_COMMANDS {
-            self.commands[self.command_count] = Command { name, function, description };
+            self.commands[self.command_count] = Command {
+                name,
+                function,
+                description,
+            };
             self.command_count += 1;
         }
     }
@@ -68,39 +80,56 @@ impl Shell {
     fn dummy_command(_: &[&str]) {
         // This function should never be called
     }
-
 }
 
 pub fn init_shell() {
     unsafe {
-        SHELL.add_command("echo",    echo::run,        "Echo the input arguments");
-        SHELL.add_command("clear",   clear::run,       "Clear the screen");
-        SHELL.add_command("credits", credits::run,     "Credits");
-        SHELL.add_command("colors",  colors::run,      "Change terminal colors");
-        SHELL.add_command("ft",      print_ft_42::run, "Print 42 logo");
-        SHELL.add_command("stack",   print_stack::run, "Print stack information");
-        SHELL.add_command("help",    help,             "Display help information");
-        SHELL.add_command("meminfo", meminfo::run,     "Displays memory mappings from multiboot2");
-        SHELL.add_command("exit",    shutdown::run,    "Shutdown");
-        SHELL.add_command("vmalloc", vmalloc::run,     "Map virtual pages:    vmalloc <addr> <size>");
-        SHELL.add_command("vfree",   vfree::run,       "Unmap virtual pages:  vfree <addr> <size>");
-        SHELL.add_command("vsize",   vsize::run,       "Query mapped size:    vsize <addr>");
-        SHELL.add_command("vwrite",  vwrite::run,      "Write to virt addr:   vwrite <addr> <val> [u8|u32|u64]");
-        SHELL.add_command("vread",   vread::run,       "Read from virt addr:  vread <addr> [u8|u32|u64]");
+        SHELL.add_command("echo", echo::run, "Echo the input arguments");
+        SHELL.add_command("clear", clear::run, "Clear the screen");
+        SHELL.add_command("credits", credits::run, "Credits");
+        SHELL.add_command("colors", colors::run, "Change terminal colors");
+        SHELL.add_command("ft", print_ft_42::run, "Print 42 logo");
+        SHELL.add_command("stack", print_stack::run, "Print stack information");
+        SHELL.add_command("help", help, "Display help information");
+        SHELL.add_command(
+            "meminfo",
+            meminfo::run,
+            "Displays memory mappings from multiboot2",
+        );
+        SHELL.add_command("exit", shutdown::run, "Shutdown");
+        SHELL.add_command(
+            "vmalloc",
+            vmalloc::run,
+            "Map virtual pages:    vmalloc <addr> <size>",
+        );
+        SHELL.add_command(
+            "vfree",
+            vfree::run,
+            "Unmap virtual pages:  vfree <addr> <size>",
+        );
+        SHELL.add_command("vsize", vsize::run, "Query mapped size:    vsize <addr>");
+        SHELL.add_command(
+            "vwrite",
+            vwrite::run,
+            "Write to virt addr:   vwrite <addr> <val> [u8|u32|u64]",
+        );
+        SHELL.add_command(
+            "vread",
+            vread::run,
+            "Read from virt addr:  vread <addr> [u8|u32|u64]",
+        );
     }
 }
 
-pub fn hello_shell () {
+pub fn hello_shell() {
     let mut color_pair: (Option<Color>, Option<Color>) = (None, None);
-    if get_current_colors() == (Color::White, Color::Black)
-    {
+    if get_current_colors() == (Color::White, Color::Black) {
         color_pair.0 = Some(Color::Red);
         // colored_print!((Some(Color::Red), None), "\n{SHELL_ID} ");
     }
     // else {
     colored_print!((color_pair.0, color_pair.1), "\n{SHELL_ID} ");
     // }
-
 }
 
 // Halt the CPU until the next interrupt.

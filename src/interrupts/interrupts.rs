@@ -30,7 +30,7 @@ pub enum Interrupt {
     // Note: These are default mappings and can be remapped
     ProgrammableInterruptTimer = 32,
     Keyboard = 33,
-    Cascade = 34,  // Connected to the second PIC
+    Cascade = 34, // Connected to the second PIC
     COM2 = 35,
     COM1 = 36,
     LPT2 = 37,
@@ -46,7 +46,7 @@ pub enum Interrupt {
     SecondaryATA = 47,
 
     // Software Interrupts
-    Syscall = 128,  // Commonly used for system calls
+    Syscall = 128, // Commonly used for system calls
 }
 
 impl Interrupt {
@@ -67,7 +67,7 @@ impl Interrupt {
 }
 
 // Additional constants
-pub const IRQ0: u8 = 32;  // Base IRQ, can be used to calculate others
+pub const IRQ0: u8 = 32; // Base IRQ, can be used to calculate others
 pub const MAX_INTERRUPT: u8 = 255;
 pub const USER_DEFINED_INTERRUPTS_START: u8 = 48;
 pub const USER_DEFINED_INTERRUPTS_END: u8 = 255;

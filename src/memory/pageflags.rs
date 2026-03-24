@@ -4,27 +4,27 @@
 // No other file should define its own PRESENT / WRITABLE / etc. constants.
 
 use core::fmt;
-use core::ops::{BitOr, BitAnd, Not};
+use core::ops::{BitAnd, BitOr, Not};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PageFlags(u32);
 
 impl PageFlags {
-    pub const NONE:          PageFlags = PageFlags(0);
-    pub const PRESENT:       PageFlags = PageFlags(1 << 0);
-    pub const WRITABLE:      PageFlags = PageFlags(1 << 1);
-    pub const USER:          PageFlags = PageFlags(1 << 2);
+    pub const NONE: PageFlags = PageFlags(0);
+    pub const PRESENT: PageFlags = PageFlags(1 << 0);
+    pub const WRITABLE: PageFlags = PageFlags(1 << 1);
+    pub const USER: PageFlags = PageFlags(1 << 2);
     pub const WRITE_THROUGH: PageFlags = PageFlags(1 << 3);
     pub const CACHE_DISABLE: PageFlags = PageFlags(1 << 4);
-    pub const ACCESSED:      PageFlags = PageFlags(1 << 5);
-    pub const DIRTY:         PageFlags = PageFlags(1 << 6);
-    pub const HUGE_PAGE:     PageFlags = PageFlags(1 << 7); // PSE in PDE, PAT in PTE
-    pub const GLOBAL:        PageFlags = PageFlags(1 << 8);
+    pub const ACCESSED: PageFlags = PageFlags(1 << 5);
+    pub const DIRTY: PageFlags = PageFlags(1 << 6);
+    pub const HUGE_PAGE: PageFlags = PageFlags(1 << 7); // PSE in PDE, PAT in PTE
+    pub const GLOBAL: PageFlags = PageFlags(1 << 8);
 
     // Mask that covers all 12 flag bits (bits 0-11).
     const FLAGS_MASK: u32 = 0xFFF;
     // Mask for the 20-bit physical page frame address (bits 12-31).
-    pub const ADDR_MASK: u32  = 0xFFFFF000;
+    pub const ADDR_MASK: u32 = 0xFFFFF000;
 
     // -- Constructors --------------------------------------------------------
 
@@ -43,9 +43,18 @@ impl PageFlags {
         self.0
     }
 
-    #[inline] pub const fn is_present(self)  -> bool { self.0 & Self::PRESENT.0  != 0 }
-    #[inline] pub const fn is_writable(self) -> bool { self.0 & Self::WRITABLE.0 != 0 }
-    #[inline] pub const fn is_user(self)     -> bool { self.0 & Self::USER.0     != 0 }
+    #[inline]
+    pub const fn is_present(self) -> bool {
+        self.0 & Self::PRESENT.0 != 0
+    }
+    #[inline]
+    pub const fn is_writable(self) -> bool {
+        self.0 & Self::WRITABLE.0 != 0
+    }
+    #[inline]
+    pub const fn is_user(self) -> bool {
+        self.0 & Self::USER.0 != 0
+    }
 
     // Check whether `self` contains all the bits in `other`.
     #[inline]
@@ -87,19 +96,25 @@ impl PageFlags {
 impl BitOr for PageFlags {
     type Output = Self;
     #[inline]
-    fn bitor(self, rhs: Self) -> Self { PageFlags(self.0 | rhs.0) }
+    fn bitor(self, rhs: Self) -> Self {
+        PageFlags(self.0 | rhs.0)
+    }
 }
 
 impl BitAnd for PageFlags {
     type Output = Self;
     #[inline]
-    fn bitand(self, rhs: Self) -> Self { PageFlags(self.0 & rhs.0) }
+    fn bitand(self, rhs: Self) -> Self {
+        PageFlags(self.0 & rhs.0)
+    }
 }
 
 impl Not for PageFlags {
     type Output = Self;
     #[inline]
-    fn not(self) -> Self { PageFlags(!self.0) }
+    fn not(self) -> Self {
+        PageFlags(!self.0)
+    }
 }
 
 // -- Display / Debug ---------------------------------------------------------
@@ -113,10 +128,12 @@ impl fmt::Debug for PageFlags {
 impl fmt::Display for PageFlags {
     // Human-readable flag summary, e.g. "PWK" or "PRU"
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}{}",
-            if self.is_present()  { 'P' } else { '-' },
+        write!(
+            f,
+            "{}{}{}",
+            if self.is_present() { 'P' } else { '-' },
             if self.is_writable() { 'W' } else { 'R' }, // W = writable, R = read-only
-            if self.is_user()     { 'U' } else { 'K' }, // U = user, K = kernel
+            if self.is_user() { 'U' } else { 'K' },     // U = user, K = kernel
         )
     }
 }

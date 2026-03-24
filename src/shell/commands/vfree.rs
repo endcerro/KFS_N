@@ -39,21 +39,24 @@ pub fn run(args: &[&str]) {
 
     let addr = match parse_u32(args[0]) {
         Some(v) => v,
-        None    => { println!("\nvfree: invalid address '{}'", args[0]); return; }
+        None => {
+            println!("\nvfree: invalid address '{}'", args[0]);
+            return;
+        }
     };
     let size = match parse_usize(args[1]) {
         Some(v) => v,
-        None    => { println!("\nvfree: invalid size '{}'", args[1]); return; }
+        None => {
+            println!("\nvfree: invalid size '{}'", args[1]);
+            return;
+        }
     };
 
     println!("\nvfree({:#010x}, {} bytes)...", addr, size);
 
     match vmm::vfree(addr, size) {
-        Ok(freed) =>
-            println!("  OK - {} page(s) freed ({} bytes)", freed, freed * 4096),
-        Err(vmm::VmError::ZeroSize) =>
-            println!("  Error: size must be > 0."),
-        Err(e) =>
-            println!("  Error: {:?}", e),
+        Ok(freed) => println!("  OK - {} page(s) freed ({} bytes)", freed, freed * 4096),
+        Err(vmm::VmError::ZeroSize) => println!("  Error: size must be > 0."),
+        Err(e) => println!("  Error: {:?}", e),
     }
 }

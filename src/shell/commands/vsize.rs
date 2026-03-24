@@ -30,7 +30,10 @@ pub fn run(args: &[&str]) {
 
     let addr = match parse_u32(args[0]) {
         Some(v) => v,
-        None    => { println!("\nvsize: invalid address '{}'", args[0]); return; }
+        None => {
+            println!("\nvsize: invalid address '{}'", args[0]);
+            return;
+        }
     };
 
     let bytes = vmm::vsize(addr);
@@ -38,10 +41,17 @@ pub fn run(args: &[&str]) {
     if bytes == 0 {
         println!("\nvsize({:#010x}): not mapped", addr);
     } else {
-        let pages   = bytes / 4096;
+        let pages = bytes / 4096;
         // Replicate the same rounding vmm::vsize uses so the range is accurate
         let aligned = (addr.saturating_add(0xFFF)) & !0xFFF;
-        println!("\nvsize({:#010x}): {} bytes ({} page(s))", addr, bytes, pages);
-        println!("  Range: {:#010x} .. {:#010x}", aligned, aligned as usize + bytes);
+        println!(
+            "\nvsize({:#010x}): {} bytes ({} page(s))",
+            addr, bytes, pages
+        );
+        println!(
+            "  Range: {:#010x} .. {:#010x}",
+            aligned,
+            aligned as usize + bytes
+        );
     }
 }

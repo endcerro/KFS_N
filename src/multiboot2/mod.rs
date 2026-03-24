@@ -42,12 +42,16 @@ pub fn init() {
         // (typically a few hundred bytes, never zero or gigabytes)
         let header = &*ptr;
         #[cfg(feature = "verbose")]
-        println!("Multiboot2: total_size = {}, reserved = {}",
-            header.total_size, header.reserverd);
+        println!(
+            "Multiboot2: total_size = {}, reserved = {}",
+            header.total_size, header.reserverd
+        );
 
         if header.total_size == 0 || header.total_size > 0x10000 {
-            panic!("Multiboot2: total_size looks invalid ({:#x}), pointer likely corrupt",
-                header.total_size);
+            panic!(
+                "Multiboot2: total_size looks invalid ({:#x}), pointer likely corrupt",
+                header.total_size
+            );
         }
 
         MBOOT_HEADER = ptr;

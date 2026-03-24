@@ -20,10 +20,10 @@
 // recursive mapping is live).  After vmm::init(), all PDE/PTE access
 // goes through the recursive mapping using raw PageEntry pointers.
 
+use super::define::{KERNEL_OFFSET, PAGE_DIRECTORY_ENTRIES};
+use super::pageflags::PageFlags;
 use core::fmt;
 use core::ptr::NonNull;
-use super::define::{PAGE_DIRECTORY_ENTRIES, KERNEL_OFFSET};
-use super::pageflags::PageFlags;
 
 // ---------------------------------------------------------------------------
 // PageEntry - a single 4-byte page directory or page table entry
@@ -43,7 +43,8 @@ impl PageEntry {
     pub fn new(phys_addr: u32, flags: PageFlags) -> Self {
         debug_assert!(
             phys_addr & 0xFFF == 0,
-            "PageEntry address {:#x} must be 4KB aligned", phys_addr
+            "PageEntry address {:#x} must be 4KB aligned",
+            phys_addr
         );
         PageEntry(flags.to_entry(phys_addr))
     }
@@ -57,7 +58,8 @@ impl PageEntry {
     pub fn set(&mut self, phys_addr: u32, flags: PageFlags) {
         debug_assert!(
             phys_addr & 0xFFF == 0,
-            "PageEntry address {:#x} must be 4KB aligned", phys_addr
+            "PageEntry address {:#x} must be 4KB aligned",
+            phys_addr
         );
         self.0 = flags.to_entry(phys_addr);
     }
@@ -70,26 +72,59 @@ impl PageEntry {
     // -- Raw access ----------------------------------------------------------
 
     // Raw u32 value as the hardware sees it.
-    #[inline] pub fn value(&self) -> u32 { self.0 }
+    #[inline]
+    pub fn value(&self) -> u32 {
+        self.0
+    }
 
     // Extract the flags portion (low 12 bits) as PageFlags.
-    #[inline] pub fn flags(&self) -> PageFlags { PageFlags::flags_of(self.0) }
+    #[inline]
+    pub fn flags(&self) -> PageFlags {
+        PageFlags::flags_of(self.0)
+    }
 
     // Extract the 4 KB-aligned physical address (high 20 bits).
-    #[inline] pub fn address(&self) -> u32 { PageFlags::addr_of(self.0) }
+    #[inline]
+    pub fn address(&self) -> u32 {
+        PageFlags::addr_of(self.0)
+    }
 
     // Page frame number (address >> 12).
-    #[inline] pub fn page_frame_number(&self) -> u32 { self.0 >> 12 }
+    #[inline]
+    pub fn page_frame_number(&self) -> u32 {
+        self.0 >> 12
+    }
 
     // -- Common flag queries (identical for PDE and PTE) ---------------------
 
-    #[inline] pub fn present(&self)       -> bool { self.flags().is_present() }
-    #[inline] pub fn writeable(&self)     -> bool { self.flags().is_writable() }
-    #[inline] pub fn user(&self)          -> bool { self.flags().is_user() }
-    #[inline] pub fn write_through(&self) -> bool { self.flags().contains(PageFlags::WRITE_THROUGH) }
-    #[inline] pub fn cache_disable(&self) -> bool { self.flags().contains(PageFlags::CACHE_DISABLE) }
-    #[inline] pub fn accessed(&self)      -> bool { self.flags().contains(PageFlags::ACCESSED) }
-    #[inline] pub fn global(&self)        -> bool { self.flags().contains(PageFlags::GLOBAL) }
+    #[inline]
+    pub fn present(&self) -> bool {
+        self.flags().is_present()
+    }
+    #[inline]
+    pub fn writeable(&self) -> bool {
+        self.flags().is_writable()
+    }
+    #[inline]
+    pub fn user(&self) -> bool {
+        self.flags().is_user()
+    }
+    #[inline]
+    pub fn write_through(&self) -> bool {
+        self.flags().contains(PageFlags::WRITE_THROUGH)
+    }
+    #[inline]
+    pub fn cache_disable(&self) -> bool {
+        self.flags().contains(PageFlags::CACHE_DISABLE)
+    }
+    #[inline]
+    pub fn accessed(&self) -> bool {
+        self.flags().contains(PageFlags::ACCESSED)
+    }
+    #[inline]
+    pub fn global(&self) -> bool {
+        self.flags().contains(PageFlags::GLOBAL)
+    }
 
     // -- Context-dependent bits (dual names) ---------------------------------
     //
@@ -101,13 +136,22 @@ impl PageEntry {
     // based on whether they're looking at a PDE or PTE.
 
     // Bit 6 as a PTE field (dirty - set by hardware on write).
-    #[inline] pub fn dirty(&self) -> bool { self.flags().contains(PageFlags::DIRTY) }
+    #[inline]
+    pub fn dirty(&self) -> bool {
+        self.flags().contains(PageFlags::DIRTY)
+    }
 
     // Bit 7 as a PDE field (4 MB page size / PSE).
-    #[inline] pub fn page_size_4mb(&self) -> bool { self.flags().contains(PageFlags::HUGE_PAGE) }
+    #[inline]
+    pub fn page_size_4mb(&self) -> bool {
+        self.flags().contains(PageFlags::HUGE_PAGE)
+    }
 
     // Bit 7 as a PTE field (Page Attribute Table).
-    #[inline] pub fn pat(&self) -> bool { self.flags().contains(PageFlags::HUGE_PAGE) }
+    #[inline]
+    pub fn pat(&self) -> bool {
+        self.flags().contains(PageFlags::HUGE_PAGE)
+    }
 }
 
 impl fmt::Display for PageEntry {
@@ -115,7 +159,9 @@ impl fmt::Display for PageEntry {
         if !self.present() {
             return write!(f, "[not present]");
         }
-        write!(f, "phys {:#010x} {} accessed={} dirty={}",
+        write!(
+            f,
+            "phys {:#010x} {} accessed={} dirty={}",
             self.address(),
             self.flags(),
             self.accessed(),
@@ -178,14 +224,20 @@ impl PageDirectory {
     // Set PDE[index] to point to `phys_addr` with `flags`.
     pub fn set_entry(&mut self, index: usize, phys_addr: u32, flags: PageFlags) {
         assert!(index < PAGE_DIRECTORY_ENTRIES, "PDE index out of bounds");
-        assert!(phys_addr & 0xFFF == 0, "Page table address must be 4KB aligned");
+        assert!(
+            phys_addr & 0xFFF == 0,
+            "Page table address must be 4KB aligned"
+        );
 
         unsafe {
             (*self.get_entry(index)).set(phys_addr, flags);
         }
 
         #[cfg(feature = "verbose")]
-        println!("PDE[{}] set to phys {:#x} flags {}", index, phys_addr, flags);
+        println!(
+            "PDE[{}] set to phys {:#x} flags {}",
+            index, phys_addr, flags
+        );
     }
 
     // Clear PDE[index] (mark as not present).

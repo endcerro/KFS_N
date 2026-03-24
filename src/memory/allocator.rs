@@ -32,8 +32,8 @@
 //   The KernelAllocator struct is intentionally stateless so swapping
 //   in a process-aware allocator later is straightforward.
 
-use core::alloc::{GlobalAlloc, Layout};
 use super::heap;
+use core::alloc::{GlobalAlloc, Layout};
 
 // ---------------------------------------------------------------------------
 // The minimum alignment that kmalloc guarantees.  Must match heap.rs.

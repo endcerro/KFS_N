@@ -14,7 +14,7 @@ gdt_test = []
 verbose = []
 debug = []
 alloc_test = []
-
+debug_screen = []
 
 [dependencies]
 spin = "0.9.8"

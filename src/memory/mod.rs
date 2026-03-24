@@ -1,12 +1,12 @@
 use paging::PageDirectory;
 
+pub mod allocator;
+pub mod define;
+pub mod heap;
 pub mod pageflags;
 pub mod paging;
-pub mod define;
-pub mod vmm;
-pub mod heap;
 pub mod physical;
-pub mod allocator;
+pub mod vmm;
 
 extern "C" {
     pub fn clear_page1();
@@ -49,8 +49,8 @@ pub fn diagnose_page_directory() {
     println!("\n=== Page Directory Diagnostic ===\n");
 
     unsafe {
-        use crate::memory::PAGING;
         use crate::memory::define::KERNEL_OFFSET;
+        use crate::memory::PAGING;
 
         let cr3: u32;
         core::arch::asm!("mov {}, cr3", out(reg) cr3);
@@ -110,8 +110,13 @@ pub fn diagnose_page_directory() {
             let pde = PAGING.as_mut().unwrap().get_entry(i);
             if (*pde).present() {
                 let virt_start = i * 0x400000;
-                println!("PDE[{}] -> {:#010x} (maps {:#010x}-{:#010x})",
-                    i, (*pde).address(), virt_start, virt_start + 0x3FFFFF);
+                println!(
+                    "PDE[{}] -> {:#010x} (maps {:#010x}-{:#010x})",
+                    i,
+                    (*pde).address(),
+                    virt_start,
+                    virt_start + 0x3FFFFF
+                );
                 count += 1;
             }
         }
@@ -124,7 +129,10 @@ pub fn diagnose_page_directory() {
 fn init_physical_memory() {
     if let Some(memory_map) = crate::multiboot2::meminfo::get_memory_map() {
         #[cfg(feature = "verbose")]
-        println!("Initializing physical memory allocator with {} memory regions...", memory_map.len());
+        println!(
+            "Initializing physical memory allocator with {} memory regions...",
+            memory_map.len()
+        );
 
         physical::init_frame_allocator(memory_map);
 
@@ -139,9 +147,7 @@ fn init_physical_memory() {
 pub static mut PAGING: Option<PageDirectory> = None;
 
 pub fn paging() -> &'static mut PageDirectory {
-    unsafe {
-        PAGING.as_mut().unwrap()
-    }
+    unsafe { PAGING.as_mut().unwrap() }
 }
 
 // ---------------------------------------------------------------------------
@@ -166,7 +172,10 @@ pub fn test_paging_infrastructure() {
         assert!(entry.writeable(), "Entry should be writable");
         assert_eq!(entry.address(), 0x2000, "Address should be updated");
 
-        entry.set(0x3000, PageFlags::PRESENT | PageFlags::WRITABLE | PageFlags::USER);
+        entry.set(
+            0x3000,
+            PageFlags::PRESENT | PageFlags::WRITABLE | PageFlags::USER,
+        );
         assert!(entry.user(), "Entry should be user-accessible");
         assert_eq!(entry.address(), 0x3000, "Address should be updated");
 
@@ -190,10 +199,14 @@ pub fn test_paging_infrastructure() {
         assert!(flags3.is_writable(), "Combined flags should have WRITABLE");
         assert!(flags3.is_user(), "Combined flags should have USER");
 
-        assert!(flags3.contains(PageFlags::PRESENT | PageFlags::USER),
-            "contains() should detect combined flags");
-        assert!(!flags1.contains(PageFlags::USER),
-            "contains() should reject missing flags");
+        assert!(
+            flags3.contains(PageFlags::PRESENT | PageFlags::USER),
+            "contains() should detect combined flags"
+        );
+        assert!(
+            !flags1.contains(PageFlags::USER),
+            "contains() should reject missing flags"
+        );
 
         println!("  PageFlags tests passed");
     }
