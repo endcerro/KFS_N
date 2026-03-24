@@ -118,6 +118,7 @@ pub fn init_shell() {
             vread::run,
             "Read from virt addr:  vread <addr> [u8|u32|u64]",
         );
+        SHELL.add_command("setkb", setkb::run, "Swap from QWERTY to AZERTY and back");
     }
 }
 

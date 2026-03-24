@@ -13,3 +13,11 @@ pub static _AZERTY_LAYOUT: Layout = [
     'h', 'j', 'k', 'l', 'm', 'ù', '²', '\0', '*', 'w', 'x', 'c', 'v', 'b', 'n', ',', ';', ':', '!',
     '\0', '*', '\0', ' ',
 ];
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(usize)]
+pub enum LayoutId {
+    Qwerty = 0,
+    Azerty = 1,
+}
+
+pub static LAYOUTS: [Layout; 2] = [_QWERTY_LAYOUT, _AZERTY_LAYOUT];

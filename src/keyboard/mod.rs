@@ -1,13 +1,16 @@
 // keyboard.rs
+use crate::keyboard::layouts::LayoutId;
 #[allow(static_mut_refs)]
 use core::fmt;
-
+use core::sync::atomic::{AtomicUsize, Ordering};
 mod layouts;
 // Constants
 const BUFFER_SIZE: usize = 256;
 
 // const CURRENT_LAYOUT: layouts::Layout = layouts::_AZERTY_LAYOUT;
-const CURRENT_LAYOUT: layouts::Layout = layouts::_QWERTY_LAYOUT;
+// const CURRENT_LAYOUT: layouts::Layout = layouts::_QWERTY_LAYOUT;
+
+static CURRENT_LAYOUT_ID: AtomicUsize = AtomicUsize::new(LayoutId::Qwerty as usize);
 
 // Bitflags for modifiers
 pub const SHIFT: u8 = 0b0000_0001;
@@ -165,7 +168,8 @@ impl Keyboard {
     }
 
     fn scancode_to_char(&self, scancode: u8) -> Option<char> {
-        CURRENT_LAYOUT
+        let id = CURRENT_LAYOUT_ID.load(Ordering::Relaxed);
+        layouts::LAYOUTS[id]
             .get(scancode as usize)
             .copied()
             .filter(|&c| c != '\0')
@@ -296,6 +300,19 @@ pub fn clear_input() {
 
 pub fn input_buffer_empty() -> bool {
     unsafe { KEYBOARD.input_buffer_empty() }
+}
+
+pub fn swap_layout() {
+    let mut current: usize = CURRENT_LAYOUT_ID.load(Ordering::Relaxed);
+    print!("Keyboard layout is now ");
+    if current == LayoutId::Azerty as usize {
+        current = LayoutId::Qwerty as usize;
+        print!("Qwerty")
+    } else {
+        current = LayoutId::Azerty as usize;
+        print!("Azerty")
+    }
+    CURRENT_LAYOUT_ID.store(current as usize, Ordering::Relaxed);
 }
 
 // Implement Display traits
