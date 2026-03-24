@@ -7,5 +7,5 @@ pub mod clear;
 pub mod colors;
 pub mod meminfo;
 pub mod shutdown;
-
+pub mod vmalloc;   // virtual memory allocation demo
 

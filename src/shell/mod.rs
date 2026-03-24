@@ -81,6 +81,7 @@ pub fn init_shell() {
         SHELL.add_command("help", help, "Display help information");
         SHELL.add_command("meminfo", meminfo::run, "Displays memory mappings from multiboot2");
         SHELL.add_command("exit", shutdown::run, "Shutdowns");
+        SHELL.add_command("vmalloc", vmalloc::run, "Demo: allocate, write, read, free a virtual page");
     }
 }
 
