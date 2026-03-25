@@ -387,7 +387,7 @@ pub fn get_current_colors() -> (Color, Color) {
     let writer = WRITER.lock();
     writer.get_color()
 }
-/// Clear a region of VGA row with spaces.
+// Clear a region of VGA row with spaces.
 pub fn vga_clear_region(row: usize, col_start: usize, col_end: usize, color: ColorCode) {
     let buf = unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer) };
     for c in col_start..col_end {
@@ -401,8 +401,8 @@ pub fn vga_clear_region(row: usize, col_start: usize, col_end: usize, color: Col
     }
 }
 
-/// Write a string to VGA at (row, start_col) with the given color.
-/// Does not move the cursor or affect Writer state.
+// Write a string to VGA at (row, start_col) with the given color.
+// Does not move the cursor or affect Writer state.
 pub fn vga_write_at(row: usize, col: usize, s: &[u8], color: ColorCode) {
     let buf = unsafe { &mut *(VGA_BUFFER_ADDR as *mut Buffer) };
     for (i, &byte) in s.iter().enumerate() {

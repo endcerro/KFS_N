@@ -1,4 +1,3 @@
-
 use crate::timer::{ACTIVE_MODES, MODE_COUNTER, MODE_HEARTBEAT, MODE_UPTIME};
 use core::sync::atomic::Ordering;
 // pub fn run(args: &[&str]) {

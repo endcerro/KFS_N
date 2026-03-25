@@ -4,7 +4,7 @@
 //
 // Writes `value` to virtual address `addr` (rounded up to page boundary).
 // Optional third argument selects write width (default: u32).
-// Address correctness is the caller's responsibility —
+// Address correctness is the caller's responsibility -
 // writing to an unmapped address will trigger a page fault.
 //
 // Examples:

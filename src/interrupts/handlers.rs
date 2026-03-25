@@ -28,14 +28,14 @@ impl InterruptStackFrame {
 }
 
 // ---------------------------------------------------------------------------
-// Kernel panic — the single path for unrecoverable faults.
+// Kernel panic - the single path for unrecoverable faults.
 //
 // Sequence:
-//   1. cli                     — no more interrupts
-//   2. CpuState::capture()     — snapshot all registers while they're fresh
-//   3. save_stack()            — copy live stack into a static buffer
-//   4. print everything        — reason, stack frame, registers, stack dump
-//   5. clean_registers_and_halt — zero GP regs, enter infinite hlt
+//   1. cli                     - no more interrupts
+//   2. CpuState::capture()     - snapshot all registers while they're fresh
+//   3. save_stack()            - copy live stack into a static buffer
+//   4. print everything        - reason, stack frame, registers, stack dump
+//   5. clean_registers_and_halt - zero GP regs, enter infinite hlt
 // ---------------------------------------------------------------------------
 pub fn kernel_panic(reason: &str, stack_frame: &InterruptStackFrame) {
     // 1. Disable interrupts immediately
@@ -47,7 +47,7 @@ pub fn kernel_panic(reason: &str, stack_frame: &InterruptStackFrame) {
     let cpu_state = CpuState::capture();
 
     // 3. Snapshot the kernel stack into a static buffer
-    //    (safe to call here — stack is still coherent)
+    //    (safe to call here - stack is still coherent)
     unsafe {
         panic::save_stack();
     }

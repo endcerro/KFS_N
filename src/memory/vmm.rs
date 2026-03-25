@@ -116,17 +116,17 @@ pub enum UnmapError {
     PageTableNotPresent,
 }
 
-/// Errors returned by vmalloc / vfree.
+// Errors returned by vmalloc / vfree.
 #[derive(Debug)]
 pub enum VmError {
-    /// size argument was zero.
+    // size argument was zero.
     ZeroSize,
-    /// Address or range overlaps the recursive-mapping region (0xFFC00000+).
-    /// That region is the live page directory — it cannot be remapped.
+    // Address or range overlaps the recursive-mapping region (0xFFC00000+).
+    // That region is the live page directory - it cannot be remapped.
     RecursiveRegion,
-    /// No free physical frames available.
+    // No free physical frames available.
     OutOfMemory,
-    /// One or more pages in the requested range are already mapped.
+    // One or more pages in the requested range are already mapped.
     AlreadyMapped,
 }
 
@@ -146,16 +146,16 @@ fn page_align_up(addr: u32) -> u32 {
 //   - Any virtual address is accepted; addr is rounded UP to the nearest
 //     page boundary before use.
 //   - The only hard block is the recursive-mapping region (0xFFC00000+)
-//     which is a hardware constraint — PDE[1023] is the page directory
+//     which is a hardware constraint - PDE[1023] is the page directory
 //     itself and cannot be remapped.
 //   - No bookkeeping table.  The caller owns (addr, size), mirroring
 //     POSIX mmap/munmap.  vsize walks the live page tables directly.
 // ---------------------------------------------------------------------------
 
-/// Map `size` bytes starting at `addr` (rounded up to page boundary).
-///
-/// Returns `(aligned_addr, pages_mapped)` so the caller always knows
-/// the actual base that was mapped even if rounding occurred.
+// Map `size` bytes starting at `addr` (rounded up to page boundary).
+//
+// Returns `(aligned_addr, pages_mapped)` so the caller always knows
+// the actual base that was mapped even if rounding occurred.
 pub fn vmalloc(addr: u32, size: usize) -> Result<(u32, usize), VmError> {
     if size == 0 {
         return Err(VmError::ZeroSize);
@@ -184,9 +184,9 @@ pub fn vmalloc(addr: u32, size: usize) -> Result<(u32, usize), VmError> {
     Ok((aligned_addr, pages))
 }
 
-/// Unmap `size` bytes starting at `addr` (rounded up to match vmalloc).
-///
-/// Returns the number of pages actually freed.
+// Unmap `size` bytes starting at `addr` (rounded up to match vmalloc).
+//
+// Returns the number of pages actually freed.
 pub fn vfree(addr: u32, size: usize) -> Result<usize, VmError> {
     if size == 0 {
         return Err(VmError::ZeroSize);
@@ -200,10 +200,10 @@ pub fn vfree(addr: u32, size: usize) -> Result<usize, VmError> {
     Ok(freed)
 }
 
-/// Count consecutive mapped pages from `addr` (rounded up to page boundary).
-///
-/// Walks the live page tables — the page tables are the ground truth.
-/// Returns the number of mapped bytes, or 0 if the address is not mapped.
+// Count consecutive mapped pages from `addr` (rounded up to page boundary).
+//
+// Walks the live page tables - the page tables are the ground truth.
+// Returns the number of mapped bytes, or 0 if the address is not mapped.
 pub fn vsize(addr: u32) -> usize {
     let aligned_addr = page_align_up(addr);
     let mut count: usize = 0;

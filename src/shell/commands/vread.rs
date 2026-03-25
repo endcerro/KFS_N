@@ -4,7 +4,7 @@
 //
 // Reads a value from virtual address `addr` (rounded up to page boundary).
 // Optional second argument selects read width (default: u32).
-// Address correctness is the caller's responsibility —
+// Address correctness is the caller's responsibility -
 // reading from an unmapped address will trigger a page fault.
 //
 // Examples:

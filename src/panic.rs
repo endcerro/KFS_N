@@ -1,25 +1,25 @@
 // ---------------------------------------------------------------------------
-// panic.rs — Pre-panic state capture and cleanup interfaces
+// panic.rs - Pre-panic state capture and cleanup interfaces
 //
 // Provides three capabilities that handlers use before halting:
-//   1. CpuState::capture()   — snapshot all GP/segment/control registers
-//   2. save_stack()          — copy a bounded region of the live kernel stack
+//   1. CpuState::capture()   - snapshot all GP/segment/control registers
+//   2. save_stack()          - copy a bounded region of the live kernel stack
 //                              into a static buffer (survives stack corruption)
-//   3. clean_registers()     — zero all GP registers right before halt
+//   3. clean_registers()     - zero all GP registers right before halt
 //                              (prevents information leakage)
 //
 // These are building blocks: kernel_panic() in handlers.rs orchestrates them.
 // ---------------------------------------------------------------------------
 use crate::m_print;
 use crate::m_println;
-/// Maximum number of stack bytes we snapshot into the static buffer.
-/// 512 bytes = 128 dwords, enough to capture a useful call chain without
-/// blowing our memory budget.
+// Maximum number of stack bytes we snapshot into the static buffer.
+// 512 bytes = 128 dwords, enough to capture a useful call chain without
+// blowing our memory budget.
 const STACK_SAVE_SIZE: usize = 512;
 
-/// Static buffer for the stack snapshot.  Written once during a panic,
-/// never freed.  Keeps the data available even if the original stack
-/// memory becomes inaccessible (e.g. after a double fault overwrites it).
+// Static buffer for the stack snapshot.  Written once during a panic,
+// never freed.  Keeps the data available even if the original stack
+// memory becomes inaccessible (e.g. after a double fault overwrites it).
 static mut SAVED_STACK: StackSnapshot = StackSnapshot {
     buf: [0u8; STACK_SAVE_SIZE],
     esp: 0,
@@ -29,12 +29,12 @@ static mut SAVED_STACK: StackSnapshot = StackSnapshot {
 };
 
 // ---------------------------------------------------------------------------
-// CpuState — full register snapshot
+// CpuState - full register snapshot
 // ---------------------------------------------------------------------------
 
-/// Complete snapshot of the i386 register file at a point in time.
-/// Populated by inline assembly so the values are as close to the
-/// fault instant as the calling convention allows.
+// Complete snapshot of the i386 register file at a point in time.
+// Populated by inline assembly so the values are as close to the
+// fault instant as the calling convention allows.
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
 pub struct CpuState {
@@ -85,17 +85,17 @@ impl CpuState {
         }
     }
 
-    /// Snapshot every accessible register right now.
-    ///
-    /// **Important**: the values of EAX/ECX/EDX may reflect the compiler's
-    /// register allocation for this function rather than the true fault-time
-    /// values.  EBX/ESI/EDI/EBP are callee-saved so they're more reliable.
-    /// For the most accurate GP values, prefer the InterruptStackFrame that
-    /// the CPU pushes automatically (EIP, CS, EFLAGS, ESP, SS).
+    // Snapshot every accessible register right now.
+    //
+    // **Important**: the values of EAX/ECX/EDX may reflect the compiler's
+    // register allocation for this function rather than the true fault-time
+    // values.  EBX/ESI/EDI/EBP are callee-saved so they're more reliable.
+    // For the most accurate GP values, prefer the InterruptStackFrame that
+    // the CPU pushes automatically (EIP, CS, EFLAGS, ESP, SS).
     pub fn capture() -> Self {
         let mut state = CpuState::empty();
         unsafe {
-            // GP registers — captured in one asm block to minimise clobbering
+            // GP registers - captured in one asm block to minimise clobbering
             core::arch::asm!(
                 "mov [{s} + 0],  eax",
                 "mov [{s} + 4],  ebx",
@@ -106,11 +106,11 @@ impl CpuState {
                 "mov [{s} + 24], ebp",
                 "mov [{s} + 28], esp",
                 s = in(reg) &mut state as *mut CpuState as u32,
-                // We clobber nothing extra — the mov instructions read
+                // We clobber nothing extra - the mov instructions read
                 // the live register values before the compiler touches them.
             );
 
-            // Segment registers — must go through a GPR on i386
+            // Segment registers - must go through a GPR on i386
             core::arch::asm!("mov {:x}, cs", out(reg) state.cs);
             core::arch::asm!("mov {:x}, ds", out(reg) state.ds);
             core::arch::asm!("mov {:x}, es", out(reg) state.es);
@@ -126,7 +126,7 @@ impl CpuState {
         state
     }
 
-    /// Pretty-print the full register dump to VGA + serial.
+    // Pretty-print the full register dump to VGA + serial.
     pub fn print(&self) {
         m_println!("  --- General Purpose Registers ---");
         m_println!(
@@ -167,22 +167,22 @@ impl CpuState {
 // Stack snapshot
 // ---------------------------------------------------------------------------
 
-/// A bounded copy of the kernel stack at panic time.
+// A bounded copy of the kernel stack at panic time.
 pub struct StackSnapshot {
     buf: [u8; STACK_SAVE_SIZE],
-    /// ESP value when the snapshot was taken.
+    // ESP value when the snapshot was taken.
     pub esp: u32,
-    /// Top of the kernel stack (highest valid address).
+    // Top of the kernel stack (highest valid address).
     pub stack_top: u32,
-    /// How many bytes were actually copied (may be < STACK_SAVE_SIZE if
-    /// the live stack was smaller).
+    // How many bytes were actually copied (may be < STACK_SAVE_SIZE if
+    // the live stack was smaller).
     pub len: usize,
-    /// Set to true once a valid snapshot has been stored.
+    // Set to true once a valid snapshot has been stored.
     pub valid: bool,
 }
 
 impl StackSnapshot {
-    /// Print the saved stack as a hexdump.
+    // Print the saved stack as a hexdump.
     pub fn print(&self) {
         if !self.valid {
             m_println!("  (no stack snapshot available)");
@@ -228,16 +228,16 @@ impl StackSnapshot {
     }
 }
 
-/// Copy up to STACK_SAVE_SIZE bytes of the live kernel stack into
-/// the static SAVED_STACK buffer.
-///
-/// Call this early in a panic path — before any further stack usage
-/// can overwrite the interesting frames.
-///
-/// # Safety
-/// Reads raw memory between ESP and `stack_top`.  Must only be
-/// called when the kernel stack is still in a consistent-enough
-/// state to be read (i.e. not from a double-fault that trashed it).
+// Copy up to STACK_SAVE_SIZE bytes of the live kernel stack into
+// the static SAVED_STACK buffer.
+//
+// Call this early in a panic path - before any further stack usage
+// can overwrite the interesting frames.
+//
+// # Safety
+// Reads raw memory between ESP and `stack_top`.  Must only be
+// called when the kernel stack is still in a consistent-enough
+// state to be read (i.e. not from a double-fault that trashed it).
 pub unsafe fn save_stack() {
     let esp: u32;
     let top: u32;
@@ -250,7 +250,7 @@ pub unsafe fn save_stack() {
     );
 
     if esp >= top {
-        // Stack pointer is at or above top — nothing useful to copy.
+        // Stack pointer is at or above top - nothing useful to copy.
         SAVED_STACK.valid = false;
         return;
     }
@@ -258,7 +258,7 @@ pub unsafe fn save_stack() {
     let available = (top - esp) as usize;
     let copy_len = core::cmp::min(available, STACK_SAVE_SIZE);
 
-    // Byte-by-byte copy — we don't trust memcpy here because the
+    // Byte-by-byte copy - we don't trust memcpy here because the
     // allocator or other subsystems might be in a broken state.
     let src = esp as *const u8;
     for i in 0..copy_len {
@@ -271,8 +271,8 @@ pub unsafe fn save_stack() {
     SAVED_STACK.valid = true;
 }
 
-/// Return a reference to the saved stack snapshot (may be invalid if
-/// save_stack() hasn't been called or the stack was empty).
+// Return a reference to the saved stack snapshot (may be invalid if
+// save_stack() hasn't been called or the stack was empty).
 pub fn get_saved_stack() -> &'static StackSnapshot {
     unsafe { &SAVED_STACK }
 }
@@ -281,18 +281,18 @@ pub fn get_saved_stack() -> &'static StackSnapshot {
 // Register cleaning
 // ---------------------------------------------------------------------------
 
-/// Zero all general-purpose registers.
-///
-/// Called right before the final halt loop to prevent information
-/// leakage (e.g. crypto keys, user data lingering in registers).
-/// After this call the only safe thing to do is `hlt` in a loop —
-/// any Rust code that touches local variables will immediately break
-/// because EBP/ESP are gone.
-///
-/// # Safety
-/// Destroys the entire GP register set including EBP and ESP.
-/// Must be the very last thing before the halt loop, and that halt
-/// loop must be in the same inline asm block.
+// Zero all general-purpose registers.
+//
+// Called right before the final halt loop to prevent information
+// leakage (e.g. crypto keys, user data lingering in registers).
+// After this call the only safe thing to do is `hlt` in a loop -
+// any Rust code that touches local variables will immediately break
+// because EBP/ESP are gone.
+//
+// # Safety
+// Destroys the entire GP register set including EBP and ESP.
+// Must be the very last thing before the halt loop, and that halt
+// loop must be in the same inline asm block.
 pub unsafe fn clean_registers_and_halt() -> ! {
     core::arch::asm!(
         // Zero every general-purpose register
@@ -303,11 +303,11 @@ pub unsafe fn clean_registers_and_halt() -> ! {
         "xor esi, esi",
         "xor edi, edi",
         "xor ebp, ebp",
-        // NOTE: we do NOT zero ESP — the `hlt` instruction still needs
+        // NOTE: we do NOT zero ESP - the `hlt` instruction still needs
         // a valid stack pointer in case an NMI fires.  The stack contents
         // have already been wiped by save_stack / are no longer relevant.
 
-        // Infinite halt loop — interrupts are off (cli was called earlier),
+        // Infinite halt loop - interrupts are off (cli was called earlier),
         // so hlt won't return.  The loop guards against NMIs.
         "2:",
         "hlt",

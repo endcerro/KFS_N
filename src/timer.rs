@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// timer.rs — PIT tick counter and signal-driven timer display
+// timer.rs - PIT tick counter and signal-driven timer display
 //
 // The PIT (IRQ0, vector 32) fires at ~18.2 Hz by default (BIOS rate).
 // The ISR in handlers.rs sends EOI and schedules a TimerTick signal.
@@ -10,7 +10,7 @@
 //   - heartbeat: alternating character pulsing in top-right corner
 //
 // All three write to VGA row 0 at the right edge.  They share the
-// same signal handler — the callback checks which modes are active
+// same signal handler - the callback checks which modes are active
 // and renders accordingly.
 //
 // The underlying tick counter always runs when any mode is active.
@@ -21,15 +21,15 @@ use crate::signals::{self, Signal};
 use crate::vga::{get_current_colors, vga_clear_region, vga_write_at, ColorCode, VGA_BUFFER_WIDTH};
 use core::sync::atomic::{AtomicU32, AtomicU8, Ordering};
 
-/// Approximate PIT frequency — BIOS default is 1193182/65536 ≈ 18.2 Hz.
-/// Used to convert ticks to seconds for uptime display.
+// Approximate PIT frequency - BIOS default is 1193182/65536 ≈ 18.2 Hz.
+// Used to convert ticks to seconds for uptime display.
 const PIT_HZ: u32 = 18;
 
-/// Monotonic tick counter.  Always incremented while any mode is active.
+// Monotonic tick counter.  Always incremented while any mode is active.
 pub static TICK_COUNT: AtomicU32 = AtomicU32::new(0);
 
-/// Bitmask of active display modes.  0 = nothing active (handler not
-/// registered).  Individual bits correspond to DisplayMode values.
+// Bitmask of active display modes.  0 = nothing active (handler not
+// registered).  Individual bits correspond to DisplayMode values.
 pub static ACTIVE_MODES: AtomicU8 = AtomicU8::new(0);
 
 // Bit positions for each mode
@@ -46,13 +46,13 @@ pub const MODE_HEARTBEAT: u8 = 1 << 2;
 // enabled but outside any lock).
 // ---------------------------------------------------------------------------
 
-/// Row 0 is the top of the screen — we'll use it as a status bar area.
+// Row 0 is the top of the screen - we'll use it as a status bar area.
 const STATUS_ROW: usize = 0;
 
-/// Color for the status display: yellow on black, distinct from normal text.
+// Color for the status display: yellow on black, distinct from normal text.
 // const STATUS_COLOR: ColorCode = ColorCode::new(Color::Yellow, Color::Black);
 
-/// Clear a region of VGA row with spaces.
+// Clear a region of VGA row with spaces.
 // fn vga_clear_region(row: usize, col_start: usize, col_end: usize, color: ColorCode) {
 //     let buf = unsafe { &mut *(vga::VGA_BUFFER_ADDR as *mut vga::Buffer) };
 //     for c in col_start..col_end {
@@ -70,9 +70,9 @@ const STATUS_ROW: usize = 0;
 // Signal callback
 // ---------------------------------------------------------------------------
 
-/// Called by dispatch_pending_signals() for every TimerTick signal.
-/// Increments the tick counter, then renders whichever display modes
-/// are active.
+// Called by dispatch_pending_signals() for every TimerTick signal.
+// Increments the tick counter, then renders whichever display modes
+// are active.
 fn timer_tick_handler(_signal: u8) {
     let ticks = TICK_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
     let modes = ACTIVE_MODES.load(Ordering::Relaxed);
@@ -97,7 +97,7 @@ fn timer_tick_handler(_signal: u8) {
         let minutes = (total_secs / 60) % 60;
         let seconds = total_secs % 60;
 
-        // Format HH:MM:SS into a fixed buffer — no alloc needed
+        // Format HH:MM:SS into a fixed buffer - no alloc needed
         let mut buf = [b'0'; 8]; // "00:00:00"
         buf[0] = b'0' + (hours / 10) as u8;
         buf[1] = b'0' + (hours % 10) as u8;
@@ -138,11 +138,11 @@ fn timer_tick_handler(_signal: u8) {
 fn update_signal_registration(old_modes: u8, new_modes: u8) {
     let current_color: ColorCode = ColorCode::new(get_current_colors().0, get_current_colors().1);
     if old_modes == 0 && new_modes != 0 {
-        // First mode activated — register the handler
+        // First mode activated - register the handler
         signals::register_signal(Signal::TimerTick.as_u8(), timer_tick_handler);
         dbg_println!("timer: signal handler registered");
     } else if old_modes != 0 && new_modes == 0 {
-        // Last mode deactivated — unregister and clear the display
+        // Last mode deactivated - unregister and clear the display
         signals::unregister_signal(Signal::TimerTick.as_u8());
         // Clear the entire status region so no stale text remains
         vga_clear_region(STATUS_ROW, 58, VGA_BUFFER_WIDTH, current_color);
@@ -176,28 +176,28 @@ fn set_mode(mode_bit: u8, enabled: bool) {
 // Public API
 // ---------------------------------------------------------------------------
 
-/// Enable/disable the raw tick counter display (top-right, 10 chars).
+// Enable/disable the raw tick counter display (top-right, 10 chars).
 pub fn set_counter(enabled: bool) {
     set_mode(MODE_COUNTER, enabled);
     let state = if enabled { "ON" } else { "OFF" };
     println!("Timer counter: {}", state);
 }
 
-/// Enable/disable the HH:MM:SS uptime display.
+// Enable/disable the HH:MM:SS uptime display.
 pub fn set_uptime(enabled: bool) {
     set_mode(MODE_UPTIME, enabled);
     let state = if enabled { "ON" } else { "OFF" };
     println!("Timer uptime: {}", state);
 }
 
-/// Enable/disable the heartbeat indicator (single pulsing char).
+// Enable/disable the heartbeat indicator (single pulsing char).
 pub fn set_heartbeat(enabled: bool) {
     set_mode(MODE_HEARTBEAT, enabled);
     let state = if enabled { "ON" } else { "OFF" };
     println!("Timer heartbeat: {}", state);
 }
 
-/// Master on/off — enables or disables ALL display modes at once.
+// Master on/off - enables or disables ALL display modes at once.
 pub fn enable() {
     let old = ACTIVE_MODES.load(Ordering::Relaxed);
     let new = MODE_COUNTER | MODE_UPTIME | MODE_HEARTBEAT;
@@ -219,17 +219,17 @@ pub fn disable() {
     );
 }
 
-/// Return the current tick count.
+// Return the current tick count.
 pub fn get_ticks() -> u32 {
     TICK_COUNT.load(Ordering::Relaxed)
 }
 
-/// Return whether any timer display mode is currently active.
+// Return whether any timer display mode is currently active.
 pub fn is_enabled() -> bool {
     ACTIVE_MODES.load(Ordering::Relaxed) != 0
 }
 
-/// Print current status.
+// Print current status.
 pub fn print_status() {
     let modes = ACTIVE_MODES.load(Ordering::Relaxed);
     let ticks = TICK_COUNT.load(Ordering::Relaxed);
@@ -267,12 +267,12 @@ pub fn print_status() {
 // Shell command handler
 //
 // Usage:
-//   timer on         — enable all modes
-//   timer off        — disable all modes
-//   timer counter    — toggle counter display
-//   timer uptime     — toggle uptime display
-//   timer beat       — toggle heartbeat
-//   timer status     — print current state
+//   timer on         - enable all modes
+//   timer off        - disable all modes
+//   timer counter    - toggle counter display
+//   timer uptime     - toggle uptime display
+//   timer beat       - toggle heartbeat
+//   timer status     - print current state
 // ---------------------------------------------------------------------------
 
 pub fn shell_command(args: &[&str]) {

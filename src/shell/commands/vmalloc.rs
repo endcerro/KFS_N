@@ -7,7 +7,7 @@
 //
 // Examples:
 //   vmalloc 0x1000 4096
-//   vmalloc 0xD0001234 0x3000   — addr rounded up to 0xD0002000
+//   vmalloc 0xD0001234 0x3000   - addr rounded up to 0xD0002000
 
 use super::parse::{page_align_up, parse_u32, parse_usize};
 use crate::memory::vmm;

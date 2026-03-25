@@ -92,7 +92,7 @@ heap::print_stats()                          // diagnostic output
 
 ### GlobalAlloc (`allocator.rs`)
 ```rust
-// Registered as #[global_allocator] in lib.rs — enables:
+// Registered as #[global_allocator] in lib.rs - enables:
 //   alloc::boxed::Box, alloc::vec::Vec, alloc::string::String, etc.
 //
 // KernelAllocator is zero-sized; all state lives in heap.rs.
@@ -121,4 +121,4 @@ heap::print_stats()                          // diagnostic output
 4. Identity map cleared: don't access low memory after clear_page1()
 5. Recursive mapping: PDE[1023] is reserved, never map into it
 6. Heap growth: auto-grows via vmm::map_range, but bounded by KERNEL_HEAP_END
-7. GlobalAlloc alignment: over-aligned dealloc must recover the stashed original pointer — always pass the correct Layout to dealloc
+7. GlobalAlloc alignment: over-aligned dealloc must recover the stashed original pointer - always pass the correct Layout to dealloc
