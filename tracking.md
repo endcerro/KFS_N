@@ -48,6 +48,15 @@ i386 higher-half kernel, Multiboot2, QEMU. Must stay under 10 MB.
 - `mod.rs` - MultibootInfo tag iterator
 - `meminfo.rs` - Memory map parsing from multiboot, static buffer (MAX_MEMORY_ENTRIES=32)
 
+### Signals (`src/signals.rs`)
+- `signals.rs` - Signal enum (KeyboardInput, TimerTick, PageFault, Error, Halt, UserDefined), SignalTable (64 callback slots), SignalQueue (ring buffer, capacity 64). Public API: register_signal, unregister_signal, has_handler, schedule_signal, dispatch_pending_signals, has_pending_signals, pending_count, print_signal_table.
+
+### Panic (`src/panic.rs`)
+- `panic.rs` - CpuState::capture() (full GP/segment/control register snapshot), save_stack() (512-byte static buffer from ESP to stack_top), StackSnapshot with hexdump print(), clean_registers_and_halt() (zero GP regs + infinite hlt loop). Building blocks used by kernel_panic() in handlers.rs.
+
+### Timer (`src/timer.rs`)
+- `timer.rs` - Timer tick counting, driven by TimerTick signal from PIT ISR.
+
 ## Key Constants
 | Constant | Value | Location |
 |---|---|---|
@@ -59,6 +68,13 @@ i386 higher-half kernel, Multiboot2, QEMU. Must stay under 10 MB.
 | RECURSIVE_INDEX | 1023 | vmm.rs |
 | PAGE_TABLES_VBASE | 0xFFC00000 | vmm.rs |
 | ALLOC_ALIGN / KMALLOC_ALIGN | 8 | heap.rs / allocator.rs |
+| IDT_SIZE | 256 | interrupts/define.rs |
+| DPL0_INTERRUPT_GATE | 0x8E | interrupts/define.rs |
+| PIC1_OFFSET | 0x20 | pic.rs |
+| PIC2_OFFSET | 0x28 | pic.rs |
+| MAX_SIGNALS | 64 | signals.rs |
+| QUEUE_CAPACITY | 64 | signals.rs |
+| STACK_SAVE_SIZE | 512 | panic.rs |
 
 ## Public APIs
 
@@ -92,7 +108,7 @@ heap::print_stats()                          // diagnostic output
 
 ### GlobalAlloc (`allocator.rs`)
 ```rust
-// Registered as #[global_allocator] in lib.rs - enables:
+// Registered as #[global_allocator] in lib.rs — enables:
 //   alloc::boxed::Box, alloc::vec::Vec, alloc::string::String, etc.
 //
 // KernelAllocator is zero-sized; all state lives in heap.rs.
@@ -102,12 +118,56 @@ heap::print_stats()                          // diagnostic output
 // OOM        → #[alloc_error_handler] panics with size/align info
 ```
 
+### Signals (`signals.rs`)
+```rust
+signals::register_signal(signal: u8, callback: fn(u8))   // bind callback to signal slot
+signals::unregister_signal(signal: u8)                    // remove callback
+signals::has_handler(signal: u8) -> bool                  // check if slot is occupied
+signals::schedule_signal(signal: u8)                      // enqueue for deferred dispatch (ISR-safe)
+signals::dispatch_pending_signals() -> usize              // drain queue, invoke callbacks
+signals::has_pending_signals() -> bool                    // peek without consuming
+signals::pending_count() -> usize                         // queued signal count
+signals::print_signal_table()                             // diagnostic dump
+```
+
+### Panic (`panic.rs`)
+```rust
+panic::CpuState::capture() -> CpuState                   // snapshot GP/segment/control regs
+panic::save_stack()                                       // copy ≤512 bytes of live stack to static buffer
+panic::get_saved_stack() -> &'static StackSnapshot        // access saved snapshot
+panic::clean_registers_and_halt() -> !                    // zero GP regs + infinite hlt
+// kernel_panic(reason, stack_frame) lives in handlers.rs — orchestrates all of the above
+```
+
 ## Cargo Features
 | Feature | Effect |
 |---|---|
 | `verbose` | Extra logging during init (paging, frame allocator, VMM, GDT) |
 | `gdt_test` | GDT structure, segment register, and TSS verification tests |
 | `alloc_test` | GlobalAlloc self-tests: Box, Vec, String, vec!, large alloc, over-aligned alloc |
+
+## Milestones
+
+### Milestone 1: Memory System — 100% ✅
+| # | Requirement | Status | Key files |
+|---|-------------|--------|-----------|
+| 1 | Enable memory paging | ✅ | bootstrap.asm (CR0 bit 31), vmm.rs (runtime) |
+| 2 | Paging structure with memory rights | ✅ | paging.rs (PageEntry/PageDirectory), pageflags.rs (PageFlags bitfield) |
+| 3 | Define Kernel and User space | ✅ | define.rs (KERNEL_OFFSET=0xC0000000), gdt define.rs (ring 0/3 selectors), tss.rs |
+| 4 | Create / get memory pages | ✅ | vmm.rs (map_page, map_alloc, map_range, translate, is_mapped) |
+| 5 | Allocate, free, get size of variable | ✅ | heap.rs (kmalloc/kfree/ksize), allocator.rs (GlobalAlloc) |
+| 6 | Virtual and physical memory functions | ✅ | physical.rs (FrameAllocator), vmm.rs (full virtual API) |
+| 7 | Handle kernel panics | ✅ | handlers.rs (kernel_panic), panic.rs (CpuState, save_stack, clean_registers_and_halt) |
+
+### Milestone 2: Interrupts & Signals — 100% ✅
+| # | Requirement | Status | Key files |
+|---|-------------|--------|-----------|
+| 1 | Create IDT, fill it, register it | ✅ | idt.rs (256-entry Idt, IdtEntry, load_idt), interrupts/mod.rs (init fills all vectors), define.rs (gate type constants) |
+| 2 | Signal-callback system | ✅ | signals.rs (SignalTable, register/unregister_signal, Signal enum) |
+| 3 | Interface to schedule signals | ✅ | signals.rs (SignalQueue ring buffer, schedule_signal, dispatch_pending_signals) |
+| 4 | Clean registers before panic/halt | ✅ | panic.rs (clean_registers_and_halt — xor GP regs + hlt loop) |
+| 5 | Save stack before panic | ✅ | panic.rs (save_stack — 512-byte snapshot, StackSnapshot hexdump) |
+| 6 | IDT keyboard handling | ✅ | handlers.rs (keyboard_interrupt: read 0x60, EOI, schedule signal), idt.rs (IRQ1 enabled) |
 
 ## Remaining Work
 1. **User space memory** - user page tables, per-process address space, user-accessible mappings
@@ -121,4 +181,4 @@ heap::print_stats()                          // diagnostic output
 4. Identity map cleared: don't access low memory after clear_page1()
 5. Recursive mapping: PDE[1023] is reserved, never map into it
 6. Heap growth: auto-grows via vmm::map_range, but bounded by KERNEL_HEAP_END
-7. GlobalAlloc alignment: over-aligned dealloc must recover the stashed original pointer - always pass the correct Layout to dealloc
+7. GlobalAlloc alignment: over-aligned dealloc must recover the stashed original pointer — always pass the correct Layout to dealloc
