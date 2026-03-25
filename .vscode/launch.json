@@ -1,28 +1,172 @@
 {
     "version": "0.2.0",
     "configurations": [
-      {
-        "type": "gdb",
-        "request": "attach",
-        "name": "Attach to QEMU",
-        "executable": "${workspaceRoot}/isofiles/boot/kernel.bin",
-        "target": ":1234",
-        "remote": true,
-        "cwd": "${workspaceRoot}",
-        "valuesFormatting": "parseText",
-        "gdbpath": "gdb",
-        "preLaunchTask": "Run QEMU",
-        "postDebugTask": "Kill QEMU",
-        "linux": {
-                "terminal": "integrated"
-            }
-      }
-    ],
-    "compounds": [
         {
-            "name": "Debug with QEMU Serial",
-            "configurations": ["Attach to QEMU"],
-            "preLaunchTask": "Tail QEMU Serial"
-        }
+            "name": "🚀 Debug Kernel (Build + Launch)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/obj/kernel.bin",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set architecture to i386",
+                    "text": "set architecture i386",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Set disassembly flavor to Intel",
+                    "text": "set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Connect to QEMU GDB server",
+                    "text": "target remote localhost:1234",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Load symbol file",
+                    "text": "symbol-file obj/kernel.bin",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Set breakpoint at rust_main",
+                    "text": "break rust_main",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set breakpoint on panic",
+                    "text": "break rust_begin_unwind",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-and-launch-debug",
+            "postDebugTask": "kill-qemu",
+            "logging": {
+                "engineLogging": false,
+                "trace": false,
+                "traceResponse": false
+            }
+        },
+        {
+            "name": "🔧 Attach to Running QEMU",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/obj/kernel.bin",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Connect to QEMU",
+                    "text": "target remote localhost:1234",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Set architecture to i386",
+                    "text": "set architecture i386",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Set disassembly flavor to Intel",
+                    "text": "set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "postDebugTask": "kill-qemu"
+        },
+        {
+            "name": "🔄 Rebuild and Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/obj/kernel.bin",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Set architecture to i386",
+                    "text": "set architecture i386",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Set disassembly flavor to Intel",
+                    "text": "set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Connect to QEMU",
+                    "text": "target remote localhost:1234",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Break at rust_main",
+                    "text": "break rust_main",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "rebuild-and-debug",
+            "postDebugTask": "kill-qemu"
+        },
+        {
+            "name": "🐛 Debug at Boot (start symbol)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/obj/kernel.bin",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Set architecture to i386",
+                    "text": "set architecture i386",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Set disassembly flavor to Intel",
+                    "text": "set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Connect to QEMU",
+                    "text": "target remote localhost:1234",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Break at start (bootstrap)",
+                    "text": "break start",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Break at higher_half_start",
+                    "text": "break higher_half_start",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-and-launch-debug",
+            "postDebugTask": "kill-qemu"
+        },
     ]
-  }
+}

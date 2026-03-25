@@ -6,14 +6,15 @@ edition = "2021"
 crate-type = ["staticlib"]
 [profile.dev]
 panic = "abort"
-debug = true
 [profile.release]
 panic = "abort"
-[target.'cfg(target_os = "none")']
-rustflags = ["-C", "link-arg=-Tlinker.ld"]
 [features]
+default = []
 gdt_test = []
 verbose = []
+debug = []
+alloc_test = []
+debug_screen = []
 
 [dependencies]
 spin = "0.9.8"

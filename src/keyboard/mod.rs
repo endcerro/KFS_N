@@ -1,12 +1,16 @@
 // keyboard.rs
+use crate::keyboard::layouts::LayoutId;
 #[allow(static_mut_refs)]
 use core::fmt;
-
+use core::sync::atomic::{AtomicUsize, Ordering};
 mod layouts;
 // Constants
 const BUFFER_SIZE: usize = 256;
 
-const CURRENT_LAYOUT : layouts::Layout = layouts::_AZERTY_LAYOUT;
+// const CURRENT_LAYOUT: layouts::Layout = layouts::_AZERTY_LAYOUT;
+// const CURRENT_LAYOUT: layouts::Layout = layouts::_QWERTY_LAYOUT;
+
+static CURRENT_LAYOUT_ID: AtomicUsize = AtomicUsize::new(LayoutId::Qwerty as usize);
 
 // Bitflags for modifiers
 pub const SHIFT: u8 = 0b0000_0001;
@@ -17,10 +21,9 @@ pub const CAPS_LOCK: u8 = 0b0000_1000;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyCode {
     Char(char),
-    Function(u8),  // F1-F12
+    Function(u8), // F1-F12
     Control(ControlKey),
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ControlKey {
@@ -44,7 +47,6 @@ pub enum ControlKey {
     RightArrow,
     UpArrow,
     DownArrow,
-
 }
 #[derive(Debug, Clone, Copy)]
 pub struct KeyEvent {
@@ -89,7 +91,7 @@ pub struct Keyboard {
     input_len: usize,
     finished_buffer: [u8; BUFFER_SIZE],
     finished_len: usize,
-    just_deleted : bool,
+    just_deleted: bool,
 }
 
 impl Keyboard {
@@ -109,11 +111,11 @@ impl Keyboard {
             input_len: 0,
             finished_buffer: [b'\0'; BUFFER_SIZE],
             finished_len: 0,
-            just_deleted : false
+            just_deleted: false,
         }
     }
 
-pub fn handle_scancode(&mut self, scancode: u8) {
+    pub fn handle_scancode(&mut self, scancode: u8) {
         if scancode == 0xE0 {
             self.is_extended = true;
             return;
@@ -166,20 +168,29 @@ pub fn handle_scancode(&mut self, scancode: u8) {
     }
 
     fn scancode_to_char(&self, scancode: u8) -> Option<char> {
-        CURRENT_LAYOUT.get(scancode as usize).copied().filter(|&c| c != '\0')
+        let id = CURRENT_LAYOUT_ID.load(Ordering::Relaxed);
+        layouts::LAYOUTS[id]
+            .get(scancode as usize)
+            .copied()
+            .filter(|&c| c != '\0')
     }
 
     fn update_modifiers(&mut self, event: &KeyEvent) {
-        let modifier = match event.code {
-            KeyCode::Control(ControlKey::LeftShift) | KeyCode::Control(ControlKey::RightShift) => Some(SHIFT),
-            KeyCode::Control(ControlKey::LeftCtrl) | KeyCode::Control(ControlKey::RightCtrl) => Some(CTRL),
-            KeyCode::Control(ControlKey::LeftAlt) | KeyCode::Control(ControlKey::RightAlt) => Some(ALT),
-            KeyCode::Control(ControlKey::CapsLock) if event.pressed => {
-                self.modifiers ^= CAPS_LOCK;
-                None
-            }
-            _ => None,
-        };
+        let modifier =
+            match event.code {
+                KeyCode::Control(ControlKey::LeftShift)
+                | KeyCode::Control(ControlKey::RightShift) => Some(SHIFT),
+                KeyCode::Control(ControlKey::LeftCtrl)
+                | KeyCode::Control(ControlKey::RightCtrl) => Some(CTRL),
+                KeyCode::Control(ControlKey::LeftAlt) | KeyCode::Control(ControlKey::RightAlt) => {
+                    Some(ALT)
+                }
+                KeyCode::Control(ControlKey::CapsLock) if event.pressed => {
+                    self.modifiers ^= CAPS_LOCK;
+                    None
+                }
+                _ => None,
+            };
 
         if let Some(modifier) = modifier {
             if event.pressed {
@@ -228,14 +239,14 @@ pub fn handle_scancode(&mut self, scancode: u8) {
                 if self.input_len > 0 {
                     self.input_len -= 1;
                     self.just_deleted = true;
-                }else {
+                } else {
                     self.just_deleted = false;
-
                 }
             }
             KeyCode::Control(ControlKey::Enter) if event.pressed => {
                 // Move current input to finished buffer
-                self.finished_buffer[..self.input_len].copy_from_slice(&self.input_buffer[..self.input_len]);
+                self.finished_buffer[..self.input_len]
+                    .copy_from_slice(&self.input_buffer[..self.input_len]);
                 self.finished_len = self.input_len;
                 self.input_len = 0;
                 self.just_deleted = false;
@@ -244,11 +255,11 @@ pub fn handle_scancode(&mut self, scancode: u8) {
         }
     }
 
-    pub fn input_buffer_empty(&self) -> bool{
+    pub fn input_buffer_empty(&self) -> bool {
         if self.input_len > 0 || self.just_deleted {
             // serial_println!("Not empty size is {}, {}", self.input_len, self.just_deleted);
-                return false
-            }
+            return false;
+        }
         true
     }
 
@@ -260,8 +271,6 @@ pub fn handle_scancode(&mut self, scancode: u8) {
         self.finished_len = 0;
     }
 }
-
-
 
 // Global keyboard instance
 
@@ -277,15 +286,11 @@ pub fn handle_keyboard_interrupt(scancode: u8) {
 }
 
 pub fn get_next_key_event() -> Option<KeyEvent> {
-    unsafe {
-        KEYBOARD.pop_event()
-    }
+    unsafe { KEYBOARD.pop_event() }
 }
 
 pub fn get_input_string() -> &'static str {
-    unsafe {
-        KEYBOARD.get_input_string()
-    }
+    unsafe { KEYBOARD.get_input_string() }
 }
 pub fn clear_input() {
     unsafe {
@@ -293,13 +298,22 @@ pub fn clear_input() {
     }
 }
 
-pub fn input_buffer_empty() -> bool{
-    unsafe {
-
-        KEYBOARD.input_buffer_empty()
-    }
+pub fn input_buffer_empty() -> bool {
+    unsafe { KEYBOARD.input_buffer_empty() }
 }
 
+pub fn swap_layout() {
+    let mut current: usize = CURRENT_LAYOUT_ID.load(Ordering::Relaxed);
+    print!("Keyboard layout is now ");
+    if current == LayoutId::Azerty as usize {
+        current = LayoutId::Qwerty as usize;
+        print!("Qwerty")
+    } else {
+        current = LayoutId::Azerty as usize;
+        print!("Azerty")
+    }
+    CURRENT_LAYOUT_ID.store(current as usize, Ordering::Relaxed);
+}
 
 // Implement Display traits
 impl fmt::Display for KeyCode {
@@ -316,13 +330,23 @@ impl fmt::Display for KeyEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut buffer = [0u8; 64];
         let mut writer = WriterWithoutAlloc::new(&mut buffer);
-        if self.modifiers & SHIFT != 0 { let _ = writer.write(b"Shift+"); }
-        if self.modifiers & CTRL != 0 { let _ = writer.write(b"Ctrl+"); }
-        if self.modifiers & ALT != 0 { let _ = writer.write(b"Alt+"); }
-        if self.modifiers & CAPS_LOCK != 0 { let _ = writer.write(b"CapsLock+"); }
+        if self.modifiers & SHIFT != 0 {
+            let _ = writer.write(b"Shift+");
+        }
+        if self.modifiers & CTRL != 0 {
+            let _ = writer.write(b"Ctrl+");
+        }
+        if self.modifiers & ALT != 0 {
+            let _ = writer.write(b"Alt+");
+        }
+        if self.modifiers & CAPS_LOCK != 0 {
+            let _ = writer.write(b"CapsLock+");
+        }
 
         match self.code {
-            KeyCode::Char(c) => { let _ = writer.write(&[c as u8]); }
+            KeyCode::Char(c) => {
+                let _ = writer.write(&[c as u8]);
+            }
             KeyCode::Function(n) => {
                 let _ = writer.write(b"F");
                 let _ = writer.write_number(n as usize);
@@ -332,7 +356,11 @@ impl fmt::Display for KeyEvent {
             }
         }
 
-        let _ = writer.write(if self.pressed { b" (pressed)" } else { b" (released)" });
+        let _ = writer.write(if self.pressed {
+            b" (pressed)"
+        } else {
+            b" (released)"
+        });
         f.write_str(core::str::from_utf8(writer.as_slice()).unwrap_or("Error"))
     }
 }
@@ -345,7 +373,10 @@ struct WriterWithoutAlloc<'a> {
 
 impl<'a> WriterWithoutAlloc<'a> {
     fn new(buffer: &'a mut [u8]) -> Self {
-        Self { buffer, position: 0 }
+        Self {
+            buffer,
+            position: 0,
+        }
     }
 
     fn write(&mut self, bytes: &[u8]) -> fmt::Result {
@@ -364,7 +395,9 @@ impl<'a> WriterWithoutAlloc<'a> {
             digits[i] = (n % 10) as u8 + b'0';
             n /= 10;
             i += 1;
-            if n == 0 { break; }
+            if n == 0 {
+                break;
+            }
         }
         for digit in digits[..i].iter().rev() {
             self.write(&[*digit])?;

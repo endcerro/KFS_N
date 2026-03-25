@@ -1,19 +1,21 @@
 use crate::keyboard;
-use crate::vga;
 use crate::keyboard::*;
+use crate::signals::dispatch_pending_signals;
+use crate::vga;
 use crate::vga::Color;
 pub mod commands;
-use commands::{*, paint};
+use crate::vga::get_current_colors;
+use commands::{paint, *};
 
 const MAX_COMMANDS: usize = 20;
 const _MAX_COMMAND_LENGTH: usize = 20;
 const MAX_ARGS: usize = 10;
-static SHELL_ID : &str = "kernel@ring0:/#";
+static SHELL_ID: &str = "kernel@ring0:/#";
 #[derive(Clone, Copy)]
 struct Command {
     name: &'static str,
     function: fn(&[&str]),
-    description: &'static str, // Added for help functionality
+    description: &'static str,
 }
 
 pub struct Shell {
@@ -21,18 +23,30 @@ pub struct Shell {
     command_count: usize,
 }
 
-
 impl Shell {
     const fn new() -> Self {
         Shell {
-            commands: [Command { name: "", function: Shell::dummy_command, description: "" }; MAX_COMMANDS],
+            commands: [Command {
+                name: "",
+                function: Shell::dummy_command,
+                description: "",
+            }; MAX_COMMANDS],
             command_count: 0,
         }
     }
 
-    fn add_command(&mut self, name: &'static str, function: fn(&[&str]), description: &'static str) {
+    fn add_command(
+        &mut self,
+        name: &'static str,
+        function: fn(&[&str]),
+        description: &'static str,
+    ) {
         if self.command_count < MAX_COMMANDS {
-            self.commands[self.command_count] = Command { name, function, description };
+            self.commands[self.command_count] = Command {
+                name,
+                function,
+                description,
+            };
             self.command_count += 1;
         }
     }
@@ -67,60 +81,130 @@ impl Shell {
     fn dummy_command(_: &[&str]) {
         // This function should never be called
     }
-
 }
 
 pub fn init_shell() {
-// In your init function or wherever appropriate:
     unsafe {
         SHELL.add_command("echo", echo::run, "Echo the input arguments");
         SHELL.add_command("clear", clear::run, "Clear the screen");
         SHELL.add_command("credits", credits::run, "Credits");
-        SHELL.add_command("colors", colors::run, "Run a custom command");
+        SHELL.add_command("colors", colors::run, "Change terminal colors");
         SHELL.add_command("ft", print_ft_42::run, "Print 42 logo");
         SHELL.add_command("stack", print_stack::run, "Print stack information");
         SHELL.add_command("help", help, "Display help information");
-        SHELL.add_command("meminfo", meminfo::run, "Displays memory mappings from multiboot2");
+        SHELL.add_command(
+            "meminfo",
+            meminfo::run,
+            "Displays memory mappings from multiboot2",
+        );
+        SHELL.add_command("exit", shutdown::run, "Shutdown");
+        SHELL.add_command(
+            "vmalloc",
+            vmalloc::run,
+            "Map virtual pages:    vmalloc <addr> <size>",
+        );
+        SHELL.add_command(
+            "vfree",
+            vfree::run,
+            "Unmap virtual pages:  vfree <addr> <size>",
+        );
+        SHELL.add_command("vsize", vsize::run, "Query mapped size:    vsize <addr>");
+        SHELL.add_command(
+            "vwrite",
+            vwrite::run,
+            "Write to virt addr:   vwrite <addr> <val> [u8|u32|u64]",
+        );
+        SHELL.add_command(
+            "vread",
+            vread::run,
+            "Read from virt addr:  vread <addr> [u8|u32|u64]",
+        );
+        SHELL.add_command("setkb", setkb::run, "Swap from QWERTY to AZERTY and back");
+        SHELL.add_command(
+            "timer",
+            timerctrl::run,
+            "Timer display: on|off|counter|uptime|beat|status",
+        );
     }
 }
 
-pub fn hello_shell () {
-    colored_print!((Some(Color::Red), Some(Color::Black)), "\n{SHELL_ID} ");
+pub fn hello_shell() {
+    let mut color_pair: (Option<Color>, Option<Color>) = (None, None);
+    if get_current_colors() == (Color::White, Color::Black) {
+        color_pair.0 = Some(Color::Red);
+        // colored_print!((Some(Color::Red), None), "\n{SHELL_ID} ");
+    }
+    // else {
+    colored_print!((color_pair.0, color_pair.1), "\n{SHELL_ID} ");
+    // }
+}
+
+// Halt the CPU until the next interrupt.
+#[inline]
+fn wait_for_interrupt() {
+    unsafe {
+        core::arch::asm!("hlt", options(nomem, nostack));
+    }
 }
 
 pub fn shell_loop() -> ! {
-    let mut paint_mode :bool;
+    let mut paint_mode: bool;
+
     loop {
         paint_mode = false;
         hello_shell();
+
+        // Inner loop: wait for Enter key
         loop {
-        if let Some(event) = get_next_key_event() {
-            if event.pressed == true {
-                    // println!("{event}");
+            // Process all pending key events (there may be multiple if typing fast)
+            let mut got_enter = false;
+            dispatch_pending_signals();
+
+            while let Some(event) = get_next_key_event() {
+                if !event.pressed {
+                    continue; // Ignore key release events
+                }
+
                 match event.code {
-                    KeyCode::Control(ControlKey::Enter) => break,
-                    KeyCode::Char(c) =>
-                    {
-                        if event.modifiers == CTRL && c == '2'{
+                    KeyCode::Control(ControlKey::Enter) => {
+                        got_enter = true;
+                        break; // Exit the while loop
+                    }
+                    KeyCode::Char(c) => {
+                        if event.modifiers == CTRL && c == '2' {
                             paint_mode = true;
+                            got_enter = true; // Reuse flag to break outer loop
                             break;
                         }
-                        print!("{c}")
-                    },
+                        print!("{c}");
+                    }
                     KeyCode::Control(ControlKey::Backspace) => {
                         if !keyboard::input_buffer_empty() {
                             vga::WRITER.lock().delete_char();
-                        }},
-                    _ => ()}}}}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            // If Enter was pressed, break out of the input loop
+            if got_enter {
+                break;
+            }
+
+            wait_for_interrupt();
+        }
+
+        // Process command or enter paint mode
         if paint_mode {
             crate::shell::paint::paint();
         } else {
-            let len = keyboard::get_input_string();
+            let input = keyboard::get_input_string();
             unsafe {
-                SHELL.run_command(len);
+                SHELL.run_command(input);
             }
         }
-
+        keyboard::clear_input();
     }
 }
 

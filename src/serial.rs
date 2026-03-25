@@ -2,7 +2,7 @@ use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
 
-use crate::utils::{outb, inb};
+use crate::utils::{inb, outb};
 
 const PORT: u16 = 0x3F8; // COM1
 
@@ -62,7 +62,10 @@ pub fn init() {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    SERIAL1.lock().write_fmt(args).expect("Printing to serial failed");
+    SERIAL1
+        .lock()
+        .write_fmt(args)
+        .expect("Printing to serial failed");
 }
 
 #[macro_export]
@@ -76,4 +79,48 @@ macro_rules! serial_print {
 macro_rules! serial_println {
     () => ($crate::serial_print!("\n"));
     ($($arg:tt)*) => ($crate::serial_print!("{}\n", format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! dbg_print {
+    ($($arg:tt)*) => {{
+        // Always emit to serial - works before VGA is up, zero cost when not reading.
+        $crate::serial_print!($($arg)*);
+        // Mirror to VGA screen only when the feature is compiled in.
+        #[cfg(feature = "debug_screen")]
+        $crate::print!($($arg)*);
+    }};
+}
+
+#[macro_export]
+macro_rules! dbg_println {
+    () => {
+        $crate::dbg_print!("\n");
+    };
+    ($($arg:tt)*) => {{
+        $crate::serial_println!($($arg)*);
+        #[cfg(feature = "debug_screen")]
+        $crate::println!($($arg)*);
+    }};
+}
+
+#[macro_export]
+macro_rules! m_print {
+    ($($arg:tt)*) => {{
+        // Always emit to serial - works before VGA is up, zero cost when not reading.
+        $crate::serial_print!($($arg)*);
+        // Mirror to VGA screen only when the feature is compiled in.
+        $crate::print!($($arg)*);
+    }};
+}
+
+#[macro_export]
+macro_rules! m_println {
+    () => {
+        $crate::m_print!("\n");
+    };
+    ($($arg:tt)*) => {{
+        $crate::serial_println!($($arg)*);
+        $crate::println!($($arg)*);
+    }};
 }
