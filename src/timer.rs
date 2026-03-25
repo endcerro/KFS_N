@@ -16,12 +16,9 @@
 // The underlying tick counter always runs when any mode is active.
 // ---------------------------------------------------------------------------
 
-use crate::dbg_println;
+// use crate::dbg_println;
 use crate::signals::{self, Signal};
-use crate::vga::{
-    self, get_current_colors, vga_clear_region, vga_write_at, Color, ColorCode, ScreenCharacter,
-    VGA_BUFFER_WIDTH,
-};
+use crate::vga::{get_current_colors, vga_clear_region, vga_write_at, ColorCode, VGA_BUFFER_WIDTH};
 use core::sync::atomic::{AtomicU32, AtomicU8, Ordering};
 
 /// Approximate PIT frequency — BIOS default is 1193182/65536 ≈ 18.2 Hz.
@@ -29,16 +26,16 @@ use core::sync::atomic::{AtomicU32, AtomicU8, Ordering};
 const PIT_HZ: u32 = 18;
 
 /// Monotonic tick counter.  Always incremented while any mode is active.
-static TICK_COUNT: AtomicU32 = AtomicU32::new(0);
+pub static TICK_COUNT: AtomicU32 = AtomicU32::new(0);
 
 /// Bitmask of active display modes.  0 = nothing active (handler not
 /// registered).  Individual bits correspond to DisplayMode values.
-static ACTIVE_MODES: AtomicU8 = AtomicU8::new(0);
+pub static ACTIVE_MODES: AtomicU8 = AtomicU8::new(0);
 
 // Bit positions for each mode
-const MODE_COUNTER: u8 = 1 << 0;
-const MODE_UPTIME: u8 = 1 << 1;
-const MODE_HEARTBEAT: u8 = 1 << 2;
+pub const MODE_COUNTER: u8 = 1 << 0;
+pub const MODE_UPTIME: u8 = 1 << 1;
+pub const MODE_HEARTBEAT: u8 = 1 << 2;
 
 // ---------------------------------------------------------------------------
 // VGA direct-write helpers
@@ -164,7 +161,6 @@ fn set_mode(mode_bit: u8, enabled: bool) {
 
     ACTIVE_MODES.store(new, Ordering::Relaxed);
     update_signal_registration(old, new);
-    let current_color: ColorCode = ColorCode::new(get_current_colors().0, get_current_colors().1);
     // If disabling a specific mode, clear its region
     if !enabled {
         match mode_bit {
@@ -208,7 +204,7 @@ pub fn enable() {
     ACTIVE_MODES.store(new, Ordering::Relaxed);
     update_signal_registration(old, new);
     println!(
-        "Timer: all modes ON (ticks: {})",
+        "\nTimer: all modes ON (ticks: {})",
         TICK_COUNT.load(Ordering::Relaxed)
     );
 }
@@ -218,7 +214,7 @@ pub fn disable() {
     ACTIVE_MODES.store(0, Ordering::Relaxed);
     update_signal_registration(old, 0);
     println!(
-        "Timer: all modes OFF (ticks frozen at: {})",
+        "\nTimer: all modes OFF (ticks frozen at: {})",
         TICK_COUNT.load(Ordering::Relaxed)
     );
 }

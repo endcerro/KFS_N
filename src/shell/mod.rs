@@ -122,7 +122,7 @@ pub fn init_shell() {
         SHELL.add_command("setkb", setkb::run, "Swap from QWERTY to AZERTY and back");
         SHELL.add_command(
             "timer",
-            crate::timer::shell_command,
+            timerctrl::run,
             "Timer display: on|off|counter|uptime|beat|status",
         );
     }

@@ -23,7 +23,7 @@
 //   32..63  — available for user / driver defined signals
 // ---------------------------------------------------------------------------
 
-use crate::dbg_println;
+// use crate::dbg_println;
 
 /// Total number of signal slots.  Kept small — this is a kernel-only
 /// mechanism for now, not a full POSIX signal set.

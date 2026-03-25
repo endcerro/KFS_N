@@ -1,9 +1,9 @@
 use crate::{
     keyboard::handle_keyboard_interrupt,
+    m_println,
     panic::{self, CpuState},
     signals::{self, Signal},
     utils::{inb, send_eoi},
-    {m_print, m_println},
 };
 
 #[repr(C, align(4))]

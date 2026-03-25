@@ -5,7 +5,7 @@ pub mod interrupts;
 pub mod pic;
 
 use crate::dbg_println;
-use crate::interrupts::handlers::timer_interrupt;
+// use crate::interrupts::handlers::timer_interrupt;
 use crate::{gdt::define::KERNEL_CODE_SELECTOR, utils::enable_interrupts};
 use define::{DPL0_INTERRUPT_GATE, IDT_SIZE};
 use interrupts::Interrupt;
