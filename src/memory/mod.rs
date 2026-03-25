@@ -37,7 +37,7 @@ pub fn init() {
     // Must come after vmm::init() and the frame allocator.
     heap::init();
     // heap::test_heap();
-    // heap::print_stats();
+    heap::print_stats();
 
     // Run GlobalAlloc tests if the feature is enabled.
     // These exercise Box, Vec, String through the #[global_allocator].

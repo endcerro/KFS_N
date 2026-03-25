@@ -25,6 +25,9 @@
 // 32-bit).  The header size is rounded up to ALLOC_ALIGN so the
 // usable region is always aligned.
 
+use crate::dbg_println;
+use crate::m_println;
+
 use super::define::{KERNEL_HEAP_END, KERNEL_HEAP_INITIAL_SIZE, KERNEL_HEAP_START, PAGE_SIZE};
 use super::pageflags::PageFlags;
 use super::vmm::{self, MapError, VirtAddr};
@@ -118,8 +121,7 @@ pub fn init() {
         initial > HEADER_SIZE,
         "Initial heap too small for even one block"
     );
-    #[cfg(feature = "verbose")]
-    println!(
+    dbg_println!(
         "Heap: mapping initial region {:#x}..{:#x} ({} KB)",
         KERNEL_HEAP_START,
         KERNEL_HEAP_START + initial,
@@ -141,10 +143,9 @@ pub fn init() {
         FREE_LIST = first_block;
     }
 
-    #[cfg(feature = "verbose")]
-    println!(
+    dbg_println!(
         "Heap: {} pages mapped, allocator ready ({} KB usable)",
-        pages,
+        _pages,
         (initial - HEADER_SIZE) / 1024
     );
 }
@@ -182,7 +183,7 @@ pub fn kmalloc(size: usize) -> *mut u8 {
         }
 
         // Truly out of memory
-        println!("kmalloc: out of memory (requested {} bytes)", size);
+        m_println!("kmalloc: out of memory (requested {} bytes)", size);
         core::ptr::null_mut()
     }
 }
@@ -293,8 +294,7 @@ unsafe fn grow_mapped_region(size: usize) -> Result<usize, MapError> {
     // block if the old last free block ended exactly at old_end.
     insert_free_block(new_block);
 
-    #[cfg(feature = "verbose")]
-    println!(
+    dbg_println!(
         "Heap: grew by {} KB, mapped end now {:#x}",
         size / 1024,
         new_end
@@ -474,22 +474,22 @@ pub fn print_stats() {
         let mapped = heap_mapped_size();
         let max = KERNEL_HEAP_END - KERNEL_HEAP_START;
 
-        println!("Kernel Heap:");
-        println!(
+        dbg_println!("Kernel Heap:");
+        dbg_println!(
             "  Region:      {:#x}..{:#x} ({} KB max)",
             KERNEL_HEAP_START,
             KERNEL_HEAP_END,
             max / 1024
         );
-        println!(
+        dbg_println!(
             "  Mapped:      {:#x}..{:#x} ({} KB)",
             KERNEL_HEAP_START,
             HEAP_MAPPED_END,
             mapped / 1024
         );
-        println!("  Allocs:      {}", STATS.total_allocs);
-        println!("  Frees:       {}", STATS.total_frees);
-        println!("  In use:      {} bytes", STATS.current_used_bytes);
+        dbg_println!("  Allocs:      {}", STATS.total_allocs);
+        dbg_println!("  Frees:       {}", STATS.total_frees);
+        dbg_println!("  In use:      {} bytes", STATS.current_used_bytes);
 
         // Walk free list to report total free space
         let mut free_bytes: usize = 0;
@@ -500,7 +500,7 @@ pub fn print_stats() {
             free_blocks += 1;
             current = (*current).next;
         }
-        println!(
+        dbg_println!(
             "  Free:        {} bytes in {} block(s)",
             free_bytes, free_blocks
         );

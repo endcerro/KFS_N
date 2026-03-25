@@ -14,6 +14,7 @@ pub mod interrupts;
 pub mod keyboard;
 pub mod memory;
 pub mod multiboot2;
+#[macro_use]
 pub mod serial;
 pub mod shell;
 pub mod utils;

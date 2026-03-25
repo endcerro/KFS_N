@@ -1,6 +1,6 @@
-use crate::multiboot2::meminfo::MemoryInfoEntry;
+use crate::{dbg_println, multiboot2::meminfo::MemoryInfoEntry};
 use core::ptr::NonNull;
-
+use crate::m_println;
 pub const PAGE_SIZE: usize = 4096;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -45,13 +45,12 @@ pub enum AllocationError {
 impl FrameAllocator {
     // Initialize the frame allocator from multiboot memory map
     pub fn new(memory_map: &[MemoryInfoEntry], bitmap_addr: usize) -> Self {
-        #[cfg(feature = "verbose")]
         {
-            println!(
+            dbg_println!(
                 "Initializing frame allocator at bitmap address: {:#x}",
                 bitmap_addr
             );
-            println!(
+            dbg_println!(
                 "Frame allocator bitmap: phys {:#x}, virt {:#x}",
                 bitmap_addr,
                 bitmap_addr + super::define::KERNEL_OFFSET
@@ -70,14 +69,12 @@ impl FrameAllocator {
         let total_frames = (highest_addr + PAGE_SIZE - 1) / PAGE_SIZE; // Round up
         let bitmap_size = (total_frames + 7) / 8; // Round up to nearest byte
 
-        #[cfg(feature = "verbose")]
-        println!(
+        dbg_println!(
             "Total frames to manage: {} ({} MB)",
             total_frames,
             (total_frames * PAGE_SIZE) / (1024 * 1024)
         );
-        #[cfg(feature = "verbose")]
-        println!("Bitmap size: {} bytes", bitmap_size);
+        dbg_println!("Bitmap size: {} bytes", bitmap_size);
 
         // Create bitmap accessor.
         let bitmap = unsafe {
@@ -104,8 +101,7 @@ impl FrameAllocator {
                 let start_frame = PhysFrame::containing_address(entry.base_addr as usize);
                 let end_frame =
                     PhysFrame::containing_address((entry.base_addr + entry.length) as usize);
-                #[cfg(feature = "verbose")]
-                println!(
+                dbg_println!(
                     "Marking frames {}-{} as free (region {:#x}-{:#x})",
                     start_frame.number,
                     end_frame.number,
@@ -120,8 +116,7 @@ impl FrameAllocator {
 
         allocator.protect_kernel_region();
         allocator.protect_bitmap_region(bitmap_addr, bitmap_size);
-        #[cfg(feature = "verbose")]
-        println!(
+        dbg_println!(
             "Frame allocator initialized: {} free frames available",
             allocator.total_frames - allocator.used_frames
         );
@@ -143,8 +138,7 @@ impl FrameAllocator {
             let start_frame = PhysFrame::containing_address(kernel_start_phys);
             let end_frame = PhysFrame::containing_address(kernel_end_phys);
 
-            #[cfg(feature = "verbose")]
-            println!(
+            dbg_println!(
                 "Protecting kernel frames {}-{} (phys {:#x}-{:#x})",
                 start_frame.number, end_frame.number, kernel_start_phys, kernel_end_phys
             );
@@ -162,8 +156,7 @@ impl FrameAllocator {
         let start_frame = PhysFrame::containing_address(bitmap_addr);
         let end_frame = PhysFrame::containing_address(bitmap_addr + bitmap_size - 1);
 
-        #[cfg(feature = "verbose")]
-        println!(
+        dbg_println!(
             "Protecting bitmap frames {}-{} (addr {:#x}, size {})",
             start_frame.number, end_frame.number, bitmap_addr, bitmap_size
         );
@@ -184,8 +177,7 @@ impl FrameAllocator {
                 self.mark_frame_used(frame);
                 self.next_free_frame = (frame + 1) % self.total_frames;
 
-                #[cfg(feature = "verbose")]
-                println!(
+                dbg_println!(
                     "Allocated frame {} at phys addr {:#x}",
                     frame,
                     PhysFrame { number: frame }.start_address()
@@ -210,8 +202,7 @@ impl FrameAllocator {
 
         self.mark_frame_used(frame.number);
 
-        #[cfg(feature = "verbose")]
-        println!(
+        dbg_println!(
             "Allocated specific frame {} at phys addr {:#x}",
             frame.number,
             frame.start_address()
@@ -230,8 +221,7 @@ impl FrameAllocator {
         // Update next_free_frame if this frame is earlier
         if frame.number < self.next_free_frame {
             self.next_free_frame = frame.number;
-            #[cfg(feature = "debug")]
-            println!(
+            dbg_println!(
                 "Warning: Attempting to free already-free frame {}",
                 frame.number
             );
@@ -301,18 +291,18 @@ impl FrameAllocator {
     // Print memory statistics
     pub fn print_stats(&self) {
         let (total, used, free) = self.memory_stats();
-        println!("Physical Memory Statistics:");
-        println!(
+        m_println!("Physical Memory Statistics:");
+        m_println!(
             "  Total: {} MB ({} frames)",
             total / (1024 * 1024),
             self.total_frames
         );
-        println!(
+        m_println!(
             "  Used:  {} MB ({} frames)",
             used / (1024 * 1024),
             self.used_frames
         );
-        println!(
+        m_println!(
             "  Free:  {} MB ({} frames)",
             free / (1024 * 1024),
             self.free_frames()

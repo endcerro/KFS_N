@@ -29,7 +29,9 @@ use super::define::{KERNEL_OFFSET, PAGE_SIZE};
 use super::pageflags::PageFlags;
 use super::paging::PageEntry;
 use super::physical::{PhysFrame, FRAME_ALLOCATOR};
-
+use crate::m_println;
+use crate::m_print;
+use crate::dbg_println;
 // ---------------------------------------------------------------------------
 // Address wrapper types
 // ---------------------------------------------------------------------------
@@ -301,8 +303,7 @@ pub fn init() {
         flush_tlb_all();
     }
 
-    #[cfg(feature = "verbose")]
-    println!(
+    dbg_println!(
         "VMM: recursive mapping installed at PDE[{}]",
         RECURSIVE_INDEX
     );
@@ -364,8 +365,7 @@ pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), 
             let pt_virt = (PAGE_TABLES_VBASE + pde_idx as u32 * PAGE_SIZE as u32) as *mut u8;
             core::ptr::write_bytes(pt_virt, 0, PAGE_SIZE);
 
-            #[cfg(feature = "verbose")]
-            println!(
+            dbg_println!(
                 "VMM: allocated PT frame {:#x} for PDE[{}]",
                 pt_phys, pde_idx
             );
@@ -386,8 +386,7 @@ pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), 
         flush_tlb_entry(virt);
     }
 
-    #[cfg(feature = "verbose")]
-    println!(
+    dbg_println!(
         "VMM: mapped virt {:#x} -> phys {:#x} (flags {})",
         virt.0, phys.0, flags
     );
@@ -426,8 +425,7 @@ pub fn unmap_page(virt: VirtAddr) -> Result<PhysAddr, UnmapError> {
         write_pte(pde_idx, pte_idx, PageEntry::empty());
         flush_tlb_entry(virt);
 
-        #[cfg(feature = "verbose")]
-        println!("VMM: unmapped virt {:#x} (was phys {:#x})", virt.0, phys.0);
+        dbg_println!("VMM: unmapped virt {:#x} (was phys {:#x})", virt.0, phys.0);
 
         Ok(phys)
     }
@@ -483,8 +481,7 @@ pub fn map_range(start: VirtAddr, size: usize, flags: PageFlags) -> Result<usize
         map_alloc(virt, flags)?;
     }
 
-    #[cfg(feature = "verbose")]
-    println!(
+    dbg_println!(
         "VMM: mapped range {:#x}..{:#x} ({} pages)",
         start.0,
         start.0 as usize + size,
@@ -524,8 +521,7 @@ pub fn map_range_to(
         map_page(virt, phys, flags)?;
     }
 
-    #[cfg(feature = "verbose")]
-    println!(
+    dbg_println!(
         "VMM: mapped range virt {:#x}..{:#x} -> phys {:#x}..{:#x} ({} pages)",
         virt_start.0,
         virt_start.0 as usize + size,
@@ -561,8 +557,7 @@ pub fn unmap_range(start: VirtAddr, size: usize) -> usize {
         }
     }
 
-    #[cfg(feature = "verbose")]
-    println!(
+    dbg_println!(
         "VMM: unmapped range {:#x}..{:#x} ({}/{} pages freed)",
         start.0,
         start.0 as usize + size,
@@ -601,7 +596,7 @@ fn free_frame(phys: PhysAddr) {
 // ---------------------------------------------------------------------------
 
 pub fn test_virtual_memory() {
-    println!("\n=== VMM Self-Test ===\n");
+    m_println!("\n=== VMM Self-Test ===\n");
 
     test_recursive_mapping_reads();
     test_map_write_read_unmap();
@@ -609,11 +604,11 @@ pub fn test_virtual_memory() {
     test_multi_page();
     test_already_mapped_error();
     test_map_range();
-    println!("\n=== VMM Self-Test PASSED ===\n");
+    m_println!("\n=== VMM Self-Test PASSED ===\n");
 }
 
 fn test_recursive_mapping_reads() {
-    print!("[VMM test 1] Recursive mapping reads ... ");
+    m_print!("[VMM test 1] Recursive mapping reads ... ");
     unsafe {
         let pde_768 = read_pde(768);
         assert!(pde_768.present(), "PDE[768] should be present");
@@ -629,11 +624,11 @@ fn test_recursive_mapping_reads() {
             "Recursive PDE should point to page directory"
         );
     }
-    println!("OK");
+    m_println!("OK");
 }
 
 fn test_map_write_read_unmap() {
-    print!("[VMM test 2] Map -> write -> read -> unmap ... ");
+    m_print!("[VMM test 2] Map -> write -> read -> unmap ... ");
 
     let test_virt = VirtAddr::new(0xD000_0000);
     let flags = PageFlags::PRESENT | PageFlags::WRITABLE;
@@ -659,11 +654,11 @@ fn test_map_write_read_unmap() {
     );
     free_frame(phys);
 
-    println!("OK");
+    m_println!("OK");
 }
 
 fn test_translate_accuracy() {
-    print!("[VMM test 3] translate() accuracy ... ");
+    m_print!("[VMM test 3] translate() accuracy ... ");
 
     let test_virt = VirtAddr::new(0xD000_1000);
     let flags = PageFlags::PRESENT | PageFlags::WRITABLE;
@@ -687,11 +682,11 @@ fn test_translate_accuracy() {
     let _ = unmap_page(test_virt);
     free_frame(phys);
 
-    println!("OK");
+    m_println!("OK");
 }
 
 fn test_multi_page() {
-    print!("[VMM test 4] Multi-page mapping ... ");
+    m_print!("[VMM test 4] Multi-page mapping ... ");
 
     let base: u32 = 0xD010_0000;
     let flags = PageFlags::PRESENT | PageFlags::WRITABLE;
@@ -726,11 +721,11 @@ fn test_multi_page() {
         free_frame(phys_addrs[i as usize]);
     }
 
-    println!("OK");
+    m_println!("OK");
 }
 
 fn test_already_mapped_error() {
-    print!("[VMM test 5] AlreadyMapped error ... ");
+    m_print!("[VMM test 5] AlreadyMapped error ... ");
 
     let test_virt = VirtAddr::new(0xD020_0000);
     let flags = PageFlags::PRESENT | PageFlags::WRITABLE;
@@ -747,11 +742,11 @@ fn test_already_mapped_error() {
     let _ = unmap_page(test_virt);
     free_frame(phys);
 
-    println!("OK");
+    m_println!("OK");
 }
 
 fn test_map_range() {
-    print!("[VMM test 6] map_range / unmap_range ... ");
+    m_print!("[VMM test 6] map_range / unmap_range ... ");
 
     let base = VirtAddr::new(0xD200_0000);
     let size = PAGE_SIZE * 8;
@@ -796,5 +791,5 @@ fn test_map_range() {
         );
     }
 
-    println!("OK");
+    m_println!("OK");
 }

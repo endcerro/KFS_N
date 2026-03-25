@@ -2,27 +2,6 @@
 //
 // Bridges Rust's `alloc` crate (Box, Vec, String, etc.) to our
 // kmalloc/kfree free-list allocator.
-//
-// Alignment handling:
-//   kmalloc() guarantees 8-byte alignment (ALLOC_ALIGN).  When the
-//   Layout requests a higher alignment, we over-allocate, find an
-//   aligned position within the buffer, and stash the *original*
-//   kmalloc pointer just before the aligned position so kfree() can
-//   recover it.
-//
-//   For align <= ALLOC_ALIGN we fast-path straight to kmalloc/kfree
-//   with zero overhead.
-//
-//   ┌─ kmalloc'd block ──────────────────────────────────┐
-//   │  ... padding ...  │ original_ptr │  aligned region  │
-//   └──────────────────────────────────┘──────────────────┘
-//                                      ▲
-//                                      └─ pointer returned to caller
-//
-//   `original_ptr` is a usize stored at (aligned - size_of::<usize>()).
-//   This is always inside the padding because align > ALLOC_ALIGN >= 8
-//   guarantees at least `align` bytes of padding room.
-//
 // Forward-compatibility for user space:
 //   This module only handles kernel-side allocation.  When user-space
 //   processes arrive, each process will have its own heap region and
@@ -57,16 +36,15 @@ unsafe impl GlobalAlloc for KernelAllocator {
         if size == 0 {
             // GlobalAlloc contract: zero-sized allocations may return
             // a non-null, dangling, well-aligned pointer.  We use the
-            // alignment value itself as a sentinel (never dereferenced).
+            // alignment value itself as a sentinel
             return align as *mut u8;
         }
 
         if align <= KMALLOC_ALIGN {
-            // Fast path: kmalloc already provides this alignment.
             return heap::kmalloc(size);
         }
 
-        // Slow path: over-allocate so we can find an aligned position
+        // Over-allocate so we can find an aligned position
         // and stash the original pointer for dealloc().
         //
         // We need `size` usable bytes at an `align`-aligned address,

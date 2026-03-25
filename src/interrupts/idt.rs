@@ -1,9 +1,5 @@
 //https://wiki.osdev.org/Interrupt_Descriptor_Table#Table
 #![allow(dead_code)]
-// use core::ptr::addr_of;
-// use crate::gdt::define::KERNEL_CODE_SELECTOR;
-// use crate::pic::{self, set_irq_state};
-// use crate::{handlers, interrupts::*};
 
 use super::pic::set_irq_state;
 use core::ptr::addr_of;

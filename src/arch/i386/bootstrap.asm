@@ -7,7 +7,7 @@
 ;   - EBX = physical address of multiboot2 info structure
 ;   - No valid stack
 ;   - No paging
-; 
+;
 ; We need to:
 ;   - Set up a temporary physical stack
 ;   - Save the multiboot pointer for later use by Rust
@@ -66,7 +66,7 @@ start:
 	call setup_paging
 
 	; --- Step 4: Jump to higher-half code ---
-	; Paging is now enabled. 
+	; Paging is now enabled
 	; Both identity mapping (PDE[0]) and higher-half mapping (PDE[768])
 	; point to the same physical memory right now, so we can execute at
 	; either address. Load the virtual address of th higher-half trampoline and jump there.
