@@ -132,7 +132,7 @@ fn timer_tick_handler(_signal: u8) {
 // Internal: manage signal registration
 //
 // The signal handler is registered when transitioning from 0 active
-// modes to ≥1, and unregistered when going back to 0.
+// modes to >=1, and unregistered when going back to 0.
 // ---------------------------------------------------------------------------
 
 fn update_signal_registration(old_modes: u8, new_modes: u8) {
@@ -234,7 +234,7 @@ pub fn print_status() {
     let modes = ACTIVE_MODES.load(Ordering::Relaxed);
     let ticks = TICK_COUNT.load(Ordering::Relaxed);
     let secs = ticks / PIT_HZ;
-    println!("Timer status:");
+    println!("\nTimer status:");
     println!("  Ticks:     {}", ticks);
     println!("  Uptime:    {}s", secs);
     println!(
