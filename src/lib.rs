@@ -4,8 +4,6 @@
 #![no_main]
 #![allow(static_mut_refs)]
 
-// Pull in the `alloc` crate - gives us Box, Vec, String, etc.
-// Requires a #[global_allocator] to be defined (see below).
 extern crate alloc;
 #[macro_use]
 pub mod vga;
@@ -13,6 +11,7 @@ pub mod gdt;
 pub mod interrupts;
 pub mod keyboard;
 pub mod memory;
+pub mod panic;
 pub mod multiboot2;
 #[macro_use]
 pub mod serial;

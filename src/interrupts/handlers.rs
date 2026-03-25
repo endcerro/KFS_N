@@ -1,6 +1,8 @@
 use crate::{
     keyboard::handle_keyboard_interrupt,
+    panic::{self, CpuState},
     utils::{inb, send_eoi},
+    {m_println,m_print},
 };
 
 #[repr(C, align(4))]
@@ -25,66 +27,48 @@ impl InterruptStackFrame {
 }
 
 // ---------------------------------------------------------------------------
-// Kernel panic helper - prints a formatted panic message and halts.
-// This disables interrupts and enters an infinite halt loop so the
-// system is completely stopped.  All interrupt handlers that represent
-// unrecoverable faults should call this instead of a bare `loop {}`.
+// Kernel panic — the single path for unrecoverable faults.
+//
+// Sequence:
+//   1. cli                     — no more interrupts
+//   2. CpuState::capture()     — snapshot all registers while they're fresh
+//   3. save_stack()            — copy live stack into a static buffer
+//   4. print everything        — reason, stack frame, registers, stack dump
+//   5. clean_registers_and_halt — zero GP regs, enter infinite hlt
 // ---------------------------------------------------------------------------
 pub fn kernel_panic(reason: &str, stack_frame: &InterruptStackFrame) {
-    // Disable interrupts immediately so nothing else fires
+    // 1. Disable interrupts immediately
     unsafe {
         core::arch::asm!("cli", options(nostack, nomem));
     }
 
-    println!("\n!!! KERNEL PANIC !!!");
-    println!("Reason: {}", reason);
-    println!("CPU State:");
-    stack_frame.print_debug_info();
+    // 2. Capture full register state while it's still warm
+    let cpu_state = CpuState::capture();
 
-    // Print general-purpose registers for extra context.
-    // These are the values *at this point* (inside the handler), not at
-    // the exact fault instant, but they're still useful for debugging.
+    // 3. Snapshot the kernel stack into a static buffer
+    //    (safe to call here — stack is still coherent)
     unsafe {
-        let eax: u32;
-        let ebx: u32;
-        let ecx: u32;
-        let edx: u32;
-        let esi: u32;
-        let edi: u32;
-        let ebp: u32;
-        core::arch::asm!(
-            "mov {0}, eax",
-            "mov {1}, ebx",
-            "mov {2}, ecx",
-            "mov {3}, edx",
-            "mov {4}, esi",
-            "mov {5}, edi",
-            "mov {6}, ebp",
-            out(reg) eax,
-            out(reg) ebx,
-            out(reg) ecx,
-            out(reg) edx,
-            out(reg) esi,
-            out(reg) edi,
-            out(reg) ebp,
-            options(nostack, nomem)
-        );
-        println!("Registers (handler context):");
-        println!(
-            "  EAX={:#010x}  EBX={:#010x}  ECX={:#010x}  EDX={:#010x}",
-            eax, ebx, ecx, edx
-        );
-        println!("  ESI={:#010x}  EDI={:#010x}  EBP={:#010x}", esi, edi, ebp);
+        panic::save_stack();
     }
 
-    println!("\nSystem halted.");
+    // 4. Print the panic report
+    m_println!("\n!!! KERNEL PANIC !!!");
+    m_println!("Reason: {}", reason);
 
-    // Infinite halt - interrupts are off so `hlt` won't wake us,
-    // but loop just in case an NMI fires.
-    loop {
-        unsafe {
-            core::arch::asm!("hlt", options(nostack, nomem));
-        }
+    m_println!("\nInterrupt Stack Frame (CPU-pushed):");
+    stack_frame.print_debug_info();
+
+    m_println!("\nRegister snapshot:");
+    cpu_state.print();
+
+    m_println!("\nKernel stack:");
+    panic::get_saved_stack().print();
+
+    m_println!("\nSystem halted.");
+
+    // 5. Wipe registers and halt forever
+    unsafe {
+        panic::clean_registers_and_halt();
     }
 }
 
@@ -135,24 +119,24 @@ pub unsafe extern "x86-interrupt" fn page_fault(
         ""
     };
 
-    println!("\n=== PAGE FAULT ===");
-    println!("Faulting address (CR2): {:#010x}", faulting_address);
-    println!("Error code: {:#06x} ({:#010b})", error_code, error_code);
-    println!("  Cause:     {}", present);
-    println!("  Operation: {}", operation);
-    println!("  Mode:      {}", mode);
+    m_println!("\n=== PAGE FAULT ===");
+    m_println!("Faulting address (CR2): {:#010x}", faulting_address);
+    m_println!("Error code: {:#06x} ({:#010b})", error_code, error_code);
+    m_println!("  Cause:     {}", present);
+    m_println!("  Operation: {}", operation);
+    m_println!("  Mode:      {}", mode);
     if !reserved.is_empty() {
-        println!("  {}", reserved);
+        m_println!("  {}", reserved);
     }
     if !fetch.is_empty() {
-        println!("  {}", fetch);
+        m_println!("  {}", fetch);
     }
 
     // Show which PDE/PTE the fault maps to - helpful for debugging
     let pde_index = (faulting_address >> 22) as usize;
     let pte_index = ((faulting_address >> 12) & 0x3FF) as usize;
     let page_offset = faulting_address & 0xFFF;
-    println!(
+    m_println!(
         "  PDE index: {}  PTE index: {}  Page offset: {:#05x}",
         pde_index, pte_index, page_offset
     );
