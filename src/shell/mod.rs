@@ -154,12 +154,12 @@ pub fn shell_loop() -> ! {
         loop {
             // Process all pending key events (there may be multiple if typing fast)
             let mut got_enter = false;
+            dispatch_pending_signals();
 
             while let Some(event) = get_next_key_event() {
                 if !event.pressed {
                     continue; // Ignore key release events
                 }
-                dispatch_pending_signals();
 
                 match event.code {
                     KeyCode::Control(ControlKey::Enter) => {
