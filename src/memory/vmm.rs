@@ -29,9 +29,9 @@ use super::define::{KERNEL_OFFSET, PAGE_SIZE};
 use super::pageflags::PageFlags;
 use super::paging::PageEntry;
 use super::physical::{PhysFrame, FRAME_ALLOCATOR};
-use crate::m_println;
-use crate::m_print;
 use crate::dbg_println;
+use crate::m_print;
+use crate::m_println;
 // ---------------------------------------------------------------------------
 // Address wrapper types
 // ---------------------------------------------------------------------------
@@ -367,7 +367,8 @@ pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), 
 
             dbg_println!(
                 "VMM: allocated PT frame {:#x} for PDE[{}]",
-                pt_phys, pde_idx
+                pt_phys,
+                pde_idx
             );
         } else if flags.is_user() && !pde.user() {
             // Page table exists but PDE lacks USER - promote it
@@ -388,7 +389,9 @@ pub fn map_page(virt: VirtAddr, phys: PhysAddr, flags: PageFlags) -> Result<(), 
 
     dbg_println!(
         "VMM: mapped virt {:#x} -> phys {:#x} (flags {})",
-        virt.0, phys.0, flags
+        virt.0,
+        phys.0,
+        flags
     );
 
     Ok(())

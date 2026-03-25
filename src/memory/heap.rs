@@ -502,7 +502,8 @@ pub fn print_stats() {
         }
         dbg_println!(
             "  Free:        {} bytes in {} block(s)",
-            free_bytes, free_blocks
+            free_bytes,
+            free_blocks
         );
     }
 }

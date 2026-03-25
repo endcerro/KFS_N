@@ -1,6 +1,6 @@
+use crate::m_println;
 use crate::{dbg_println, multiboot2::meminfo::MemoryInfoEntry};
 use core::ptr::NonNull;
-use crate::m_println;
 pub const PAGE_SIZE: usize = 4096;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -140,7 +140,10 @@ impl FrameAllocator {
 
             dbg_println!(
                 "Protecting kernel frames {}-{} (phys {:#x}-{:#x})",
-                start_frame.number, end_frame.number, kernel_start_phys, kernel_end_phys
+                start_frame.number,
+                end_frame.number,
+                kernel_start_phys,
+                kernel_end_phys
             );
 
             for frame_num in start_frame.number..=end_frame.number {
@@ -158,7 +161,10 @@ impl FrameAllocator {
 
         dbg_println!(
             "Protecting bitmap frames {}-{} (addr {:#x}, size {})",
-            start_frame.number, end_frame.number, bitmap_addr, bitmap_size
+            start_frame.number,
+            end_frame.number,
+            bitmap_addr,
+            bitmap_size
         );
 
         for frame_num in start_frame.number..=end_frame.number {
