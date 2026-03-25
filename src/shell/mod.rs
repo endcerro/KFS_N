@@ -120,7 +120,7 @@ pub fn init_shell() {
             "Read from virt addr:  vread <addr> [u8|u32|u64]",
         );
         SHELL.add_command("setkb", setkb::run, "Swap from QWERTY to AZERTY and back");
-        SHELL.add_command("timer", timer::run, "Toggle timer: timer on|off|status");
+        SHELL.add_command("timer", crate::timer::shell_command, "Timer display: on|off|counter|uptime|beat|status");
     }
 }
 
