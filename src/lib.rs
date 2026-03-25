@@ -18,6 +18,7 @@ pub mod serial;
 pub mod shell;
 pub mod utils;
 pub mod signals;
+pub mod timer;
 
 use core::panic::PanicInfo;
 

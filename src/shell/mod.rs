@@ -1,5 +1,6 @@
 use crate::keyboard;
 use crate::keyboard::*;
+use crate::signals::dispatch_pending_signals;
 use crate::vga;
 use crate::vga::Color;
 pub mod commands;
@@ -119,6 +120,7 @@ pub fn init_shell() {
             "Read from virt addr:  vread <addr> [u8|u32|u64]",
         );
         SHELL.add_command("setkb", setkb::run, "Swap from QWERTY to AZERTY and back");
+        SHELL.add_command("timer", timer::run, "Toggle timer: timer on|off|status");
     }
 }
 
@@ -157,6 +159,7 @@ pub fn shell_loop() -> ! {
                 if !event.pressed {
                     continue; // Ignore key release events
                 }
+                dispatch_pending_signals();
 
                 match event.code {
                     KeyCode::Control(ControlKey::Enter) => {

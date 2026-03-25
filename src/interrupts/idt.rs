@@ -94,7 +94,7 @@ pub fn configure_interrupts() {
     for i in 32..48 {
         set_irq_state(Interrupt::from_u8(i).expect("Configure int error"), false);
     }
-    // set_irq_state(Interrupt::Timer, true);
+    set_irq_state(Interrupt::ProgrammableInterruptTimer, true);
     set_irq_state(Interrupt::Keyboard, true);
     // set_irq_state(Interrupt::CascadeForPIC2, true); // Always enable this for PIC2
 }

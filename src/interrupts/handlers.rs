@@ -74,6 +74,25 @@ pub fn kernel_panic(reason: &str, stack_frame: &InterruptStackFrame) {
 }
 
 // ---------------------------------------------------------------------------
+// Timer ISR (IRQ0, vector 32)
+//
+// The PIT fires at ~18.2 Hz by default.  This handler does the bare
+// minimum: send EOI, then conditionally schedule a TimerTick signal.
+// The actual tick-counting logic lives in timer.rs and runs later
+// when dispatch_pending_signals() is called from the main loop.
+// ---------------------------------------------------------------------------
+pub unsafe extern "x86-interrupt" fn timer_interrupt(_stack_frame: &InterruptStackFrame) {
+    send_eoi(0);
+
+    // Only enqueue a signal if someone registered a TimerTick handler.
+    // When the timer demo is off, this is a no-op and the ISR is as
+    // cheap as possible (just the EOI above).
+    if signals::has_handler(Signal::TimerTick.as_u8()) {
+        signals::schedule_signal(Signal::TimerTick.as_u8());
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Page Fault Handler (Interrupt 14)
 //
 // The CPU pushes an error code with this structure:
@@ -165,6 +184,9 @@ pub unsafe extern "x86-interrupt" fn keyboard_interrupt(_stack_frame: &Interrupt
     handle_keyboard_interrupt(scancode);
     send_eoi(1);
 
+    // Only schedule a signal if a subsystem has registered a handler.
+    // Without this guard the queue fills up and drops signals when
+    // nothing is consuming them (e.g. during the basic polling shell).
     if signals::has_handler(Signal::KeyboardInput.as_u8()) {
         signals::schedule_signal(Signal::KeyboardInput.as_u8());
     }

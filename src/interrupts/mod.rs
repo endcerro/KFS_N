@@ -5,6 +5,7 @@ pub mod interrupts;
 pub mod pic;
 
 use crate::dbg_println;
+use crate::interrupts::handlers::timer_interrupt;
 use crate::{gdt::define::KERNEL_CODE_SELECTOR, utils::enable_interrupts};
 use define::{DPL0_INTERRUPT_GATE, IDT_SIZE};
 use interrupts::Interrupt;
@@ -22,6 +23,7 @@ pub fn init() {
         Interrupt::GeneralProtectionFault.as_u8(),
         handlers::general_protection_fault_handler,
     );
+    set_interrupt_handler(Interrupt::ProgrammableInterruptTimer.as_u8(), handlers::timer_interrupt);
     for i in 0..IDT_SIZE {
         unsafe {
             if idt::IDT.entries[i].handler_present() == false {
