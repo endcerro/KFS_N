@@ -17,6 +17,7 @@ pub mod multiboot2;
 pub mod serial;
 pub mod shell;
 pub mod utils;
+pub mod signals;
 
 use core::panic::PanicInfo;
 

@@ -1,6 +1,7 @@
 use crate::{
     keyboard::handle_keyboard_interrupt,
     panic::{self, CpuState},
+    signals::{self, Signal},
     utils::{inb, send_eoi},
     {m_println,m_print},
 };
@@ -163,6 +164,10 @@ pub unsafe extern "x86-interrupt" fn keyboard_interrupt(_stack_frame: &Interrupt
     let scancode = inb(0x60);
     handle_keyboard_interrupt(scancode);
     send_eoi(1);
+
+    if signals::has_handler(Signal::KeyboardInput.as_u8()) {
+        signals::schedule_signal(Signal::KeyboardInput.as_u8());
+    }
 }
 
 pub unsafe extern "x86-interrupt" fn double_fault_handler(
