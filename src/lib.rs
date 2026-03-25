@@ -11,14 +11,14 @@ pub mod gdt;
 pub mod interrupts;
 pub mod keyboard;
 pub mod memory;
-pub mod panic;
 pub mod multiboot2;
+pub mod panic;
 #[macro_use]
 pub mod serial;
 pub mod shell;
-pub mod utils;
 pub mod signals;
 pub mod timer;
+pub mod utils;
 
 use core::panic::PanicInfo;
 

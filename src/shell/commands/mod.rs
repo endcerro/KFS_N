@@ -9,9 +9,9 @@ pub mod print_ft_42;
 pub mod print_stack;
 pub mod setkb;
 pub mod shutdown;
+pub mod timer;
 pub mod vfree;
 pub mod vmalloc; // virtual memory allocation demo
 pub mod vread;
 pub mod vsize;
 pub mod vwrite;
-pub mod timer;

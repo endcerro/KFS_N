@@ -3,7 +3,7 @@ use crate::{
     panic::{self, CpuState},
     signals::{self, Signal},
     utils::{inb, send_eoi},
-    {m_println,m_print},
+    {m_print, m_println},
 };
 
 #[repr(C, align(4))]
@@ -158,7 +158,9 @@ pub unsafe extern "x86-interrupt" fn page_fault(
     let page_offset = faulting_address & 0xFFF;
     m_println!(
         "  PDE index: {}  PTE index: {}  Page offset: {:#05x}",
-        pde_index, pte_index, page_offset
+        pde_index,
+        pte_index,
+        page_offset
     );
 
     kernel_panic("Unrecoverable page fault", stack_frame);

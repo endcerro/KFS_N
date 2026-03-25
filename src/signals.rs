@@ -47,18 +47,18 @@ pub enum Signal {
     /// Keyboard input ready (posted by the keyboard ISR).
     KeyboardInput = 0,
     /// Programmable interval timer tick.
-    TimerTick     = 1,
+    TimerTick = 1,
     /// A page fault occurred (informational — the real handler is in the IDT,
     /// but subsystems may want a notification).
-    PageFault     = 2,
+    PageFault = 2,
     /// Generic "something went wrong" — subsystems can use this for
     /// non-fatal error notification.
-    Error         = 3,
+    Error = 3,
     /// Explicit halt request (e.g., `shutdown` shell command).
-    Halt          = 4,
+    Halt = 4,
     /// Custom / user-defined signals start here.  Subsystems that need
     /// their own signals should pick a number >= 32.
-    UserDefined   = 32,
+    UserDefined = 32,
 }
 
 impl Signal {
@@ -69,13 +69,13 @@ impl Signal {
     /// Convert a raw number to a Signal.  Returns None if out of range.
     pub fn from_u8(v: u8) -> Option<Signal> {
         match v {
-            0  => Some(Signal::KeyboardInput),
-            1  => Some(Signal::TimerTick),
-            2  => Some(Signal::PageFault),
-            3  => Some(Signal::Error),
-            4  => Some(Signal::Halt),
+            0 => Some(Signal::KeyboardInput),
+            1 => Some(Signal::TimerTick),
+            2 => Some(Signal::PageFault),
+            3 => Some(Signal::Error),
+            4 => Some(Signal::Halt),
             32 => Some(Signal::UserDefined),
-            _  => None, // raw numbers are still valid for the table, just not named
+            _ => None, // raw numbers are still valid for the table, just not named
         }
     }
 }
@@ -296,18 +296,15 @@ pub fn print_signal_table() {
                 let name = match Signal::from_u8(i as u8) {
                     Some(s) => match s {
                         Signal::KeyboardInput => "KeyboardInput",
-                        Signal::TimerTick     => "TimerTick",
-                        Signal::PageFault     => "PageFault",
-                        Signal::Error         => "Error",
-                        Signal::Halt          => "Halt",
-                        Signal::UserDefined   => "UserDefined",
+                        Signal::TimerTick => "TimerTick",
+                        Signal::PageFault => "PageFault",
+                        Signal::Error => "Error",
+                        Signal::Halt => "Halt",
+                        Signal::UserDefined => "UserDefined",
                     },
                     None => "(unnamed)",
                 };
-                println!(
-                    "  [{}] {} -> {:#010x}",
-                    i, name, cb as usize
-                );
+                println!("  [{}] {} -> {:#010x}", i, name, cb as usize);
             }
         }
     }

@@ -23,7 +23,10 @@ pub fn init() {
         Interrupt::GeneralProtectionFault.as_u8(),
         handlers::general_protection_fault_handler,
     );
-    set_interrupt_handler(Interrupt::ProgrammableInterruptTimer.as_u8(), handlers::timer_interrupt);
+    set_interrupt_handler(
+        Interrupt::ProgrammableInterruptTimer.as_u8(),
+        handlers::timer_interrupt,
+    );
     for i in 0..IDT_SIZE {
         unsafe {
             if idt::IDT.entries[i].handler_present() == false {

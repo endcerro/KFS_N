@@ -16,9 +16,12 @@
 // The underlying tick counter always runs when any mode is active.
 // ---------------------------------------------------------------------------
 
-use crate::signals::{self, Signal};
-use crate::vga::{self, ColorCode, Color, ScreenCharacter, vga_clear_region, vga_write_at, VGA_BUFFER_WIDTH, get_current_colors};
 use crate::dbg_println;
+use crate::signals::{self, Signal};
+use crate::vga::{
+    self, get_current_colors, vga_clear_region, vga_write_at, Color, ColorCode, ScreenCharacter,
+    VGA_BUFFER_WIDTH,
+};
 use core::sync::atomic::{AtomicU32, AtomicU8, Ordering};
 
 /// Approximate PIT frequency — BIOS default is 1193182/65536 ≈ 18.2 Hz.
@@ -33,8 +36,8 @@ static TICK_COUNT: AtomicU32 = AtomicU32::new(0);
 static ACTIVE_MODES: AtomicU8 = AtomicU8::new(0);
 
 // Bit positions for each mode
-const MODE_COUNTER:   u8 = 1 << 0;
-const MODE_UPTIME:    u8 = 1 << 1;
+const MODE_COUNTER: u8 = 1 << 0;
+const MODE_UPTIME: u8 = 1 << 1;
 const MODE_HEARTBEAT: u8 = 1 << 2;
 
 // ---------------------------------------------------------------------------
@@ -51,8 +54,6 @@ const STATUS_ROW: usize = 0;
 
 /// Color for the status display: yellow on black, distinct from normal text.
 // const STATUS_COLOR: ColorCode = ColorCode::new(Color::Yellow, Color::Black);
-
-
 
 /// Clear a region of VGA row with spaces.
 // fn vga_clear_region(row: usize, col_start: usize, col_end: usize, color: ColorCode) {
@@ -85,8 +86,8 @@ fn timer_tick_handler(_signal: u8) {
     //   counter:   col 58..67    (up to 10 digits)
     //
     // Laid out:  [... normal text ...] [counter   ] [uptime  ] [beat]
-    
-    let current_color : ColorCode = ColorCode::new(get_current_colors().0, get_current_colors().1);
+
+    let current_color: ColorCode = ColorCode::new(get_current_colors().0, get_current_colors().1);
     if modes & MODE_HEARTBEAT != 0 {
         // Alternate between '*' and ' ' every ~9 ticks (~0.5s)
         let ch = if (ticks / 9) % 2 == 0 { b'*' } else { b' ' };
@@ -95,7 +96,7 @@ fn timer_tick_handler(_signal: u8) {
 
     if modes & MODE_UPTIME != 0 {
         let total_secs = ticks / PIT_HZ;
-        let hours   = (total_secs / 3600) % 100; // cap at 99h
+        let hours = (total_secs / 3600) % 100; // cap at 99h
         let minutes = (total_secs / 60) % 60;
         let seconds = total_secs % 60;
 
@@ -138,7 +139,7 @@ fn timer_tick_handler(_signal: u8) {
 // ---------------------------------------------------------------------------
 
 fn update_signal_registration(old_modes: u8, new_modes: u8) {
-    let current_color : ColorCode = ColorCode::new(get_current_colors().0, get_current_colors().1);
+    let current_color: ColorCode = ColorCode::new(get_current_colors().0, get_current_colors().1);
     if old_modes == 0 && new_modes != 0 {
         // First mode activated — register the handler
         signals::register_signal(Signal::TimerTick.as_u8(), timer_tick_handler);
@@ -153,7 +154,7 @@ fn update_signal_registration(old_modes: u8, new_modes: u8) {
 }
 
 fn set_mode(mode_bit: u8, enabled: bool) {
-    let current_color : ColorCode = ColorCode::new(get_current_colors().0, get_current_colors().1);
+    let current_color: ColorCode = ColorCode::new(get_current_colors().0, get_current_colors().1);
     let old = ACTIVE_MODES.load(Ordering::Relaxed);
     let new = if enabled {
         old | mode_bit
@@ -163,12 +164,12 @@ fn set_mode(mode_bit: u8, enabled: bool) {
 
     ACTIVE_MODES.store(new, Ordering::Relaxed);
     update_signal_registration(old, new);
-    let current_color : ColorCode = ColorCode::new(get_current_colors().0, get_current_colors().1);
+    let current_color: ColorCode = ColorCode::new(get_current_colors().0, get_current_colors().1);
     // If disabling a specific mode, clear its region
     if !enabled {
         match mode_bit {
-            MODE_COUNTER   => vga_clear_region(STATUS_ROW, 58, 68, current_color),
-            MODE_UPTIME    => vga_clear_region(STATUS_ROW, 70, 78, current_color),
+            MODE_COUNTER => vga_clear_region(STATUS_ROW, 58, 68, current_color),
+            MODE_UPTIME => vga_clear_region(STATUS_ROW, 70, 78, current_color),
             MODE_HEARTBEAT => vga_clear_region(STATUS_ROW, 79, 80, current_color),
             _ => {}
         }
@@ -206,14 +207,20 @@ pub fn enable() {
     let new = MODE_COUNTER | MODE_UPTIME | MODE_HEARTBEAT;
     ACTIVE_MODES.store(new, Ordering::Relaxed);
     update_signal_registration(old, new);
-    println!("Timer: all modes ON (ticks: {})", TICK_COUNT.load(Ordering::Relaxed));
+    println!(
+        "Timer: all modes ON (ticks: {})",
+        TICK_COUNT.load(Ordering::Relaxed)
+    );
 }
 
 pub fn disable() {
     let old = ACTIVE_MODES.load(Ordering::Relaxed);
     ACTIVE_MODES.store(0, Ordering::Relaxed);
     update_signal_registration(old, 0);
-    println!("Timer: all modes OFF (ticks frozen at: {})", TICK_COUNT.load(Ordering::Relaxed));
+    println!(
+        "Timer: all modes OFF (ticks frozen at: {})",
+        TICK_COUNT.load(Ordering::Relaxed)
+    );
 }
 
 /// Return the current tick count.
@@ -234,9 +241,30 @@ pub fn print_status() {
     println!("Timer status:");
     println!("  Ticks:     {}", ticks);
     println!("  Uptime:    {}s", secs);
-    println!("  Counter:   {}", if modes & MODE_COUNTER != 0 { "ON" } else { "OFF" });
-    println!("  Uptime:    {}", if modes & MODE_UPTIME != 0 { "ON" } else { "OFF" });
-    println!("  Heartbeat: {}", if modes & MODE_HEARTBEAT != 0 { "ON" } else { "OFF" });
+    println!(
+        "  Counter:   {}",
+        if modes & MODE_COUNTER != 0 {
+            "ON"
+        } else {
+            "OFF"
+        }
+    );
+    println!(
+        "  Uptime:    {}",
+        if modes & MODE_UPTIME != 0 {
+            "ON"
+        } else {
+            "OFF"
+        }
+    );
+    println!(
+        "  Heartbeat: {}",
+        if modes & MODE_HEARTBEAT != 0 {
+            "ON"
+        } else {
+            "OFF"
+        }
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -253,12 +281,12 @@ pub fn print_status() {
 
 pub fn shell_command(args: &[&str]) {
     match args.first() {
-        Some(&"on")      => enable(),
-        Some(&"off")     => disable(),
+        Some(&"on") => enable(),
+        Some(&"off") => disable(),
         Some(&"counter") => set_counter(ACTIVE_MODES.load(Ordering::Relaxed) & MODE_COUNTER == 0),
-        Some(&"uptime")  => set_uptime(ACTIVE_MODES.load(Ordering::Relaxed) & MODE_UPTIME == 0),
-        Some(&"beat")    => set_heartbeat(ACTIVE_MODES.load(Ordering::Relaxed) & MODE_HEARTBEAT == 0),
-        Some(&"status")  => print_status(),
+        Some(&"uptime") => set_uptime(ACTIVE_MODES.load(Ordering::Relaxed) & MODE_UPTIME == 0),
+        Some(&"beat") => set_heartbeat(ACTIVE_MODES.load(Ordering::Relaxed) & MODE_HEARTBEAT == 0),
+        Some(&"status") => print_status(),
         _ => println!("Usage: timer on|off|counter|uptime|beat|status"),
     }
 }

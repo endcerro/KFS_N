@@ -65,10 +65,23 @@ pub struct CpuState {
 impl CpuState {
     pub const fn empty() -> Self {
         CpuState {
-            eax: 0, ebx: 0, ecx: 0, edx: 0,
-            esi: 0, edi: 0, ebp: 0, esp: 0,
-            cs: 0, ds: 0, es: 0, fs: 0, gs: 0, ss: 0,
-            cr0: 0, cr2: 0, cr3: 0,
+            eax: 0,
+            ebx: 0,
+            ecx: 0,
+            edx: 0,
+            esi: 0,
+            edi: 0,
+            ebp: 0,
+            esp: 0,
+            cs: 0,
+            ds: 0,
+            es: 0,
+            fs: 0,
+            gs: 0,
+            ss: 0,
+            cr0: 0,
+            cr2: 0,
+            cr3: 0,
         }
     }
 
@@ -118,21 +131,34 @@ impl CpuState {
         m_println!("  --- General Purpose Registers ---");
         m_println!(
             "  EAX={:#010x}  EBX={:#010x}  ECX={:#010x}  EDX={:#010x}",
-            self.eax, self.ebx, self.ecx, self.edx
+            self.eax,
+            self.ebx,
+            self.ecx,
+            self.edx
         );
         m_println!(
             "  ESI={:#010x}  EDI={:#010x}  EBP={:#010x}  ESP={:#010x}",
-            self.esi, self.edi, self.ebp, self.esp
+            self.esi,
+            self.edi,
+            self.ebp,
+            self.esp
         );
         m_println!("  --- Segment Registers ---");
         m_println!(
             "  CS={:#06x}  DS={:#06x}  ES={:#06x}  FS={:#06x}  GS={:#06x}  SS={:#06x}",
-            self.cs, self.ds, self.es, self.fs, self.gs, self.ss
+            self.cs,
+            self.ds,
+            self.es,
+            self.fs,
+            self.gs,
+            self.ss
         );
         m_println!("  --- Control Registers ---");
         m_println!(
             "  CR0={:#010x}  CR2={:#010x}  CR3={:#010x}",
-            self.cr0, self.cr2, self.cr3
+            self.cr0,
+            self.cr2,
+            self.cr3
         );
     }
 }
@@ -164,7 +190,9 @@ impl StackSnapshot {
         }
         m_println!(
             "  Stack snapshot: {} bytes from ESP={:#010x}  TOP={:#010x}",
-            self.len, self.esp, self.stack_top
+            self.len,
+            self.esp,
+            self.stack_top
         );
         // Print as rows of 16 bytes, matching the hexdump convention
         let mut offset = 0usize;
