@@ -38,7 +38,8 @@ pub fn run(args: &[&str]) {
         }
     };
 
-    let aligned = page_align_up(addr);
+    // let aligned = page_align_up(addr);
+    let aligned = addr;
     if aligned != addr {
         println!(
             "\nNote: address rounded up {:#010x} -> {:#010x}",
