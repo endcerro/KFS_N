@@ -1,4 +1,5 @@
 use alloc::collections::VecDeque;
+use alloc::string::String;
 use core::sync::atomic::{AtomicU32, Ordering};
 
 use crate::keyboard::{self, ControlKey, KeyCode};
@@ -13,8 +14,8 @@ use crate::vga::{
 // Constants
 // ---------------------------------------------------------------------------
 
-// Game ticks between each snake step.  Lower = faster.
-// At ~18 Hz PIT, 4 ticks ≈ 220 ms per step — a comfortable starting speed.
+// Game ticks between each snake step. Lower = faster.
+// At ~18 Hz PIT, 4 ticks ~= 220 ms per step
 const INITIAL_SPEED: u32 = 4;
 // Speed up by 1 tick every N points scored (minimum 2 ticks per step).
 const SPEED_UP_EVERY: u32 = 5;
@@ -31,7 +32,6 @@ const SNAKE_HEAD: u8 = b'@';
 const SNAKE_BODY: u8 = b'o';
 const FOOD_CHAR: u8 = b'*';
 const BORDER_H: u8 = b'-';
-const WALL_CHAR: u8 = b'#';
 
 // Colors
 const HEAD_COLOR: ColorCode = ColorCode::new(Color::LightGreen, Color::Black);
@@ -57,7 +57,7 @@ enum Dir {
 }
 
 impl Dir {
-    /// Prevent 180° turns (instant self-collision).
+    /// Prevent 180 turns
     fn is_opposite(self, other: Dir) -> bool {
         matches!(
             (self, other),
