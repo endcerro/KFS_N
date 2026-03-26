@@ -1,5 +1,4 @@
 use alloc::collections::VecDeque;
-use alloc::string::String;
 use core::sync::atomic::{AtomicU32, Ordering};
 
 use crate::keyboard::{self, ControlKey, KeyCode};
