@@ -86,6 +86,33 @@ fn init() {
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    print!("{}", info);
-    loop {}
+    // Disable interrupts immediately — same as kernel_panic()
+    unsafe {
+        core::arch::asm!("cli", options(nostack, nomem));
+    }
+
+    // Capture register state while it's still warm
+    let cpu_state = panic::CpuState::capture();
+
+    // Snapshot the live stack into a static buffer
+    unsafe {
+        panic::save_stack();
+    }
+
+    // Print the panic report to both VGA and serial
+    m_println!("\n!!! RUST PANIC !!!");
+    m_println!("{}", info);
+
+    m_println!("\nRegister snapshot:");
+    cpu_state.print();
+
+    m_println!("\nKernel stack:");
+    panic::get_saved_stack().print();
+
+    m_println!("\nSystem halted.");
+
+    // Wipe registers and halt forever
+    unsafe {
+        panic::clean_registers_and_halt();
+    }
 }

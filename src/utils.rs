@@ -1,6 +1,3 @@
-// use crate::m_print;
-// use crate::m_println;
-
 // Number of bytes displayed per hexdump row.
 const HEXDUMP_ROW: usize = 16;
 
@@ -34,31 +31,6 @@ fn print_hexdump_row(addr: usize, bytes: &[u8]) {
         m_print!("{}", ch);
     }
     m_println!("|");
-
-    // Duplicate the full formatted row to the serial port for capture
-    // serial_println!("0x{:08x}  {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x}  {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x}  |{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}|",
-    //     addr,
-    //     bytes[0],  bytes[1],  bytes[2],  bytes[3],
-    //     bytes[4],  bytes[5],  bytes[6],  bytes[7],
-    //     bytes[8],  bytes[9],  bytes[10], bytes[11],
-    //     bytes[12], bytes[13], bytes[14], bytes[15],
-    //     if bytes[0]  >= 0x20 && bytes[0]  <= 0x7e { bytes[0]  as char } else { '.' },
-    //     if bytes[1]  >= 0x20 && bytes[1]  <= 0x7e { bytes[1]  as char } else { '.' },
-    //     if bytes[2]  >= 0x20 && bytes[2]  <= 0x7e { bytes[2]  as char } else { '.' },
-    //     if bytes[3]  >= 0x20 && bytes[3]  <= 0x7e { bytes[3]  as char } else { '.' },
-    //     if bytes[4]  >= 0x20 && bytes[4]  <= 0x7e { bytes[4]  as char } else { '.' },
-    //     if bytes[5]  >= 0x20 && bytes[5]  <= 0x7e { bytes[5]  as char } else { '.' },
-    //     if bytes[6]  >= 0x20 && bytes[6]  <= 0x7e { bytes[6]  as char } else { '.' },
-    //     if bytes[7]  >= 0x20 && bytes[7]  <= 0x7e { bytes[7]  as char } else { '.' },
-    //     if bytes[8]  >= 0x20 && bytes[8]  <= 0x7e { bytes[8]  as char } else { '.' },
-    //     if bytes[9]  >= 0x20 && bytes[9]  <= 0x7e { bytes[9]  as char } else { '.' },
-    //     if bytes[10] >= 0x20 && bytes[10] <= 0x7e { bytes[10] as char } else { '.' },
-    //     if bytes[11] >= 0x20 && bytes[11] <= 0x7e { bytes[11] as char } else { '.' },
-    //     if bytes[12] >= 0x20 && bytes[12] <= 0x7e { bytes[12] as char } else { '.' },
-    //     if bytes[13] >= 0x20 && bytes[13] <= 0x7e { bytes[13] as char } else { '.' },
-    //     if bytes[14] >= 0x20 && bytes[14] <= 0x7e { bytes[14] as char } else { '.' },
-    //     if bytes[15] >= 0x20 && bytes[15] <= 0x7e { bytes[15] as char } else { '.' },
-    // );
 }
 
 pub fn print_kernel_stack() {
@@ -94,8 +66,6 @@ pub fn print_kernel_stack() {
         end,
         total
     );
-    // serial_println!("\nKernel stack dump  ESP={:#010x}  TOP={:#010x}  ({} bytes)\n",
-    //     start, end, total);
 
     // Align the dump start down to a HEXDUMP_ROW boundary so the address
     // column always shows a multiple of 16 (classic hexdump convention).

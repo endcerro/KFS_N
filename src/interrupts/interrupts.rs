@@ -55,13 +55,49 @@ impl Interrupt {
         self as u8
     }
 
-    // Helper method to create an Interrupt from a number
     pub fn from_u8(value: u8) -> Option<Interrupt> {
-        if value <= 47 || value == 0x80 {
-            // Safety: We know these values are valid
-            Some(unsafe { core::mem::transmute(value) })
-        } else {
-            None
+        match value {
+            0 => Some(Interrupt::DivideError),
+            1 => Some(Interrupt::Debug),
+            2 => Some(Interrupt::NonMaskableInterrupt),
+            3 => Some(Interrupt::Breakpoint),
+            4 => Some(Interrupt::Overflow),
+            5 => Some(Interrupt::BoundRangeExceeded),
+            6 => Some(Interrupt::InvalidOpcode),
+            7 => Some(Interrupt::DeviceNotAvailable),
+            8 => Some(Interrupt::DoubleFault),
+            9 => Some(Interrupt::CoprocessorSegmentOverrun),
+            10 => Some(Interrupt::InvalidTSS),
+            11 => Some(Interrupt::SegmentNotPresent),
+            12 => Some(Interrupt::StackSegmentFault),
+            13 => Some(Interrupt::GeneralProtectionFault),
+            14 => Some(Interrupt::PageFault),
+            // 15 reserved
+            16 => Some(Interrupt::X87FloatingPointException),
+            17 => Some(Interrupt::AlignmentCheck),
+            18 => Some(Interrupt::MachineCheck),
+            19 => Some(Interrupt::SIMDFloatingPointException),
+            20 => Some(Interrupt::VirtualizationException),
+            21 => Some(Interrupt::ControlProtectionException),
+            // 22-31 reserved
+            32 => Some(Interrupt::ProgrammableInterruptTimer),
+            33 => Some(Interrupt::Keyboard),
+            34 => Some(Interrupt::Cascade),
+            35 => Some(Interrupt::COM2),
+            36 => Some(Interrupt::COM1),
+            37 => Some(Interrupt::LPT2),
+            38 => Some(Interrupt::FloppyDisk),
+            39 => Some(Interrupt::LPT1),
+            40 => Some(Interrupt::RealTimeClock),
+            41 => Some(Interrupt::ACPI),
+            42 => Some(Interrupt::Peripheral1),
+            43 => Some(Interrupt::Peripheral2),
+            44 => Some(Interrupt::PS2Mouse),
+            45 => Some(Interrupt::FPU),
+            46 => Some(Interrupt::PrimaryATA),
+            47 => Some(Interrupt::SecondaryATA),
+            128 => Some(Interrupt::Syscall),
+            _ => None,
         }
     }
 }

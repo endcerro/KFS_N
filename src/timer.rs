@@ -49,23 +49,6 @@ pub const MODE_HEARTBEAT: u8 = 1 << 2;
 // Row 0 is the top of the screen - we'll use it as a status bar area.
 const STATUS_ROW: usize = 0;
 
-// Color for the status display: yellow on black, distinct from normal text.
-// const STATUS_COLOR: ColorCode = ColorCode::new(Color::Yellow, Color::Black);
-
-// Clear a region of VGA row with spaces.
-// fn vga_clear_region(row: usize, col_start: usize, col_end: usize, color: ColorCode) {
-//     let buf = unsafe { &mut *(vga::VGA_BUFFER_ADDR as *mut vga::Buffer) };
-//     for c in col_start..col_end {
-//         if c >= VGA_BUFFER_WIDTH {
-//             break;
-//         }
-//         buf.chars[row][c] = ScreenCharacter {
-//             ascii_value: b' ',
-//             color,
-//         };
-//     }
-// }
-
 // ---------------------------------------------------------------------------
 // Signal callback
 // ---------------------------------------------------------------------------

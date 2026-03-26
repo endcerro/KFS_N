@@ -18,6 +18,7 @@ impl PartialEq for SegmentDescriptor {
         self.low_limit == other.low_limit
             && self.low_base == other.low_base
             && self.mid_base == other.mid_base
+            && self.access == other.access
             && self.flags_limit == other.flags_limit
             && self.high_base == other.high_base
     }

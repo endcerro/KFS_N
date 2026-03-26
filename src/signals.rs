@@ -23,8 +23,6 @@
 //   32..63  - available for user / driver defined signals
 // ---------------------------------------------------------------------------
 
-// use crate::dbg_println;
-
 // Total number of signal slots.  Kept small - this is a kernel-only
 // mechanism for now, not a full POSIX signal set.
 const MAX_SIGNALS: usize = 64;
@@ -264,6 +262,11 @@ pub fn dispatch_pending_signals() -> usize {
             Some(s) => s,
             None => break, // queue empty
         };
+
+        if (signal as usize) >= MAX_SIGNALS {
+            dbg_println!("signals: dispatch skipping out-of-range signal {}", signal);
+            continue;
+        }
 
         // --- invoke callback with interrupts enabled ---
         let cb = unsafe { SIGNAL_TABLE.handlers[signal as usize] };
