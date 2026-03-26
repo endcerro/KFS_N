@@ -125,11 +125,12 @@ pub fn init_shell() {
             timerctrl::run,
             "Timer display: on|off|counter|uptime|beat|status",
         );
-        SHELL.add_command(
-            "snake",
-            snake::run,
-            "ssssssssssssssssssssssssssssssssssss",
-        );
+        SHELL.add_command("snake", snake::run, "Classic game making use of all the kernel features");
+        // SHELL.add_command(
+        //     "usermode",
+        //     crate::syscall::run,
+        //     "Ring 3 test: jump to user mode and back",
+        // );
     }
 }
 

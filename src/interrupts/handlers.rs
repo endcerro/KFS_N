@@ -175,7 +175,7 @@ pub unsafe extern "x86-interrupt" fn divide_by_zero(stack_frame: &InterruptStack
 }
 
 pub unsafe extern "x86-interrupt" fn default(stack_frame: &InterruptStackFrame) {
-    println!("Unhandled interrupt fired!");
+    m_println!("Unhandled interrupt fired!");
     stack_frame.print_debug_info();
     // Not necessarily fatal - some spurious interrupts can happen.
     // We log and return rather than panicking.
@@ -205,8 +205,8 @@ pub unsafe extern "x86-interrupt" fn general_protection_fault_handler(
     stack_frame: &InterruptStackFrame,
     error_code: u32,
 ) {
-    println!("\n=== GENERAL PROTECTION FAULT ===");
-    println!("Error code: {:#010x}", error_code);
+    m_println!("\n=== GENERAL PROTECTION FAULT ===");
+    m_println!("Error code: {:#010x}", error_code);
 
     // If error_code is non-zero, bits [15:3] are a segment selector index
     if error_code != 0 {
@@ -220,7 +220,7 @@ pub unsafe extern "x86-interrupt" fn general_protection_fault_handler(
             0b11 => "IDT",
             _ => "unknown",
         };
-        println!(
+        m_println!(
             "  Selector index: {} in {}{}",
             index,
             table_name,

@@ -3,11 +3,11 @@ use core::sync::atomic::{AtomicU32, Ordering};
 
 use crate::keyboard::{self, ControlKey, KeyCode};
 use crate::signals::{self, Signal};
-use crate::vga::{
-    self, Color, ColorCode, ScreenCharacter, VGA_BUFFER_ADDR, VGA_BUFFER_HEIGHT, VGA_BUFFER_WIDTH,
-    Buffer,
-};
 use crate::utils::Cursor;
+use crate::vga::{
+    self, Buffer, Color, ColorCode, ScreenCharacter, VGA_BUFFER_ADDR, VGA_BUFFER_HEIGHT,
+    VGA_BUFFER_WIDTH,
+};
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -80,9 +80,7 @@ struct Rng {
 impl Rng {
     fn new(seed: u32) -> Self {
         // Avoid a zero seed which would make the LCG degenerate.
-        Rng {
-            state: seed | 1,
-        }
+        Rng { state: seed | 1 }
     }
 
     fn next(&mut self) -> u32 {
@@ -216,11 +214,11 @@ fn erase_cell(col: u8, row: u8) {
 // ---------------------------------------------------------------------------
 
 struct SnakeGame {
-    body: VecDeque<(u8, u8)>,  // (col, row), front = head
+    body: VecDeque<(u8, u8)>, // (col, row), front = head
     dir: Dir,
     food: (u8, u8),
     score: u32,
-    speed: u32,                 // ticks per step
+    speed: u32, // ticks per step
     rng: Rng,
     game_over: bool,
 }
@@ -353,7 +351,7 @@ impl SnakeGame {
 fn draw_game_over(score: u32) {
     let row = (VGA_BUFFER_HEIGHT / 2) as u8;
     put_str(30, row - 1, b"====================", GAMEOVER_COLOR);
-    put_str(30, row,     b"    GAME  OVER !    ", GAMEOVER_COLOR);
+    put_str(30, row, b"    GAME  OVER !    ", GAMEOVER_COLOR);
     put_str(30, row + 1, b"====================", GAMEOVER_COLOR);
 
     // "Score: NNN"
@@ -484,7 +482,6 @@ pub fn run(_args: &[&str]) {
     // Cleanup — restore shell state
     // -----------------------------------------------------------------------
     signals::unregister_signal(Signal::TimerTick.as_u8());
-
 
     vga::clear_screen();
     vga::WRITER.lock().cursor.enable_cursor(0, 15);

@@ -2,7 +2,7 @@
 //https://wiki.osdev.org/GDT_Tutorial#Basics
 pub mod define;
 mod descriptor;
-mod tss;
+pub mod tss;
 
 use core::ptr::addr_of;
 

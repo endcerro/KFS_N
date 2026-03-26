@@ -275,7 +275,7 @@ impl FrameAllocator {
             let bitmap = self.bitmap.as_mut();
             bitmap[byte_index] &= !(1 << bit_index);
         }
-        self.used_frames = self.used_frames.saturating_sub(1);// -= 1;
+        self.used_frames = self.used_frames.saturating_sub(1);
     }
 
     // Get the total number of frames

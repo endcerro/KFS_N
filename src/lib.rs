@@ -55,7 +55,9 @@ fn init() {
     print!("Serial     ");
     serial::init();
     colored_print!((None, Some(Color::Green)), "OK\n");
-
+    serial_println!(
+        "==================================KERNEL START=================================="
+    );
     vga::clear_screen();
     vga::print_ft();
 
