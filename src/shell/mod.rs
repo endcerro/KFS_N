@@ -125,6 +125,11 @@ pub fn init_shell() {
             timerctrl::run,
             "Timer display: on|off|counter|uptime|beat|status",
         );
+        SHELL.add_command(
+            "snake",
+            snake::run,
+            "ssssssssssssssssssssssssssssssssssss",
+        );
     }
 }
 
