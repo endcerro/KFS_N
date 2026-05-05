@@ -30,3 +30,7 @@ make docker ; make qemu
 ```
 
 If you don't you can read the docker rule in the makefile, you'll still need a virtual machine to run it (kvm qemu vbox etc)
+
+
+
+I'm kind of underselling it but there is quite of bit of work i've done and I consider this a solid fundation for the work i'll do on this in the coming years
