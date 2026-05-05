@@ -36,7 +36,7 @@ impl IdtEntry {
         self.flags = flags;
     }
     pub fn handler_present(&self) -> bool {
-        self.base_low != 0 && self.base_high != 0
+        self.flags & 0x80 != 0
     }
 }
 
@@ -70,6 +70,14 @@ impl Idt {
         flags: u8,
     ) {
         self.entries[index].set_base(handler as usize as u32);
+        self.entries[index].set_selector(selector);
+        self.entries[index].set_flags(flags);
+    }
+
+    // Used for handlers written in global_asm that don't use the
+    // x86-interrupt calling convention (e.g. the int 0x80 syscall gate).
+    pub fn set_raw_handler(&mut self, index: usize, handler_addr: u32, selector: u16, flags: u8) {
+        self.entries[index].set_base(handler_addr);
         self.entries[index].set_selector(selector);
         self.entries[index].set_flags(flags);
     }

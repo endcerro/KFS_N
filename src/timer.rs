@@ -49,23 +49,6 @@ pub const MODE_HEARTBEAT: u8 = 1 << 2;
 // Row 0 is the top of the screen - we'll use it as a status bar area.
 const STATUS_ROW: usize = 0;
 
-// Color for the status display: yellow on black, distinct from normal text.
-// const STATUS_COLOR: ColorCode = ColorCode::new(Color::Yellow, Color::Black);
-
-// Clear a region of VGA row with spaces.
-// fn vga_clear_region(row: usize, col_start: usize, col_end: usize, color: ColorCode) {
-//     let buf = unsafe { &mut *(vga::VGA_BUFFER_ADDR as *mut vga::Buffer) };
-//     for c in col_start..col_end {
-//         if c >= VGA_BUFFER_WIDTH {
-//             break;
-//         }
-//         buf.chars[row][c] = ScreenCharacter {
-//             ascii_value: b' ',
-//             color,
-//         };
-//     }
-// }
-
 // ---------------------------------------------------------------------------
 // Signal callback
 // ---------------------------------------------------------------------------
@@ -132,7 +115,7 @@ fn timer_tick_handler(_signal: u8) {
 // Internal: manage signal registration
 //
 // The signal handler is registered when transitioning from 0 active
-// modes to ≥1, and unregistered when going back to 0.
+// modes to >=1, and unregistered when going back to 0.
 // ---------------------------------------------------------------------------
 
 fn update_signal_registration(old_modes: u8, new_modes: u8) {
@@ -234,7 +217,7 @@ pub fn print_status() {
     let modes = ACTIVE_MODES.load(Ordering::Relaxed);
     let ticks = TICK_COUNT.load(Ordering::Relaxed);
     let secs = ticks / PIT_HZ;
-    println!("Timer status:");
+    println!("\nTimer status:");
     println!("  Ticks:     {}", ticks);
     println!("  Uptime:    {}s", secs);
     println!(

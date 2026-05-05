@@ -37,6 +37,9 @@ qemu: $(ISO_FILE)
 	@echo "Starting with QEMU"
 	$(QEMU) -cdrom $(ISO_FILE) -m 16M -serial stdio
 
+qemu_hard : $(ISO_FILE)
+	$(QEMU) -cdrom $(ISO_FILE) -m 16M -serial stdio -d int -no-reboot -no-shutdown
+
 qemu_dbg: $(ISO_FILE)
 	@echo "Starting with QEMU in debug mode"
 	$(QEMU) -cdrom $(ISO_FILE) -s -S -serial stdio -m 256M

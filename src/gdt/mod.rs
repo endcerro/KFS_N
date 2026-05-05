@@ -2,7 +2,7 @@
 //https://wiki.osdev.org/GDT_Tutorial#Basics
 pub mod define;
 mod descriptor;
-mod tss;
+pub mod tss;
 
 use core::ptr::addr_of;
 
@@ -25,11 +25,10 @@ struct GdtDescriptor {
 impl GdtDescriptor {
     //Retrieve the current GDT
     pub fn current() -> GdtDescriptor {
-        let gdtr = GdtDescriptor::default();
+        let mut gdtr = GdtDescriptor::default();
         unsafe {
-            core::arch::asm!("sgdt [{}]", in(reg) &gdtr as *const _);
+            core::arch::asm!("sgdt [{}]", in(reg) &mut gdtr as *mut _);
         }
-        // print!("GDT is {:#?}", gdtr);
         gdtr
     }
 }
@@ -46,7 +45,7 @@ pub fn init() {
     unsafe {
         tss::TSS
             .init(stack_phys)
-            .expect("Unvalid TSS stack address");
+            .expect("Invalid TSS stack address");
         tss_addr = core::ptr::addr_of!(tss::TSS) as *const TssSegment as u32 - KERNEL_VIRTUAL_BASE;
         tss_limit = tss_addr + size_of::<TssSegment>() as u32 - 1;
     }

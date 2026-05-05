@@ -113,7 +113,7 @@ impl TssSegment {
         self.cr3 = 0; //This will change when paging is on
         self.eflags = 0x2;
 
-        return Ok(());
+        Ok(())
     }
     pub fn _set_usermode_selector(&mut self) {
         self.cs = USER_CODE_SELECTOR;

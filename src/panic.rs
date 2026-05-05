@@ -200,7 +200,7 @@ impl StackSnapshot {
             let addr = self.esp as usize + offset;
             let row_len = core::cmp::min(16, self.len - offset);
             // Address column
-            m_print!("  {:#010x}  ", addr);
+            m_print!("{:#010x}  ", addr);
             // Hex bytes
             for i in 0..row_len {
                 if i == 8 {

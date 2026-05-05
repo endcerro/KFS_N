@@ -1,5 +1,6 @@
 use crate::m_println;
 use crate::{dbg_println, multiboot2::meminfo::MemoryInfoEntry};
+// use core::intrinsics::saturating_sub;
 use core::ptr::NonNull;
 pub const PAGE_SIZE: usize = 4096;
 
@@ -222,15 +223,19 @@ impl FrameAllocator {
             return Err(AllocationError::InvalidFrame);
         }
 
-        self.mark_frame_free(frame.number);
-
-        // Update next_free_frame if this frame is earlier
-        if frame.number < self.next_free_frame {
-            self.next_free_frame = frame.number;
+        if !self.is_frame_used(frame.number) {
             dbg_println!(
-                "Warning: Attempting to free already-free frame {}",
+                "Warning: double-free of already-free frame {}",
                 frame.number
             );
+        }
+
+        self.mark_frame_free(frame.number);
+
+        // Update next_free_frame hint so subsequent allocations find
+        // this slot sooner.
+        if frame.number < self.next_free_frame {
+            self.next_free_frame = frame.number;
         }
 
         Ok(())
@@ -261,14 +266,16 @@ impl FrameAllocator {
 
     // Mark a frame as free in the bitmap
     fn mark_frame_free(&mut self, frame: usize) {
+        if !self.is_frame_used(frame) {
+            return;
+        }
         let byte_index = frame / 8;
         let bit_index = frame % 8;
         unsafe {
             let bitmap = self.bitmap.as_mut();
             bitmap[byte_index] &= !(1 << bit_index);
         }
-        //TODO This is a bug waiting to happen as it can underflow
-        self.used_frames -= 1;
+        self.used_frames = self.used_frames.saturating_sub(1);
     }
 
     // Get the total number of frames
