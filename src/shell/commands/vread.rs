@@ -12,7 +12,7 @@
 //   vread 0xD0000000 u8
 //   vread 0xD0000000 u64
 
-use super::parse::{page_align_up, parse_u32};
+use super::parse::parse_u32;
 
 pub fn run(args: &[&str]) {
     if args.is_empty() || args.len() > 2 {

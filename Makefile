@@ -25,10 +25,14 @@ KVM := kvm
 RUST_FLAGS :=#--features gdt_test 
 
 # Phony targets
-.PHONY: all kvm qemu qemu_dbg dbg clean
+.PHONY: all kvm qemu qemu_dbg dbg clean docker
 
 all: $(ISO_FILE)
 
+docker:
+	docker build . -t kfs
+	docker run -v ./:/kfs kfs
+	docker run -v ./:/kfs kfs make cleandocker
 kvm: $(ISO_FILE)
 	@echo "Starting with KVM"
 	$(KVM) -name kfs -cdrom $(ISO_FILE) -boot c -cpu host
@@ -77,6 +81,12 @@ $(ISO_FILE): $(KERNEL_BIN) | $(ISO_DIR)/boot/grub
 # Directory creation
 $(OBJ_DIR) $(ISO_DIR)/boot/grub $(TARGET_DIR):
 	mkdir -p $@
+
+cleandocker:
+	cargo clean -Zjson-target-spec
+	rm -rf $(OBJ_DIR) $(ISO_DIR) Cargo.lock
+	chmod 755 os.iso
+
 
 clean:
 	cargo clean -Zjson-target-spec -p kfs

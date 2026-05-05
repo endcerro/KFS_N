@@ -12,7 +12,7 @@
 //   vwrite 0xD0000000 255 u8
 //   vwrite 0xD0000000 0xCAFEBABEDEADBEEF u64
 
-use super::parse::{page_align_up, parse_u32, parse_u64};
+use super::parse::{parse_u32, parse_u64};
 
 pub fn run(args: &[&str]) {
     if args.len() < 2 || args.len() > 3 {
